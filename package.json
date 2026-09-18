@@ -1,0 +1,27 @@
+{
+  "name": "fit-trace",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.22.0",
+  "scripts": {
+    "dev": "concurrently -n h5,api -c cyan,green \"pnpm dev:h5\" \"pnpm dev:api\"",
+    "dev:h5": "pnpm --filter @fit-trace/h5 dev",
+    "dev:api": "pnpm --filter @fit-trace/api dev",
+    "build": "pnpm -r --if-present build",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.4.0",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "typescript-eslint": "^8.43.0",
+    "vue-eslint-parser": "^10.2.0"
+  }
+}

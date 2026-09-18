@@ -1,0 +1,3 @@
+@mixin safe-area-bottom($spacing: 0px) {
+  padding-bottom: calc(#{$spacing} + env(safe-area-inset-bottom));
+}

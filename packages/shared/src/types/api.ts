@@ -20,3 +20,30 @@ export interface ApiErrorResponse {
 export interface HealthStatus {
   status: 'ok';
 }
+
+export interface PublicUser {
+  id: string;
+  email: string;
+  nickname: string | null;
+  avatarUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuthResult {
+  accessToken: string;
+  user: PublicUser;
+}
+
+export interface BodyRecord {
+  id: string;
+  weight: number;
+  bodyFat: number | null;
+  waist: number | null;
+  chest: number | null;
+  hip: number | null;
+  recordedAt: string;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

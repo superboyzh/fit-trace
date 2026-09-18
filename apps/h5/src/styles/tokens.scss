@@ -1,13 +1,17 @@
 :root {
-  --color-primary: #1677ff;
-  --color-success: #22a06b;
+  --color-primary: #146c5b;
+  --color-primary-hover: #0f5b4c;
+  --color-primary-light: #e5f4ef;
+  --color-accent: #42a78f;
+  --color-success: #198754;
   --color-warning: #e98b00;
   --color-danger: #dc3d43;
-  --color-text-primary: #17202e;
-  --color-text-secondary: #667085;
-  --color-background: #f5f7fb;
+  --color-text-primary: #18231f;
+  --color-text-secondary: #60706a;
+  --color-text-tertiary: #8a9994;
+  --color-background: #f3f7f5;
   --color-surface: #fff;
-  --color-border: #e8ecf2;
+  --color-border: #e1e9e5;
   --border-radius-sm: 8px;
   --border-radius-md: 14px;
   --border-radius-lg: 22px;
@@ -16,5 +20,11 @@
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 40px;
-  --shadow-card: 0 16px 36px rgb(32 76 153 / 16%);
+  --shadow-card: 0 16px 38px rgb(25 76 62 / 11%);
+
+  --td-brand-color: var(--color-primary);
+  --td-brand-color-hover: var(--color-primary-hover);
+  --td-brand-color-focus: #d8eee7;
+  --td-brand-color-active: #0a4d40;
+  --td-brand-color-light: var(--color-primary-light);
 }

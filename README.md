@@ -13,6 +13,7 @@ FitTrace 是一个用于长期记录身体数据、饮食、训练和身材变�
 ```bash
 cp .env.example .env
 pnpm install
+pnpm --filter @fit-trace/api prisma:migrate
 pnpm dev
 ```
 
@@ -31,6 +32,16 @@ pnpm build
 ```
 
 数据库结构由 `apps/api/prisma/schema.prisma` 和 Prisma Migration 统一管理。
+
+## Phase 2 Auth API
+
+```text
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+GET  /api/v1/auth/me
+```
+
+`/auth/me` 需要 `Authorization: Bearer <token>`。开发前请在 `.env` 中设置可用的 PostgreSQL `DATABASE_URL` 和足够长的 `JWT_SECRET`。
 
 ## 目录
 

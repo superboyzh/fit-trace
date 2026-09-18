@@ -1,0 +1,108 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import type { BodyRecord as BodyRecordResponse } from '@fit-trace/shared';
+import type { BodyRecord as PrismaBodyRecord, Prisma } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateBodyRecordDto } from './dto/create-body-record.dto';
+import { ListBodyRecordsDto } from './dto/list-body-records.dto';
+import { UpdateBodyRecordDto } from './dto/update-body-record.dto';
+
+@Injectable()
+export class BodyRecordsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(userId: string, dto: CreateBodyRecordDto): Promise<BodyRecordResponse> {
+    const record = await this.prisma.bodyRecord.create({
+      data: {
+        userId,
+        weight: dto.weight,
+        bodyFat: dto.bodyFat,
+        waist: dto.waist,
+        chest: dto.chest,
+        hip: dto.hip,
+        recordedAt: dto.recordedAt ? new Date(dto.recordedAt) : new Date(),
+        note: dto.note?.trim() || null,
+      },
+    });
+    return this.toResponse(record);
+  }
+
+  async list(
+    userId: string,
+    query: ListBodyRecordsDto,
+  ): Promise<{
+    data: BodyRecordResponse[];
+    meta: { page: number; pageSize: number; total: number };
+  }> {
+    const where: Prisma.BodyRecordWhereInput = { userId };
+    const [records, total] = await this.prisma.$transaction([
+      this.prisma.bodyRecord.findMany({
+        where,
+        orderBy: [{ recordedAt: 'desc' }, { createdAt: 'desc' }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.bodyRecord.count({ where }),
+    ]);
+    return {
+      data: records.map((record) => this.toResponse(record)),
+      meta: { page: query.page, pageSize: query.pageSize, total },
+    };
+  }
+
+  async latest(userId: string): Promise<BodyRecordResponse | null> {
+    const record = await this.prisma.bodyRecord.findFirst({
+      where: { userId },
+      orderBy: [{ recordedAt: 'desc' }, { createdAt: 'desc' }],
+    });
+    return record ? this.toResponse(record) : null;
+  }
+
+  async findOne(userId: string, id: string): Promise<BodyRecordResponse> {
+    return this.toResponse(await this.findOwnedRecord(userId, id));
+  }
+
+  async update(userId: string, id: string, dto: UpdateBodyRecordDto): Promise<BodyRecordResponse> {
+    await this.findOwnedRecord(userId, id);
+    const data: Prisma.BodyRecordUpdateInput = {
+      ...(dto.weight !== undefined ? { weight: dto.weight } : {}),
+      ...(dto.bodyFat !== undefined ? { bodyFat: dto.bodyFat } : {}),
+      ...(dto.waist !== undefined ? { waist: dto.waist } : {}),
+      ...(dto.chest !== undefined ? { chest: dto.chest } : {}),
+      ...(dto.hip !== undefined ? { hip: dto.hip } : {}),
+      ...(dto.recordedAt !== undefined ? { recordedAt: new Date(dto.recordedAt) } : {}),
+      ...(dto.note !== undefined ? { note: dto.note.trim() || null } : {}),
+    };
+    return this.toResponse(await this.prisma.bodyRecord.update({ where: { id }, data }));
+  }
+
+  async remove(userId: string, id: string): Promise<void> {
+    await this.findOwnedRecord(userId, id);
+    await this.prisma.bodyRecord.delete({ where: { id } });
+  }
+
+  private async findOwnedRecord(userId: string, id: string): Promise<PrismaBodyRecord> {
+    const record = await this.prisma.bodyRecord.findFirst({ where: { id, userId } });
+    if (!record) {
+      throw new NotFoundException({
+        code: 'BODY_RECORD_NOT_FOUND',
+        message: '身体数据记录不存在',
+      });
+    }
+    return record;
+  }
+
+  private toResponse(record: PrismaBodyRecord): BodyRecordResponse {
+    return {
+      id: record.id,
+      weight: Number(record.weight),
+      bodyFat: record.bodyFat === null ? null : Number(record.bodyFat),
+      waist: record.waist === null ? null : Number(record.waist),
+      chest: record.chest === null ? null : Number(record.chest),
+      hip: record.hip === null ? null : Number(record.hip),
+      recordedAt: record.recordedAt.toISOString(),
+      note: record.note,
+      createdAt: record.createdAt.toISOString(),
+      updatedAt: record.updatedAt.toISOString(),
+    };
+  }
+}

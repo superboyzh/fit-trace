@@ -31,6 +31,21 @@ pnpm typecheck
 pnpm build
 ```
 
+## 代码规范与编辑器
+
+提交前跑一次：
+
+```bash
+pnpm check   # prettier --check + eslint + oxlint + typecheck
+```
+
+- `pnpm lint:fix` 自动修复 ESLint 可修复的问题，`pnpm format` 统一格式
+- 简单组件风格、命名与导入顺序等约定见 `eslint.config.mjs`（flat config）
+- 仓库根目录已放好 `.vscode/settings.json` 与 `.vscode/extensions.json`：
+  保存时自动格式化、ESLint 自动修复、按工作区 TypeScript 版本解析类型
+- 首次打开工作区时，VS Code 会询问是否使用工作区 TypeScript 版本，选择“使用工作区版本”，
+  这样编辑器与实际构建（TypeScript 5.9）保持一致
+
 数据库结构由 `apps/api/prisma/schema.prisma` 和 Prisma Migration 统一管理。
 
 ## Phase 2 Auth API

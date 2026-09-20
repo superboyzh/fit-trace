@@ -6,6 +6,7 @@ coverage/
 .env.*
 !.env.example
 *.log
+*.tsbuildinfo
 .DS_Store
 # 本地图片存储目录（STORAGE_LOCAL_DIR 指向的位置）不入库。
 # 用精确路径而不是 uploads/，避免误伤源码目录 apps/api/src/uploads/

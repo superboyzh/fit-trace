@@ -4,3 +4,6 @@ dist
 coverage
 pnpm-lock.yaml
 docs/PRD.md
+*.prisma
+uploads
+.uploads

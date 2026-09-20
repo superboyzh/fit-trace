@@ -168,7 +168,8 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
           role: 'user',
           content: [
             { type: 'text', text: INSTRUCTION },
-            { type: 'image_url', image_url: { url: imageUrl, detail: 'auto' } },
+            // 兼容端点对多余字段比较敏感，chat 模式只传 url。
+            { type: 'image_url', image_url: { url: imageUrl } },
           ],
         },
       ],

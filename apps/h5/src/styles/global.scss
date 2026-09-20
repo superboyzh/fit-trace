@@ -8,7 +8,7 @@
 html {
   min-width: 320px;
   color: var(--color-text-primary);
-  background: var(--color-background);
+  background: #e7eae5;
   font-family:
     Inter,
     -apple-system,
@@ -34,6 +34,10 @@ select {
   font: inherit;
 }
 
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
 .page-container {
   width: min(100%, $page-max-width);
   min-height: 100vh;
@@ -42,7 +46,8 @@ select {
 }
 
 .view-page {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--bottom-nav-space));
+  min-height: calc(100dvh - var(--bottom-nav-space));
   padding: 0 var(--spacing-md) var(--spacing-xl);
 }
 
@@ -50,40 +55,84 @@ select {
   padding: 30px 0 22px;
 
   &__eyebrow {
-    color: var(--color-primary);
-    font-size: 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--color-text-secondary);
+    font-size: 0.66rem;
     font-weight: 800;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+
+    &::before {
+      width: 18px;
+      height: 3px;
+      background: var(--color-primary);
+      content: '';
+    }
   }
 
   h1 {
-    margin: 6px 0;
-    font-size: 1.8rem;
-    line-height: 1.2;
+    margin: 7px 0 5px;
+    font-size: 1.85rem;
+    font-weight: 850;
+    line-height: 1.15;
+    letter-spacing: -0.04em;
   }
 
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.88rem;
+    font-size: 0.84rem;
     line-height: 1.6;
   }
 }
 
-.surface-card.t-card {
+.surface-card {
   overflow: hidden;
   background: var(--color-surface);
+  border: 1px solid rgb(20 28 25 / 6%);
   border-radius: var(--border-radius-md);
-  box-shadow: 0 8px 28px rgb(25 76 62 / 7%);
+  box-shadow: var(--shadow-card);
+}
+
+.page-loading.t-loading {
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .t-button {
-  font-weight: 650;
+  font-weight: 700;
+
+  .t-loading {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .t-loading__gradient {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.t-button--primary:not(.t-button--text):not(.t-button--outline) {
+  color: #fff;
+  background: var(--color-ink);
+  border-color: var(--color-ink);
 }
 
 .t-input,
-.t-input-number,
-.t-textarea__inner,
-.t-date-picker {
+.t-textarea {
   border-radius: var(--border-radius-sm);
+}
+
+.metric-number {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.055em;
 }

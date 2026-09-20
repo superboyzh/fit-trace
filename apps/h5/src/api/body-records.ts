@@ -1,4 +1,10 @@
-import type { ApiListResponse, ApiResponse, BodyRecord } from '@fit-trace/shared';
+import type {
+  ApiListResponse,
+  ApiResponse,
+  BodyRecord,
+  BodyTrendData,
+  BodyTrendDays,
+} from '@fit-trace/shared';
 import { http } from './http';
 
 export interface BodyRecordInput {
@@ -14,6 +20,7 @@ export interface BodyRecordInput {
 export interface BodyRecordListParams {
   page?: number;
   pageSize?: number;
+  recordedAtOrder?: 'asc' | 'desc';
 }
 
 export async function createBodyRecord(input: BodyRecordInput): Promise<BodyRecord> {
@@ -30,6 +37,13 @@ export async function getBodyRecords(
 
 export async function getLatestBodyRecord(): Promise<BodyRecord | null> {
   const response = await http.get<ApiResponse<BodyRecord | null>>('/body-records/latest');
+  return response.data.data;
+}
+
+export async function getBodyTrends(days: BodyTrendDays): Promise<BodyTrendData> {
+  const response = await http.get<ApiResponse<BodyTrendData>>('/body-records/trends', {
+    params: { days },
+  });
   return response.data.data;
 }
 

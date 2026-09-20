@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 export class ListBodyRecordsDto {
   @Type(() => Number)
@@ -14,4 +14,8 @@ export class ListBodyRecordsDto {
   @Min(1, { message: '每页数量不能小于 1' })
   @Max(100, { message: '每页数量不能超过 100' })
   pageSize = 20;
+
+  @IsOptional()
+  @IsIn(['asc', 'desc'], { message: '排序方式只能是 asc 或 desc' })
+  recordedAtOrder: 'asc' | 'desc' = 'desc';
 }

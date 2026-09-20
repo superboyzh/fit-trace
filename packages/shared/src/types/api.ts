@@ -47,3 +47,34 @@ export interface BodyRecord {
   createdAt: string;
   updatedAt: string;
 }
+
+export type BodyTrendDays = 7 | 30 | 90;
+export type BodyTrendMetric = 'weight' | 'bodyFat' | 'waist';
+
+export interface BodyTrendPoint {
+  recordedAt: string;
+  value: number;
+}
+
+export interface BodyTrendStats {
+  current: number;
+  start: number;
+  change: number;
+  max: number;
+  min: number;
+  average: number;
+}
+
+export interface BodyTrendSeries {
+  points: BodyTrendPoint[];
+  stats: BodyTrendStats | null;
+}
+
+export interface BodyTrendData {
+  days: BodyTrendDays;
+  from: string;
+  to: string;
+  weight: BodyTrendSeries;
+  bodyFat: BodyTrendSeries;
+  waist: BodyTrendSeries;
+}

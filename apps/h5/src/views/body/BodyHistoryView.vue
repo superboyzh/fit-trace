@@ -2,7 +2,8 @@
 import type { BodyRecord } from '@fit-trace/shared';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import { Button, Card, DialogPlugin, Empty, Loading, MessagePlugin, Tag } from 'tdesign-vue-next';
+import { Button, DialogPlugin, Empty, Loading, Tag, ToastPlugin } from 'tdesign-mobile-vue';
+import { AddIcon, DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import type { ApiErrorResponse } from '@fit-trace/shared';
@@ -21,7 +22,11 @@ async function load(reset = false): Promise<void> {
     page.value = 1;
     records.value = [];
   }
-  const result = await getBodyRecords({ page: page.value, pageSize });
+  const result = await getBodyRecords({
+    page: page.value,
+    pageSize,
+    recordedAtOrder: 'asc',
+  });
   records.value.push(...result.data);
   total.value = result.meta.total;
 }
@@ -33,34 +38,36 @@ async function loadMore(): Promise<void> {
     await load();
   } catch {
     page.value -= 1;
-    MessagePlugin.error('加载更多记录失败');
+    ToastPlugin.error('加载更多记录失败');
   } finally {
     loadingMore.value = false;
   }
 }
 
 function confirmDelete(record: BodyRecord): void {
+  let deleting = false;
   const dialog = DialogPlugin.confirm({
-    header: '删除这条记录？',
-    body: `${dayjs(record.recordedAt).format('YYYY年M月D日')} · ${record.weight} kg，删除后无法恢复。`,
-    theme: 'danger',
+    title: '删除这条记录？',
+    content: `${dayjs(record.recordedAt).format('YYYY年M月D日')} · ${record.weight} kg，删除后无法恢复。`,
     confirmBtn: { content: '删除', theme: 'danger' },
     cancelBtn: '取消',
-    width: 'min(90vw, 420px)',
     onConfirm: async () => {
-      dialog.setConfirmLoading(true);
+      if (deleting) return;
+      deleting = true;
+      dialog.update({ confirmBtn: { content: '删除中…', theme: 'danger', loading: true } });
       try {
         await deleteBodyRecord(record.id);
         records.value = records.value.filter((item) => item.id !== record.id);
         total.value -= 1;
-        MessagePlugin.success('记录已删除');
+        ToastPlugin.success('记录已删除');
         dialog.destroy();
       } catch (error) {
         const message = axios.isAxiosError<ApiErrorResponse>(error)
           ? error.response?.data.message
           : undefined;
-        MessagePlugin.error(message ?? '删除失败，请稍后重试');
-        dialog.setConfirmLoading(false);
+        ToastPlugin.error(message ?? '删除失败，请稍后重试');
+        deleting = false;
+        dialog.update({ confirmBtn: { content: '删除', theme: 'danger' } });
       }
     },
   });
@@ -79,14 +86,16 @@ onMounted(async () => {
   <main class="view-page history-page">
     <header class="history-header">
       <div>
-        <span class="page-header__eyebrow">BODY HISTORY</span>
+        <span class="page-header__eyebrow">Body History</span>
         <h1>身体数据</h1>
         <p>每一次记录，都会让变化更清晰。</p>
       </div>
-      <Button theme="primary" shape="round" @click="router.push('/body/create')">+ 新记录</Button>
+      <Button class="new-record-button" shape="round" @click="router.push('/body/create')">
+        <AddIcon /> 新记录
+      </Button>
     </header>
 
-    <Loading :loading="loading" text="正在读取历史记录">
+    <Loading class="page-loading" :loading="loading" text="正在读取历史记录">
       <Empty
         v-if="!loading && records.length === 0"
         class="empty-state"
@@ -99,12 +108,7 @@ onMounted(async () => {
       </Empty>
 
       <div v-else class="record-list">
-        <Card
-          v-for="record in records"
-          :key="record.id"
-          class="surface-card record-card"
-          :bordered="false"
-        >
+        <section v-for="record in records" :key="record.id" class="surface-card record-card">
           <div class="record-card__heading">
             <div>
               <strong>{{ record.weight }} <small>kg</small></strong>
@@ -140,14 +144,14 @@ onMounted(async () => {
 
           <p v-if="record.note" class="record-card__note">{{ record.note }}</p>
           <div class="record-card__actions">
-            <Button size="small" variant="text" @click="router.push(`/body/${record.id}/edit`)"
-              >编辑</Button
-            >
+            <Button size="small" variant="text" @click="router.push(`/body/${record.id}/edit`)">
+              <EditIcon /> 编辑
+            </Button>
             <Button size="small" variant="text" theme="danger" @click="confirmDelete(record)"
-              >删除</Button
+              ><DeleteIcon /> 删除</Button
             >
           </div>
-        </Card>
+        </section>
       </div>
 
       <Button
@@ -184,6 +188,12 @@ onMounted(async () => {
   }
 }
 
+.new-record-button.t-button {
+  color: var(--color-ink);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
 .empty-state {
   padding: 52px 18px;
   background: var(--color-surface);
@@ -191,13 +201,41 @@ onMounted(async () => {
 }
 
 .record-list {
+  position: relative;
   display: grid;
+  width: 100%;
+  min-width: 0;
   gap: 12px;
+
+  &::before {
+    position: absolute;
+    top: 18px;
+    bottom: 18px;
+    left: 5px;
+    width: 2px;
+    background: var(--color-border);
+    content: '';
+  }
 }
 
 .record-card {
-  :deep(.t-card__body) {
-    padding: 17px;
+  position: relative;
+  width: auto;
+  min-width: 0;
+  margin-left: 17px;
+  padding: 17px;
+
+  &::before {
+    position: absolute;
+    top: 25px;
+    left: -18px;
+    width: 10px;
+    height: 10px;
+    background: var(--color-primary);
+    border: 3px solid var(--color-background);
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--color-ink);
+    content: '';
   }
 
   &__heading {
@@ -212,8 +250,9 @@ onMounted(async () => {
     }
 
     strong {
-      color: var(--color-primary);
+      color: var(--color-ink);
       font-size: 1.65rem;
+      font-variant-numeric: tabular-nums;
 
       small {
         font-size: 0.78rem;
@@ -232,8 +271,8 @@ onMounted(async () => {
     gap: 6px;
     margin-top: 17px;
     padding: 12px;
-    background: var(--color-background);
-    border-radius: 11px;
+    background: var(--color-surface-muted);
+    border-radius: 10px;
 
     div {
       display: flex;

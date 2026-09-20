@@ -1,32 +1,39 @@
 <script setup lang="ts">
-import { Button, Card, Tag } from 'tdesign-vue-next';
+import { Button, Tag } from 'tdesign-mobile-vue';
+import {
+  ActivityIcon,
+  CameraIcon,
+  ChevronRightIcon,
+  ForkIcon,
+  MeasurementIcon,
+} from 'tdesign-icons-vue-next';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const entries = [
-  { title: '身体数据', description: '体重、体脂和身体围度', symbol: 'kg', enabled: true },
-  { title: '饮食记录', description: '记录每一餐和食物', symbol: '餐', enabled: false },
-  { title: '训练记录', description: '保存训练类型和时长', symbol: '练', enabled: false },
-  { title: '身材照片', description: '留下不同阶段的变化', symbol: '照', enabled: false },
+  {
+    title: '身体数据',
+    description: '体重、体脂和身体围度',
+    icon: MeasurementIcon,
+    enabled: true,
+  },
+  { title: '饮食记录', description: '记录每一餐和食物', icon: ForkIcon, enabled: false },
+  { title: '训练记录', description: '保存训练类型和强度', icon: ActivityIcon, enabled: false },
+  { title: '身材照片', description: '留下不同阶段的变化', icon: CameraIcon, enabled: false },
 ];
 </script>
 
 <template>
   <main class="view-page">
     <header class="page-header">
-      <span class="page-header__eyebrow">QUICK LOG</span>
-      <h1>记录</h1>
-      <p>选择你现在要记录的内容。</p>
+      <span class="page-header__eyebrow">Quick Log</span>
+      <h1>记录训练轨迹</h1>
+      <p>选择记录类型，用最少的步骤留下今天的数据。</p>
     </header>
 
     <div class="entry-list">
-      <Card
-        v-for="entry in entries"
-        :key="entry.title"
-        class="surface-card entry-card"
-        :bordered="false"
-      >
-        <div class="entry-card__symbol">{{ entry.symbol }}</div>
+      <section v-for="entry in entries" :key="entry.title" class="surface-card entry-card">
+        <div class="entry-card__symbol"><component :is="entry.icon" /></div>
         <div class="entry-card__content">
           <div class="entry-card__title">
             <strong>{{ entry.title }}</strong>
@@ -35,14 +42,14 @@ const entries = [
           <span>{{ entry.description }}</span>
         </div>
         <Button
-          :theme="entry.enabled ? 'primary' : 'default'"
+          variant="text"
           :disabled="!entry.enabled"
           shape="round"
           @click="router.push('/body/create')"
         >
-          {{ entry.enabled ? '去记录' : '暂不可用' }}
+          <ChevronRightIcon />
         </Button>
-      </Card>
+      </section>
     </div>
 
     <Button variant="text" block size="large" @click="router.push('/body/history')">
@@ -54,29 +61,26 @@ const entries = [
 <style scoped lang="scss">
 .entry-list {
   display: grid;
-  gap: var(--spacing-sm);
+  gap: 10px;
   margin-bottom: var(--spacing-md);
 }
 
 .entry-card {
-  :deep(.t-card__body) {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px;
-  }
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 15px;
 
   &__symbol {
     display: grid;
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     flex: none;
     place-items: center;
-    color: var(--color-primary);
-    font-size: 0.82rem;
-    font-weight: 800;
-    background: var(--color-primary-light);
-    border-radius: 14px;
+    color: var(--color-ink);
+    font-size: 1.25rem;
+    background: var(--color-primary);
+    border-radius: 12px;
   }
 
   &__content {
@@ -96,6 +100,14 @@ const entries = [
     display: flex;
     align-items: center;
     gap: 7px;
+  }
+
+  &:has(.t-button:disabled) {
+    opacity: 0.54;
+
+    .entry-card__symbol {
+      background: var(--color-surface-muted);
+    }
   }
 }
 </style>

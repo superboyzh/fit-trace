@@ -9,10 +9,11 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import type { ApiListMeta, BodyRecord } from '@fit-trace/shared';
+import type { ApiListMeta, BodyRecord, BodyTrendData } from '@fit-trace/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { BodyRecordsService } from './body-records.service';
+import { BodyTrendsQueryDto } from './dto/body-trends-query.dto';
 import { CreateBodyRecordDto } from './dto/create-body-record.dto';
 import { ListBodyRecordsDto } from './dto/list-body-records.dto';
 import { UpdateBodyRecordDto } from './dto/update-body-record.dto';
@@ -41,6 +42,14 @@ export class BodyRecordsController {
   @Get('latest')
   async latest(@CurrentUser('sub') userId: string): Promise<{ data: BodyRecord | null }> {
     return { data: await this.bodyRecords.latest(userId) };
+  }
+
+  @Get('trends')
+  async trends(
+    @CurrentUser('sub') userId: string,
+    @Query() query: BodyTrendsQueryDto,
+  ): Promise<{ data: BodyTrendData }> {
+    return { data: await this.bodyRecords.trends(userId, query.days) };
   }
 
   @Get(':id')

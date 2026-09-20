@@ -1,5 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { BodyRecord as BodyRecordResponse } from '@fit-trace/shared';
+import type {
+  BodyRecord as BodyRecordResponse,
+  BodyTrendData,
+  BodyTrendDays,
+  BodyTrendMetric,
+  BodyTrendSeries,
+} from '@fit-trace/shared';
 import type { BodyRecord as PrismaBodyRecord, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBodyRecordDto } from './dto/create-body-record.dto';
@@ -37,7 +43,7 @@ export class BodyRecordsService {
     const [records, total] = await this.prisma.$transaction([
       this.prisma.bodyRecord.findMany({
         where,
-        orderBy: [{ recordedAt: 'desc' }, { createdAt: 'desc' }],
+        orderBy: [{ recordedAt: query.recordedAtOrder }, { createdAt: query.recordedAtOrder }],
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
       }),
@@ -55,6 +61,24 @@ export class BodyRecordsService {
       orderBy: [{ recordedAt: 'desc' }, { createdAt: 'desc' }],
     });
     return record ? this.toResponse(record) : null;
+  }
+
+  async trends(userId: string, days: BodyTrendDays): Promise<BodyTrendData> {
+    const to = new Date();
+    const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+    const records = await this.prisma.bodyRecord.findMany({
+      where: { userId, recordedAt: { gte: from, lte: to } },
+      orderBy: [{ recordedAt: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    return {
+      days,
+      from: from.toISOString(),
+      to: to.toISOString(),
+      weight: this.toTrendSeries(records, 'weight'),
+      bodyFat: this.toTrendSeries(records, 'bodyFat'),
+      waist: this.toTrendSeries(records, 'waist'),
+    };
   }
 
   async findOne(userId: string, id: string): Promise<BodyRecordResponse> {
@@ -89,6 +113,31 @@ export class BodyRecordsService {
       });
     }
     return record;
+  }
+
+  private toTrendSeries(records: PrismaBodyRecord[], metric: BodyTrendMetric): BodyTrendSeries {
+    const points = records.flatMap((record) => {
+      const rawValue = record[metric];
+      return rawValue === null
+        ? []
+        : [{ recordedAt: record.recordedAt.toISOString(), value: Number(rawValue) }];
+    });
+    if (points.length === 0) return { points, stats: null };
+
+    const values = points.map((point) => point.value);
+    const start = values[0];
+    const current = values.at(-1) ?? start;
+    return {
+      points,
+      stats: {
+        current,
+        start,
+        change: current - start,
+        max: Math.max(...values),
+        min: Math.min(...values),
+        average: values.reduce((sum, value) => sum + value, 0) / values.length,
+      },
+    };
   }
 
   private toResponse(record: PrismaBodyRecord): BodyRecordResponse {

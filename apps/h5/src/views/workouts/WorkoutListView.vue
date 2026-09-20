@@ -3,11 +3,12 @@ import type { ApiErrorResponse, WorkoutRecord, WorkoutType } from '@fit-trace/sh
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { Button, DialogPlugin, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
-import { AddIcon, DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
+import { DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteWorkout, getWorkouts } from '@/api/workouts';
 import SportIcon from '@/components/SportIcon.vue';
+import RecordDetailHeader from '@/components/RecordDetailHeader.vue';
 
 const workoutTypes: Array<{ value: WorkoutType; label: string }> = [
   { value: 'STRENGTH', label: '力量' },
@@ -122,20 +123,12 @@ onMounted(async () => {
 
 <template>
   <main class="view-page workouts-page">
-    <header class="workouts-header">
-      <div>
-        <h1>训练记录</h1>
-        <p>把练过的留下，和身体变化放在同一条时间线上。</p>
-      </div>
-      <Button
-        class="new-workout-button"
-        theme="primary"
-        size="small"
-        @click="router.push('/workouts/create')"
-      >
-        <AddIcon /> 新记录
-      </Button>
-    </header>
+    <RecordDetailHeader
+      title="训练记录"
+      subtitle="把练过的留下，和身体变化放在同一条时间线上。"
+      action-label="新记录"
+      @action="router.push('/workouts/create')"
+    />
 
     <div class="workout-filter" aria-label="按训练类型筛选">
       <button
@@ -241,10 +234,6 @@ onMounted(async () => {
     font-size: 0.875rem;
     line-height: 1.6;
   }
-}
-
-.new-workout-button.t-button {
-  flex: none;
 }
 
 .workout-filter {

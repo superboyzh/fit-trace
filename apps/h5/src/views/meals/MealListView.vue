@@ -3,7 +3,7 @@ import type { ApiErrorResponse, MealRecord, MealType } from '@fit-trace/shared';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { Button, DialogPlugin, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
-import { AddIcon, DeleteIcon, EditIcon, ForkIcon } from 'tdesign-icons-vue-next';
+import { DeleteIcon, EditIcon, ForkIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteMeal, getMeals } from '@/api/meals';
@@ -120,19 +120,12 @@ onMounted(async () => {
 
 <template>
   <main class="view-page meals-page">
-    <header class="meals-header">
-      <div>
-        <h1>饮食日记</h1>
-        <p>按餐次记录，回顾每天真实的饮食。</p>
-      </div>
-      <Button
-        class="new-meal-button"
-        theme="primary"
-        size="small"
-        @click="router.push('/meals/create')"
-        ><AddIcon /> 添加</Button
-      >
-    </header>
+    <RecordDetailHeader
+      title="饮食日记"
+      subtitle="按餐次记录，回顾每天真实的饮食。"
+      action-label="添加"
+      @action="router.push('/meals/create')"
+    />
 
     <div class="meal-filter" aria-label="按餐次筛选">
       <button
@@ -258,9 +251,6 @@ onMounted(async () => {
     color: var(--color-text-secondary);
     font-size: 0.875rem;
   }
-}
-.new-meal-button.t-button {
-  flex: none;
 }
 .meal-filter {
   display: flex;

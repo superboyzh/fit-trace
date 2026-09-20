@@ -3,11 +3,12 @@ import type { BodyRecord } from '@fit-trace/shared';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { Button, DialogPlugin, Empty, Loading, Tag, ToastPlugin } from 'tdesign-mobile-vue';
-import { AddIcon, DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
+import { DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import type { ApiErrorResponse } from '@fit-trace/shared';
 import { deleteBodyRecord, getBodyRecords } from '@/api/body-records';
+import RecordDetailHeader from '@/components/RecordDetailHeader.vue';
 
 const router = useRouter();
 const records = ref<BodyRecord[]>([]);
@@ -84,21 +85,12 @@ onMounted(async () => {
 
 <template>
   <main class="view-page history-page">
-    <header class="history-header">
-      <div>
-        <span class="page-header__eyebrow">Body History</span>
-        <h1>身体数据</h1>
-        <p>每一次记录，都会让变化更清晰。</p>
-      </div>
-      <Button
-        class="new-record-button"
-        theme="primary"
-        shape="round"
-        @click="router.push('/body/create')"
-      >
-        <AddIcon /> 新记录
-      </Button>
-    </header>
+    <RecordDetailHeader
+      title="身体数据"
+      subtitle="每一次记录，都会让变化更清晰。"
+      action-label="新记录"
+      @action="router.push('/body/create')"
+    />
 
     <Loading class="page-loading" :loading="loading" text="正在读取历史记录">
       <Empty
@@ -186,29 +178,6 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss">
-.history-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--spacing-md);
-  padding: 30px 0 22px;
-
-  h1 {
-    margin: 5px 0;
-    font-size: 1.8rem;
-  }
-
-  p {
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-size: 0.9375rem;
-  }
-}
-
-.new-record-button.t-button {
-  flex: none;
-}
-
 .empty-state {
   padding: 52px 18px;
   background: var(--color-surface);

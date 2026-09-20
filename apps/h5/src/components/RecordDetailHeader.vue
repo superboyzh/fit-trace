@@ -7,6 +7,7 @@ defineProps<{
   title: string;
   subtitle?: string;
   actionLabel?: string;
+  actionLoading?: boolean;
 }>();
 
 const emit = defineEmits<{ action: [] }>();
@@ -21,7 +22,14 @@ const router = useRouter();
         <h1>{{ title }}</h1>
         <p v-if="subtitle">{{ subtitle }}</p>
       </div>
-      <Button v-if="actionLabel" size="small" variant="outline" @click="emit('action')">
+      <Button
+        v-if="actionLabel"
+        class="detail-header__action"
+        theme="primary"
+        size="small"
+        :loading="actionLoading"
+        @click="emit('action')"
+      >
         {{ actionLabel }}
       </Button>
     </div>
@@ -41,6 +49,10 @@ const router = useRouter();
     align-items: flex-end;
     justify-content: space-between;
     gap: 12px;
+  }
+
+  &__action {
+    flex: none;
   }
 
   h1 {

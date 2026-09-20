@@ -28,6 +28,7 @@ const router = createRouter({
           path: 'dashboard',
           name: 'dashboard',
           component: () => import('@/views/DashboardView.vue'),
+          meta: { tabBar: true },
         },
         {
           path: 'record',
@@ -38,16 +39,19 @@ const router = createRouter({
           path: 'trends',
           name: 'trends',
           component: () => import('@/views/TrendsView.vue'),
+          meta: { tabBar: true },
         },
         {
           path: 'profile',
           name: 'profile',
           component: () => import('@/views/ProfileView.vue'),
+          meta: { tabBar: true },
         },
         {
           path: 'archive',
           name: 'archive',
           component: () => import('@/views/ArchiveView.vue'),
+          meta: { tabBar: true },
         },
         {
           path: 'body',

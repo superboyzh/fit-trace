@@ -3,11 +3,12 @@ import type { ApiErrorResponse, PhotoType, ProgressPhoto } from '@fit-trace/shar
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { Button, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
-import { CameraIcon, ImageIcon, UploadIcon } from 'tdesign-icons-vue-next';
+import { ImageIcon, UploadIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { createProgressPhoto, getProgressPhotos } from '@/api/progress-photos';
 import { uploadImage } from '@/api/uploads';
+import RecordDetailHeader from '@/components/RecordDetailHeader.vue';
 
 const photoTypes: Array<{ value: PhotoType; label: string }> = [
   { value: 'FRONT', label: '正面' },
@@ -95,21 +96,13 @@ onMounted(async () => {
 
 <template>
   <main class="view-page photos-page">
-    <header class="photos-header">
-      <div>
-        <h1>身材照片</h1>
-        <p>同角度、同光线，隔一段时间再拍一张。</p>
-      </div>
-      <Button
-        class="upload-button"
-        theme="primary"
-        size="small"
-        :loading="uploading"
-        @click="pickFile"
-      >
-        <CameraIcon /> 上传
-      </Button>
-    </header>
+    <RecordDetailHeader
+      title="身材照片"
+      subtitle="同角度、同光线，隔一段时间再拍一张。"
+      action-label="上传"
+      :action-loading="uploading"
+      @action="pickFile"
+    />
 
     <section class="upload-panel">
       <span class="upload-panel__label">本次记录为</span>
@@ -209,10 +202,6 @@ onMounted(async () => {
     color: var(--color-text-secondary);
     font-size: 0.875rem;
   }
-}
-
-.upload-button.t-button {
-  flex: none;
 }
 
 .upload-panel {

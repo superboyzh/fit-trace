@@ -8,6 +8,7 @@ import {
   MeasurementIcon,
 } from 'tdesign-icons-vue-next';
 import { useRouter } from 'vue-router';
+import RecordDetailHeader from '@/components/RecordDetailHeader.vue';
 
 const router = useRouter();
 const entries = [
@@ -47,10 +48,7 @@ const shortcuts = [
 
 <template>
   <main class="view-page">
-    <header class="page-header">
-      <h1>添加记录</h1>
-      <p>选择今天想要记录的内容。</p>
-    </header>
+    <RecordDetailHeader title="添加记录" subtitle="选择今天想要记录的内容。" />
 
     <div class="entry-list">
       <section v-for="entry in entries" :key="entry.title" class="surface-card entry-card">

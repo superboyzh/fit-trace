@@ -6,7 +6,7 @@ import {
   ForkIcon,
   MeasurementIcon,
 } from 'tdesign-icons-vue-next';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -19,9 +19,6 @@ const options = [
   { label: '训练记录', hint: '类型与时长', icon: ActivityIcon, path: '/workouts/create' },
   { label: '身材照片', hint: '留一张存档', icon: CameraIcon, path: '/photos' },
 ];
-
-/** 表单页已经有自己的保存入口，不必再叠一个悬浮按钮 */
-const visible = computed(() => !/\/(create|edit)$/.test(route.path));
 
 function toggle(): void {
   open.value = !open.value;
@@ -47,7 +44,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 </script>
 
 <template>
-  <div v-if="visible" class="record-fab" :class="{ 'is-open': open }">
+  <div class="record-fab" :class="{ 'is-open': open }">
     <Transition name="fab-scrim">
       <div v-if="open" class="record-fab__scrim" @click="close" />
     </Transition>

@@ -81,6 +81,19 @@ export interface BodyTrendData {
 
 export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
 
+export interface FoodRecognitionItem {
+  name: string;
+  estimatedAmount: string | null;
+  estimatedCalories: number | null;
+}
+
+export interface FoodRecognitionResult {
+  /** 生成该结果的识别服务，用于提示用户当前是否处于模拟模式。 */
+  provider: string;
+  imageUrl: string;
+  foods: FoodRecognitionItem[];
+}
+
 export interface FoodItem {
   id: string;
   name: string;

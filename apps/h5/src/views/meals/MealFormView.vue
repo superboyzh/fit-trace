@@ -11,16 +11,30 @@ import {
   Textarea,
   ToastPlugin,
 } from 'tdesign-mobile-vue';
-import { AddIcon, CalendarIcon, ChevronLeftIcon, DeleteIcon } from 'tdesign-icons-vue-next';
+import {
+  AddIcon,
+  CalendarIcon,
+  CameraIcon,
+  CheckIcon,
+  ChevronLeftIcon,
+  DeleteIcon,
+} from 'tdesign-icons-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { recognizeFood } from '@/api/ai';
 import { createMeal, getMeal, updateMeal, type MealInput } from '@/api/meals';
+import { uploadImage } from '@/api/uploads';
 
 interface EditableFood {
   key: number;
   name: string;
   amount: string;
   calories: string | number;
+  aiGenerated: boolean;
+}
+
+interface FoodSuggestion extends EditableFood {
+  selected: boolean;
 }
 
 const mealTypes: Array<{ value: MealType; label: string; time: string }> = [
@@ -37,18 +51,29 @@ const isEdit = computed(() => Boolean(mealId.value));
 const loading = ref(Boolean(mealId.value));
 const submitting = ref(false);
 const datePickerVisible = ref(false);
+const uploadingPhoto = ref(false);
+const recognizing = ref(false);
+const imageUrl = ref('');
+const recognitionProvider = ref('');
+const suggestions = ref<FoodSuggestion[]>([]);
+const fileInput = ref<HTMLInputElement | null>(null);
 let foodKey = 1;
 const formData = reactive({
   type: 'BREAKFAST' as MealType,
   recordedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
   note: '',
-  foods: [{ key: foodKey, name: '', amount: '', calories: '' }] as EditableFood[],
+  foods: [
+    { key: foodKey, name: '', amount: '', calories: '', aiGenerated: false },
+  ] as EditableFood[],
 });
 const recordedAtDisplay = computed(() => dayjs(formData.recordedAt).format('YYYY-MM-DD HH:mm'));
+const selectedMealLabel = computed(
+  () => mealTypes.find((item) => item.value === formData.type)?.label ?? '这一餐',
+);
 
 function addFood(): void {
   foodKey += 1;
-  formData.foods.push({ key: foodKey, name: '', amount: '', calories: '' });
+  formData.foods.push({ key: foodKey, name: '', amount: '', calories: '', aiGenerated: false });
 }
 
 function removeFood(key: number): void {
@@ -64,6 +89,94 @@ function confirmRecordedAt(value: string | number): void {
   datePickerVisible.value = false;
 }
 
+function pickPhoto(): void {
+  if (uploadingPhoto.value) return;
+  fileInput.value?.click();
+}
+
+async function onPhotoChange(event: Event): Promise<void> {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  target.value = '';
+  if (!file) return;
+
+  uploadingPhoto.value = true;
+  try {
+    const uploaded = await uploadImage(file);
+    imageUrl.value = uploaded.url;
+    await recognizePhoto();
+  } catch (error) {
+    ToastPlugin.error(resolveErrorMessage(error, '照片上传失败，请稍后重试'));
+  } finally {
+    uploadingPhoto.value = false;
+  }
+}
+
+async function recognizePhoto(): Promise<void> {
+  if (!imageUrl.value || recognizing.value) return;
+  recognizing.value = true;
+  try {
+    const result = await recognizeFood(imageUrl.value);
+    recognitionProvider.value = result.provider;
+    suggestions.value = result.foods.map((food) => ({
+      key: ++foodKey,
+      name: food.name,
+      amount: food.estimatedAmount ?? '',
+      calories: food.estimatedCalories ?? '',
+      aiGenerated: true,
+      selected: true,
+    }));
+    if (suggestions.value.length === 0) {
+      ToastPlugin.warning('没有识别到食物，请手动添加');
+    }
+  } catch (error) {
+    ToastPlugin.error(resolveErrorMessage(error, '识别失败，请手动填写'));
+  } finally {
+    recognizing.value = false;
+  }
+}
+
+function removePhoto(): void {
+  imageUrl.value = '';
+  recognitionProvider.value = '';
+  suggestions.value = [];
+}
+
+function toggleSuggestion(key: number): void {
+  suggestions.value = suggestions.value.map((item) =>
+    item.key === key ? { ...item, selected: !item.selected } : item,
+  );
+}
+
+function applySuggestions(): void {
+  const picked = suggestions.value.filter((item) => item.selected);
+  if (picked.length === 0) {
+    ToastPlugin.warning('请先勾选要添加的食物');
+    return;
+  }
+  const isEmptyRow = formData.foods.every((food) => !food.name.trim());
+  const nextFoods = isEmptyRow ? [] : [...formData.foods];
+  for (const item of picked) {
+    foodKey += 1;
+    nextFoods.push({
+      key: foodKey,
+      name: item.name,
+      amount: item.amount,
+      calories: item.calories,
+      aiGenerated: true,
+    });
+  }
+  formData.foods = nextFoods;
+  suggestions.value = [];
+  ToastPlugin.success(`已添加 ${picked.length} 种食物，可继续修改`);
+}
+
+function resolveErrorMessage(error: unknown, fallback: string): string {
+  return axios.isAxiosError<ApiErrorResponse>(error)
+    ? (error.response?.data.message ?? fallback)
+    : fallback;
+}
+
 function buildInput(): MealInput | null {
   const foods = formData.foods
     .map((food) => ({
@@ -73,6 +186,7 @@ function buildInput(): MealInput | null {
         food.calories === '' || !Number.isFinite(Number(food.calories))
           ? undefined
           : Number(food.calories),
+      aiGenerated: food.aiGenerated,
     }))
     .filter((food) => food.name);
   if (foods.length === 0) {
@@ -87,6 +201,7 @@ function buildInput(): MealInput | null {
     type: formData.type,
     recordedAt: dayjs(formData.recordedAt).toISOString(),
     note: formData.note.trim() || undefined,
+    imageUrl: imageUrl.value || undefined,
     foods,
   };
 }
@@ -106,10 +221,7 @@ async function submit(): Promise<void> {
     }
     await router.replace('/meals');
   } catch (error) {
-    const message = axios.isAxiosError<ApiErrorResponse>(error)
-      ? error.response?.data.message
-      : undefined;
-    ToastPlugin.error(message ?? '保存失败，请稍后重试');
+    ToastPlugin.error(resolveErrorMessage(error, '保存失败，请稍后重试'));
   } finally {
     submitting.value = false;
   }
@@ -122,11 +234,13 @@ onMounted(async () => {
     formData.type = meal.type;
     formData.recordedAt = dayjs(meal.recordedAt).format('YYYY-MM-DD HH:mm:ss');
     formData.note = meal.note ?? '';
+    imageUrl.value = meal.imageUrl ?? '';
     formData.foods = meal.foods.map((food) => ({
       key: ++foodKey,
       name: food.name,
       amount: food.amount ?? '',
       calories: food.calories ?? '',
+      aiGenerated: food.aiGenerated,
     }));
   } catch {
     await router.replace('/meals');
@@ -148,6 +262,74 @@ onMounted(async () => {
 
     <Loading class="page-loading" :loading="loading" text="正在读取饮食记录">
       <section class="surface-card meal-form-card">
+        <div class="field-block">
+          <span class="field-label">餐食照片（可选）</span>
+
+          <div v-if="imageUrl" class="photo-preview">
+            <img :src="imageUrl" alt="餐食照片" />
+            <div class="photo-preview__actions">
+              <Button size="small" variant="outline" :loading="recognizing" @click="recognizePhoto">
+                重新识别
+              </Button>
+              <Button size="small" variant="text" theme="danger" @click="removePhoto">
+                <DeleteIcon /> 移除
+              </Button>
+            </div>
+          </div>
+
+          <button v-else type="button" class="photo-picker" @click="pickPhoto">
+            <CameraIcon />
+            <strong>{{ uploadingPhoto ? '正在上传…' : '拍照或选择餐食照片' }}</strong>
+            <span>上传后先由 AI 识别，再由你确认</span>
+          </button>
+
+          <div v-if="recognizing && !suggestions.length" class="recognizing-hint">
+            正在识别这张照片…
+          </div>
+
+          <div v-if="suggestions.length" class="suggestion-panel">
+            <header>
+              <div>
+                <strong>识别结果</strong>
+                <span>{{
+                  recognitionProvider === 'mock'
+                    ? '当前为模拟识别，请按实际情况调整'
+                    : '确认后加入下方食物明细'
+                }}</span>
+              </div>
+              <Button size="small" variant="outline" @click="applySuggestions">添加所选</Button>
+            </header>
+            <div class="suggestion-list">
+              <button
+                v-for="item in suggestions"
+                :key="item.key"
+                type="button"
+                class="suggestion-item"
+                :class="{ selected: item.selected }"
+                @click="toggleSuggestion(item.key)"
+              >
+                <span class="suggestion-item__check"><CheckIcon v-if="item.selected" /></span>
+                <span class="suggestion-item__main">
+                  <strong>{{ item.name }}</strong>
+                  <span>{{ item.amount || '份量未知' }}</span>
+                </span>
+                <span class="suggestion-item__calories">
+                  {{ item.calories === '' ? '—' : item.calories }}<small>kcal</small>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <input
+          ref="fileInput"
+          class="file-input"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/heic"
+          capture="environment"
+          @change="onPhotoChange"
+        />
+
         <div class="field-block">
           <span class="field-label">餐次</span>
           <div class="meal-type-grid">
@@ -174,9 +356,7 @@ onMounted(async () => {
         <div class="foods-heading">
           <div>
             <span class="field-label">食物明细</span>
-            <small>
-              以下食物均属于：{{ mealTypes.find((item) => item.value === formData.type)?.label }}
-            </small>
+            <small>以下食物均属于：{{ selectedMealLabel }}</small>
           </div>
           <Button size="small" variant="outline" @click="addFood"><AddIcon /> 添加</Button>
         </div>
@@ -186,7 +366,8 @@ onMounted(async () => {
             <div class="food-item__header">
               <div>
                 <strong>食物 {{ index + 1 }}</strong>
-                <span>{{ mealTypes.find((item) => item.value === formData.type)?.label }}</span>
+                <span>{{ selectedMealLabel }}</span>
+                <span v-if="food.aiGenerated" class="food-item__ai">AI 识别</span>
               </div>
               <Button size="small" variant="text" theme="danger" @click="removeFood(food.key)">
                 <DeleteIcon /> 删除
@@ -265,6 +446,166 @@ onMounted(async () => {
   color: var(--color-text-secondary);
   font-size: 0.72rem;
   font-weight: 750;
+}
+
+.file-input {
+  display: none;
+}
+
+.photo-picker {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 20px 14px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--border-radius-md);
+
+  svg {
+    color: var(--color-ink);
+    font-size: 1.4rem;
+  }
+
+  strong {
+    color: var(--color-ink);
+    font-size: 0.78rem;
+  }
+
+  span {
+    color: var(--color-text-tertiary);
+    font-size: 0.64rem;
+  }
+}
+
+.photo-preview {
+  display: grid;
+  gap: 9px;
+
+  img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    background: var(--color-surface-muted);
+    border-radius: var(--border-radius-md);
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+}
+
+.recognizing-hint {
+  padding: 12px;
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  text-align: center;
+  background: var(--color-surface-muted);
+  border-radius: var(--border-radius-md);
+}
+
+.suggestion-panel {
+  margin-top: 3px;
+  padding: 13px;
+  background: var(--color-primary-light);
+  border: 1px solid #dce9bd;
+  border-radius: var(--border-radius-md);
+
+  > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+
+    > div {
+      display: grid;
+      gap: 3px;
+    }
+
+    strong {
+      font-size: 0.78rem;
+    }
+
+    span {
+      color: var(--color-text-secondary);
+      font-size: 0.62rem;
+    }
+  }
+}
+
+.suggestion-list {
+  display: grid;
+  gap: 6px;
+}
+
+.suggestion-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 11px;
+  text-align: left;
+  background: rgb(255 255 255 / 72%);
+  border: 1px solid transparent;
+  border-radius: 9px;
+
+  &__check {
+    display: grid;
+    width: 18px;
+    height: 18px;
+    flex: none;
+    place-items: center;
+    color: var(--color-ink);
+    font-size: 0.7rem;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: 5px;
+  }
+
+  &__main {
+    display: grid;
+    min-width: 0;
+    flex: 1;
+    gap: 2px;
+
+    strong {
+      overflow: hidden;
+      font-size: 0.76rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    span {
+      color: var(--color-text-tertiary);
+      font-size: 0.62rem;
+    }
+  }
+
+  &__calories {
+    flex: none;
+    font-size: 0.74rem;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+
+    small {
+      margin-left: 2px;
+      color: var(--color-text-tertiary);
+      font-size: 0.55rem;
+      font-weight: 500;
+    }
+  }
+
+  &.selected {
+    border-color: var(--color-primary);
+
+    .suggestion-item__check {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+  }
 }
 
 .meal-type-grid {
@@ -353,6 +694,11 @@ onMounted(async () => {
         background: var(--color-primary-light);
         border-radius: 5px;
       }
+
+      .food-item__ai {
+        color: var(--color-text-secondary);
+        background: #e7ece6;
+      }
     }
   }
 
@@ -375,10 +721,6 @@ onMounted(async () => {
 @media (max-width: 360px) {
   .meal-type-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .food-item__details {
-    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -7,6 +7,7 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -26,6 +27,12 @@ export class UpdateMealDto {
   @IsString({ message: '备注格式不正确' })
   @MaxLength(500, { message: '备注不能超过 500 个字符' })
   note?: string;
+
+  @IsOptional()
+  @IsString({ message: '餐食照片格式不正确' })
+  @MaxLength(500, { message: '餐食照片地址过长' })
+  @Matches(/^https?:\/\//i, { message: '餐食照片地址格式不正确' })
+  imageUrl?: string;
 
   @IsOptional()
   @IsArray({ message: '请添加食物' })

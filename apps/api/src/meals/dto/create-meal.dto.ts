@@ -3,12 +3,14 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -33,6 +35,10 @@ export class FoodItemInputDto {
   @Min(0, { message: '热量不能小于 0' })
   @Max(100000, { message: '热量数值过大' })
   calories?: number;
+
+  @IsOptional()
+  @IsBoolean({ message: '食物来源标记不正确' })
+  aiGenerated?: boolean;
 }
 
 export class CreateMealDto {
@@ -47,6 +53,12 @@ export class CreateMealDto {
   @IsString({ message: '备注格式不正确' })
   @MaxLength(500, { message: '备注不能超过 500 个字符' })
   note?: string;
+
+  @IsOptional()
+  @IsString({ message: '餐食照片格式不正确' })
+  @MaxLength(500, { message: '餐食照片地址过长' })
+  @Matches(/^https?:\/\//i, { message: '餐食照片地址格式不正确' })
+  imageUrl?: string;
 
   @IsArray({ message: '请添加食物' })
   @ArrayMinSize(1, { message: '至少添加一种食物' })

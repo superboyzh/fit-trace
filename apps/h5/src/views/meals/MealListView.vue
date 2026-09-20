@@ -171,13 +171,25 @@ onMounted(async () => {
               <div class="meal-row__time">{{ dayjs(meal.recordedAt).format('HH:mm') }}</div>
               <div class="meal-row__content">
                 <div class="meal-row__title">
-                  <strong>{{ mealLabels[meal.type] }}</strong
-                  ><span v-if="meal.totalCalories !== null">{{ meal.totalCalories }} kcal</span>
+                  <div class="meal-row__label">
+                    <img
+                      v-if="meal.imageUrl"
+                      class="meal-row__thumb"
+                      :src="meal.imageUrl"
+                      :alt="`${mealLabels[meal.type]}照片`"
+                      loading="lazy"
+                    />
+                    <strong>{{ mealLabels[meal.type] }}</strong>
+                  </div>
+                  <span v-if="meal.totalCalories !== null">{{ meal.totalCalories }} kcal</span>
                 </div>
                 <div class="food-list">
                   <div v-for="food in meal.foods" :key="food.id">
-                    <span>{{ food.name }}</span
-                    ><small>{{
+                    <span class="food-name"
+                      >{{ food.name
+                      }}<small v-if="food.aiGenerated" class="food-ai-tag">AI</small></span
+                    >
+                    <small>{{
                       food.amount || (food.calories !== null ? `${food.calories} kcal` : '')
                     }}</small>
                   </div>
@@ -328,6 +340,20 @@ onMounted(async () => {
       font-size: 0.66rem;
     }
   }
+  &__label {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+  }
+  &__thumb {
+    width: 32px;
+    height: 32px;
+    flex: none;
+    object-fit: cover;
+    background: var(--color-surface-muted);
+    border-radius: 8px;
+  }
   p {
     margin: 9px 0 0;
     color: var(--color-text-secondary);
@@ -360,6 +386,16 @@ onMounted(async () => {
     flex: none;
     color: var(--color-text-tertiary);
     font-size: 0.64rem;
+  }
+
+  .food-ai-tag {
+    margin-left: 5px;
+    padding: 1px 4px;
+    color: var(--color-text-secondary);
+    font-size: 0.55rem;
+    font-weight: 750;
+    background: var(--color-surface-muted);
+    border-radius: 4px;
   }
 }
 .load-more {

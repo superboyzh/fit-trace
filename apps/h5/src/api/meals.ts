@@ -5,12 +5,14 @@ export interface FoodItemInput {
   name: string;
   amount?: string;
   calories?: number;
+  aiGenerated?: boolean;
 }
 
 export interface MealInput {
   type: MealType;
   recordedAt?: string;
   note?: string;
+  imageUrl?: string;
   foods: FoodItemInput[];
 }
 

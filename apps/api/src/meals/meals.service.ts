@@ -19,6 +19,7 @@ export class MealsService {
         type: dto.type,
         recordedAt: dto.recordedAt ? new Date(dto.recordedAt) : new Date(),
         note: dto.note?.trim() || null,
+        imageUrl: dto.imageUrl ?? null,
         foods: { create: dto.foods.map((food) => this.toFoodCreateInput(food)) },
       },
       include: { foods: true },
@@ -65,6 +66,7 @@ export class MealsService {
         ...(dto.type !== undefined ? { type: dto.type } : {}),
         ...(dto.recordedAt !== undefined ? { recordedAt: new Date(dto.recordedAt) } : {}),
         ...(dto.note !== undefined ? { note: dto.note.trim() || null } : {}),
+        ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
         ...(dto.foods !== undefined
           ? {
               foods: {
@@ -100,7 +102,7 @@ export class MealsService {
       name: food.name.trim(),
       amount: food.amount?.trim() || null,
       calories: food.calories,
-      aiGenerated: false,
+      aiGenerated: food.aiGenerated ?? false,
     };
   }
 

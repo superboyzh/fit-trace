@@ -22,7 +22,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router';
 import { getBodyTrends } from '@/api/body-records';
 import { getInsightOverview } from '@/api/insights';
-import { resolvedTheme } from '@/utils/theme';
+import { currentAccent, resolvedTheme } from '@/utils/theme';
 
 interface MetricOption {
   key: BodyTrendMetric;
@@ -333,7 +333,9 @@ function statItems(value: BodyTrendStats) {
   ];
 }
 
-watch([series, selectedMetric, insights, resolvedTheme], renderCharts, { flush: 'post' });
+watch([series, selectedMetric, insights, resolvedTheme, currentAccent], renderCharts, {
+  flush: 'post',
+});
 
 onMounted(async () => {
   await loadTrends();

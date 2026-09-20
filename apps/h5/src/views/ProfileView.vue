@@ -10,7 +10,16 @@ import { getMeals } from '@/api/meals';
 import { getProgressPhotos } from '@/api/progress-photos';
 import { getWorkouts } from '@/api/workouts';
 import { useAuthStore } from '@/stores/auth';
-import { applyTheme, getThemeMode, setThemeMode, type ThemeMode } from '@/utils/theme';
+import {
+  applyAccent,
+  applyTheme,
+  getAccent,
+  getThemeMode,
+  setAccent,
+  setThemeMode,
+  type AccentId,
+  type ThemeMode,
+} from '@/utils/theme';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -32,6 +41,20 @@ const themeOptions: Array<{ value: ThemeMode; label: string }> = [
   { value: 'light', label: '浅色' },
   { value: 'dark', label: '深色' },
 ];
+const accentMode = ref<AccentId>(getAccent());
+const accentOptions: Array<{ value: AccentId; label: string; color: string }> = [
+  { value: 'lime', label: '酸绿', color: '#a8dd35' },
+  { value: 'pine', label: '松针绿', color: '#2f7d5b' },
+  { value: 'teal', label: '青绿', color: '#0b7a73' },
+  { value: 'indigo', label: '靛蓝', color: '#2a5fe0' },
+  { value: 'amber', label: '暖橙', color: '#ff9f43' },
+];
+
+function selectAccent(accent: AccentId): void {
+  accentMode.value = accent;
+  setAccent(accent);
+  applyAccent(accent);
+}
 
 function selectTheme(mode: ThemeMode): void {
   themeMode.value = mode;
@@ -117,6 +140,25 @@ onMounted(async () => {
           @click="selectTheme(item.value)"
         >
           {{ item.label }}
+        </button>
+      </div>
+    </section>
+
+    <section class="content-section">
+      <div class="section-heading">
+        <h2>强调色</h2>
+        <span>点击即时预览</span>
+      </div>
+      <div class="accent-switch">
+        <button
+          v-for="item in accentOptions"
+          :key="item.value"
+          type="button"
+          :class="{ active: accentMode === item.value }"
+          @click="selectAccent(item.value)"
+        >
+          <i :style="{ background: item.color }" />
+          <span>{{ item.label }}</span>
         </button>
       </div>
     </section>
@@ -289,6 +331,38 @@ onMounted(async () => {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 10px;
+
+    &.active {
+      color: var(--color-text-primary);
+      background: var(--color-primary-light);
+      border-color: var(--color-primary-border);
+    }
+  }
+}
+
+.accent-switch {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+
+  button {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    padding: 11px 2px;
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+
+    i {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
+    }
 
     &.active {
       color: var(--color-text-primary);

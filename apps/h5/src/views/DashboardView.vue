@@ -62,7 +62,13 @@ const quickEntries = [
     path: '/body/create',
     enabled: true,
   },
-  { title: '饮食', subtitle: '记录每一餐', icon: ForkIcon, enabled: false },
+  {
+    title: '饮食',
+    subtitle: '记录每一餐',
+    icon: ForkIcon,
+    path: '/meals/create',
+    enabled: true,
+  },
   { title: '训练', subtitle: '组数与强度', icon: ActivityIcon, enabled: false },
   { title: '照片', subtitle: '追踪身材变化', icon: CameraIcon, enabled: false },
 ];

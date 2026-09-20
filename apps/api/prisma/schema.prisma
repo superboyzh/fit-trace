@@ -16,8 +16,16 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   bodyRecords  BodyRecord[]
+  mealRecords  MealRecord[]
 
   @@map("users")
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
 }
 
 model BodyRecord {
@@ -37,4 +45,37 @@ model BodyRecord {
 
   @@index([userId, recordedAt])
   @@map("body_records")
+}
+
+model MealRecord {
+  id         String   @id @default(uuid())
+  userId     String
+  type       MealType
+  recordedAt DateTime
+  note       String?
+  imageUrl   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foods FoodItem[]
+
+  @@index([userId, recordedAt])
+  @@map("meal_records")
+}
+
+model FoodItem {
+  id           String   @id @default(uuid())
+  mealRecordId String
+  name         String
+  amount       String?
+  calories     Int?
+  aiGenerated  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  mealRecord MealRecord @relation(fields: [mealRecordId], references: [id], onDelete: Cascade)
+
+  @@index([mealRecordId])
+  @@map("food_items")
 }

@@ -78,3 +78,27 @@ export interface BodyTrendData {
   bodyFat: BodyTrendSeries;
   waist: BodyTrendSeries;
 }
+
+export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
+
+export interface FoodItem {
+  id: string;
+  name: string;
+  amount: string | null;
+  calories: number | null;
+  aiGenerated: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MealRecord {
+  id: string;
+  type: MealType;
+  recordedAt: string;
+  note: string | null;
+  imageUrl: string | null;
+  foods: FoodItem[];
+  totalCalories: number | null;
+  createdAt: string;
+  updatedAt: string;
+}

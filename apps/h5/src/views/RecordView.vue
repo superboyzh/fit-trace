@@ -15,9 +15,16 @@ const entries = [
     title: '身体数据',
     description: '体重、体脂和身体围度',
     icon: MeasurementIcon,
+    path: '/body/create',
     enabled: true,
   },
-  { title: '饮食记录', description: '记录每一餐和食物', icon: ForkIcon, enabled: false },
+  {
+    title: '饮食记录',
+    description: '记录每一餐和食物',
+    icon: ForkIcon,
+    path: '/meals/create',
+    enabled: true,
+  },
   { title: '训练记录', description: '保存训练类型和强度', icon: ActivityIcon, enabled: false },
   { title: '身材照片', description: '留下不同阶段的变化', icon: CameraIcon, enabled: false },
 ];
@@ -45,16 +52,17 @@ const entries = [
           variant="text"
           :disabled="!entry.enabled"
           shape="round"
-          @click="router.push('/body/create')"
+          @click="entry.path && router.push(entry.path)"
         >
           <ChevronRightIcon />
         </Button>
       </section>
     </div>
 
-    <Button variant="text" block size="large" @click="router.push('/body/history')">
-      查看身体数据历史
-    </Button>
+    <div class="history-links">
+      <Button variant="text" block @click="router.push('/body/history')">身体数据历史</Button>
+      <Button variant="text" block @click="router.push('/meals')">饮食记录历史</Button>
+    </div>
   </main>
 </template>
 
@@ -109,5 +117,11 @@ const entries = [
       background: var(--color-surface-muted);
     }
   }
+}
+
+.history-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 }
 </style>

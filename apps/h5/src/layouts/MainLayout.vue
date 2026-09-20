@@ -15,6 +15,7 @@ const navigation = [
 ];
 
 const activePath = computed(() => {
+  if (route.path.startsWith('/meals')) return '/record';
   if (route.path === '/body/create' || route.path.includes('/edit')) return '/record';
   if (route.path.startsWith('/body')) return '/body/history';
   return navigation.find((item) => route.path.startsWith(item.path))?.path ?? '/dashboard';

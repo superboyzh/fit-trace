@@ -56,6 +56,21 @@ const router = createRouter({
           name: 'body-edit',
           component: () => import('@/views/body/BodyFormView.vue'),
         },
+        {
+          path: 'meals',
+          name: 'meals',
+          component: () => import('@/views/meals/MealListView.vue'),
+        },
+        {
+          path: 'meals/create',
+          name: 'meal-create',
+          component: () => import('@/views/meals/MealFormView.vue'),
+        },
+        {
+          path: 'meals/:id',
+          name: 'meal-edit',
+          component: () => import('@/views/meals/MealFormView.vue'),
+        },
       ],
     },
   ],

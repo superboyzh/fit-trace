@@ -16,7 +16,7 @@ import {
   ForkIcon,
   MeasurementIcon,
 } from 'tdesign-icons-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getBodyRecords } from '@/api/body-records';
 import { getMeals } from '@/api/meals';
@@ -84,7 +84,10 @@ const todayWorkoutMinutes = computed(() =>
 const latestWorkout = computed(() => workouts.value[0] ?? null);
 const latestPhoto = computed(() => photos.value[0] ?? null);
 
-onMounted(async () => {
+defineOptions({ name: 'DashboardView' });
+
+async function loadOverview(silent = false): Promise<void> {
+  if (!silent) loading.value = true;
   try {
     const [bodyResult, mealResult, workoutResult, photoResult] = await Promise.all([
       getBodyRecords({ page: 1, pageSize: 30, recordedAtOrder: 'desc' }),
@@ -97,8 +100,19 @@ onMounted(async () => {
     workouts.value = workoutResult.data;
     photos.value = photoResult.data;
   } finally {
-    loading.value = false;
+    if (!silent) loading.value = false;
   }
+}
+
+onMounted(() => void loadOverview());
+// 从别的 tab 切回来时静默刷新：保留原内容，不再闪加载态
+let activated = false;
+onActivated(() => {
+  if (!activated) {
+    activated = true;
+    return;
+  }
+  void loadOverview(true);
 });
 </script>
 

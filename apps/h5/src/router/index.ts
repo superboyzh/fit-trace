@@ -1,9 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { getAccessToken } from '@/utils/auth-token';
 
+/** 记住每页离开时的滚动位置，切回同级 tab 时回到原处 */
+const scrollPositions = new Map<string, number>();
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  scrollBehavior: () => ({ top: 0 }),
+  scrollBehavior: (to, _from, savedPosition) => {
+    if (savedPosition) return savedPosition;
+    const cached = scrollPositions.get(to.fullPath);
+    return cached === undefined ? { top: 0 } : { top: cached };
+  },
   routes: [
     {
       path: '/login',
@@ -122,6 +129,10 @@ const router = createRouter({
 });
 
 router.beforeEach((to) => {
+  const current = router.currentRoute.value;
+  if (current.fullPath && current.fullPath !== to.fullPath) {
+    scrollPositions.set(current.fullPath, window.scrollY);
+  }
   const hasToken = Boolean(getAccessToken());
   if (to.meta.requiresAuth && !hasToken) {
     return { name: 'login', query: { redirect: to.fullPath } };

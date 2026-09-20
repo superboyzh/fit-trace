@@ -12,3 +12,20 @@ applyAccent();
 watchSystemTheme();
 
 createApp(App).use(pinia).use(router).mount('#app');
+
+/**
+ * 四个主 tab 是懒加载的，首次切换要等 chunk，会闪一下空白。
+ * 挂载后在空闲时预热，用户点过去时已经就绪（含 ECharts 那块大包）。
+ */
+function prefetchTabViews(): void {
+  void import('@/views/DashboardView.vue');
+  void import('@/views/TrendsView.vue');
+  void import('@/views/ArchiveView.vue');
+  void import('@/views/ProfileView.vue');
+}
+
+if ('requestIdleCallback' in window) {
+  window.requestIdleCallback(prefetchTabViews, { timeout: 2000 });
+} else {
+  setTimeout(prefetchTabViews, 800);
+}

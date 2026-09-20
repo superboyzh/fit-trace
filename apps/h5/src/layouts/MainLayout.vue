@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Button } from 'tdesign-mobile-vue';
 import { ChartLineIcon, DataIcon, HomeIcon, UserIcon } from 'tdesign-icons-vue-next';
 import { useRoute, useRouter } from 'vue-router';
@@ -7,6 +7,9 @@ import RecordFab from '@/components/RecordFab.vue';
 
 const route = useRoute();
 const router = useRouter();
+const TAB_ROOTS = ['/dashboard', '/trends', '/archive', '/profile'];
+/** 四个主 tab 做缓存：切回来时内容还在，只在后台静默刷新 */
+const CACHED_VIEWS = ['DashboardView', 'TrendsView', 'ArchiveView', 'ProfileView'];
 const navigation = [
   { path: '/dashboard', label: '首页', icon: HomeIcon },
   { path: '/trends', label: '趋势', icon: ChartLineIcon },
@@ -24,6 +27,28 @@ const activePath = computed(() => {
   if (route.path.startsWith('/record')) return '/dashboard';
   return navigation.find((item) => route.path.startsWith(item.path))?.path ?? '/dashboard';
 });
+const activeIndex = computed(() =>
+  Math.max(
+    0,
+    navigation.findIndex((item) => item.path === activePath.value),
+  ),
+);
+
+/**
+ * 同级 tab 之间瞬切（苹果的标签栏就是瞬切，只有高亮在动）；
+ * 进入子页面（详情、表单）才做方向性转场，暗示层级关系。
+ */
+const transitionName = ref('route-push');
+let lastTab: string | null = TAB_ROOTS.includes(route.path) ? route.path : null;
+watch(
+  () => route.path,
+  (path) => {
+    const tab = TAB_ROOTS.includes(path) ? path : null;
+    transitionName.value = tab && lastTab && tab !== lastTab ? 'route-none' : 'route-push';
+    lastTab = tab;
+  },
+  { flush: 'pre' },
+);
 
 async function navigate(path: string): Promise<void> {
   if (route.path !== path) await router.push(path);
@@ -34,13 +59,16 @@ async function navigate(path: string): Promise<void> {
   <div class="app-shell">
     <div class="app-shell__content">
       <RouterView v-slot="{ Component }">
-        <Transition name="route-fade" mode="out-in">
-          <component :is="Component" />
+        <Transition :name="transitionName" mode="out-in">
+          <KeepAlive :include="CACHED_VIEWS">
+            <component :is="Component" />
+          </KeepAlive>
         </Transition>
       </RouterView>
     </div>
     <RecordFab />
-    <nav class="bottom-nav" aria-label="主导航">
+    <nav class="bottom-nav" :style="{ '--active-index': activeIndex }" aria-label="主导航">
+      <span class="bottom-nav__indicator" aria-hidden="true" />
       <Button
         v-for="item in navigation"
         :key="item.path"
@@ -92,7 +120,23 @@ async function navigate(path: string): Promise<void> {
   transform: translateX(-50%);
   backdrop-filter: saturate(180%) blur(24px);
 
+  /* 选中高亮是一枚滑动的胶囊，而不是两个背景色交叉淡入 */
+  &__indicator {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 6px;
+    width: calc((100% - 18px) / 4);
+    background: var(--color-primary-light);
+    border-radius: 20px;
+    transform: translateX(calc(var(--active-index, 0) * (100% + 2px)));
+    transition: transform 320ms var(--ease-standard);
+    pointer-events: none;
+  }
+
   &__item.t-button {
+    position: relative;
+    z-index: 1;
     min-width: 0;
     height: auto;
     min-height: 50px;
@@ -101,9 +145,7 @@ async function navigate(path: string): Promise<void> {
     background: transparent;
     border: 0;
     border-radius: 20px;
-    transition:
-      color var(--duration-fast) var(--ease-standard),
-      background-color var(--duration-base) var(--ease-standard);
+    transition: color var(--duration-base) var(--ease-standard);
 
     :deep(.t-button__content) {
       display: flex;
@@ -117,7 +159,6 @@ async function navigate(path: string): Promise<void> {
 
     &.active {
       color: var(--color-accent-text);
-      background: var(--color-primary-light);
 
       :deep(.t-button__content) {
         font-weight: 650;

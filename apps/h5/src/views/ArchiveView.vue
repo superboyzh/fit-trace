@@ -11,7 +11,7 @@ import type {
 import dayjs from 'dayjs';
 import { Button, Empty, Loading } from 'tdesign-mobile-vue';
 import { ActivityIcon, AddIcon, ForkIcon, MeasurementIcon } from 'tdesign-icons-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getBodyRecords } from '@/api/body-records';
 import { getMeals } from '@/api/meals';
@@ -109,7 +109,10 @@ function openItem(item: ArchiveItem): void {
   if (item.kind === 'WORKOUT') return void router.push(`/workouts/${item.workout.id}`);
   router.push(`/photos/${item.photo.id}`);
 }
-onMounted(async () => {
+defineOptions({ name: 'ArchiveView' });
+
+async function loadRecords(silent = false): Promise<void> {
+  if (!silent) loading.value = true;
   try {
     const [bodyResult, mealResult, workoutResult, photoResult] = await Promise.all([
       getBodyRecords({ page: 1, pageSize: 100, recordedAtOrder: 'desc' }),
@@ -122,8 +125,18 @@ onMounted(async () => {
     workouts.value = workoutResult.data;
     photos.value = photoResult.data;
   } finally {
-    loading.value = false;
+    if (!silent) loading.value = false;
   }
+}
+
+onMounted(() => void loadRecords());
+let activated = false;
+onActivated(() => {
+  if (!activated) {
+    activated = true;
+    return;
+  }
+  void loadRecords(true);
 });
 </script>
 

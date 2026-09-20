@@ -18,7 +18,7 @@ import { init, use, type ComposeOption, type EChartsType } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { Button, Empty, Loading } from 'tdesign-mobile-vue';
 import { ChartLineIcon, RefreshIcon } from 'tdesign-icons-vue-next';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { getBodyTrends } from '@/api/body-records';
 import { getInsightOverview } from '@/api/insights';
@@ -296,8 +296,8 @@ async function renderCharts(): Promise<void> {
   }
 }
 
-async function loadTrends(): Promise<void> {
-  loading.value = true;
+async function loadTrends(silent = false): Promise<void> {
+  if (!silent) loading.value = true;
   errorMessage.value = '';
   try {
     const [trend, insight] = await Promise.all([
@@ -312,7 +312,7 @@ async function loadTrends(): Promise<void> {
     insights.value = null;
     errorMessage.value = '趋势数据加载失败，请稍后重试';
   } finally {
-    loading.value = false;
+    if (!silent) loading.value = false;
   }
 }
 
@@ -346,6 +346,18 @@ onMounted(async () => {
   for (const element of [chartElement.value, insightElement.value]) {
     if (element) resizeObserver.observe(element);
   }
+});
+
+defineOptions({ name: 'TrendsView' });
+
+// 从别的 tab 切回来时静默刷新，避免图表区域闪一下加载态
+let activated = false;
+onActivated(() => {
+  if (!activated) {
+    activated = true;
+    return;
+  }
+  void loadTrends(true);
 });
 
 onBeforeUnmount(() => {
@@ -390,7 +402,7 @@ onBeforeUnmount(() => {
 
         <div v-if="errorMessage" class="error-state">
           <span>{{ errorMessage }}</span>
-          <Button size="small" variant="outline" @click="loadTrends">
+          <Button size="small" variant="outline" @click="loadTrends()">
             <RefreshIcon /> 重新加载
           </Button>
         </div>

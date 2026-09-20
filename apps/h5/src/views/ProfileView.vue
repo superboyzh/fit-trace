@@ -3,7 +3,7 @@ import type { BodyRecord } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import { Button, Skeleton, ToastPlugin } from 'tdesign-mobile-vue';
 import { LogoutIcon } from 'tdesign-icons-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getBodyRecords } from '@/api/body-records';
 import { getMeals } from '@/api/meals';
@@ -71,7 +71,10 @@ async function logout(): Promise<void> {
   await router.replace('/login');
 }
 
-onMounted(async () => {
+defineOptions({ name: 'ProfileView' });
+
+async function loadSummary(silent = false): Promise<void> {
+  if (!silent) loading.value = true;
   try {
     const [body, meals, workouts, photos] = await Promise.all([
       getBodyRecords({ page: 1, pageSize: 1 }),
@@ -89,8 +92,18 @@ onMounted(async () => {
   } catch {
     // 统计失败不影响账户信息展示。
   } finally {
-    loading.value = false;
+    if (!silent) loading.value = false;
   }
+}
+
+onMounted(() => void loadSummary());
+let activated = false;
+onActivated(() => {
+  if (!activated) {
+    activated = true;
+    return;
+  }
+  void loadSummary(true);
 });
 </script>
 

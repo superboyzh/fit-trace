@@ -41,25 +41,27 @@ button {
     opacity var(--duration-fast) var(--ease-standard);
 }
 
-/* 路由切换：轻微上浮淡入，避免硬切 */
-.route-fade-enter-active {
+/* 子页面转场：从右侧轻微推入，暗示层级 */
+.route-push-enter-active {
   transition:
     opacity var(--duration-base) var(--ease-standard),
     transform var(--duration-base) var(--ease-standard);
 }
 
-.route-fade-leave-active {
+.route-push-leave-active {
   transition: opacity var(--duration-fast) var(--ease-standard);
 }
 
-.route-fade-enter-from {
+.route-push-enter-from {
   opacity: 0;
-  transform: translateY(6px);
+  transform: translateX(14px);
 }
 
-.route-fade-leave-to {
+.route-push-leave-to {
   opacity: 0;
 }
+
+/* 同级 tab 之间瞬切：不定义过渡，避免出现中间空白帧 */
 
 @media (prefers-reduced-motion: reduce) {
   *,

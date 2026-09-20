@@ -7,18 +7,19 @@ import { AddIcon, DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteWorkout, getWorkouts } from '@/api/workouts';
+import SportIcon from '@/components/SportIcon.vue';
 
-const workoutTypes: Array<{ value: WorkoutType; label: string; icon: string }> = [
-  { value: 'STRENGTH', label: '力量', icon: '🏋️' },
-  { value: 'CARDIO', label: '有氧', icon: '🫀' },
-  { value: 'RUNNING', label: '跑步', icon: '🏃' },
-  { value: 'CYCLING', label: '骑行', icon: '🚴' },
-  { value: 'SWIMMING', label: '游泳', icon: '🏊' },
-  { value: 'OTHER', label: '其他', icon: '🎯' },
+const workoutTypes: Array<{ value: WorkoutType; label: string }> = [
+  { value: 'STRENGTH', label: '力量' },
+  { value: 'CARDIO', label: '有氧' },
+  { value: 'RUNNING', label: '跑步' },
+  { value: 'CYCLING', label: '骑行' },
+  { value: 'SWIMMING', label: '游泳' },
+  { value: 'OTHER', label: '其他' },
 ];
 const workoutMeta = Object.fromEntries(workoutTypes.map((item) => [item.value, item])) as Record<
   WorkoutType,
-  { value: WorkoutType; label: string; icon: string }
+  { value: WorkoutType; label: string }
 >;
 const filters: Array<{ value: WorkoutType | 'ALL'; label: string }> = [
   { value: 'ALL', label: '全部' },
@@ -126,7 +127,12 @@ onMounted(async () => {
         <h1>训练记录</h1>
         <p>把练过的留下，和身体变化放在同一条时间线上。</p>
       </div>
-      <Button class="new-workout-button" size="small" @click="router.push('/workouts/create')">
+      <Button
+        class="new-workout-button"
+        theme="primary"
+        size="small"
+        @click="router.push('/workouts/create')"
+      >
         <AddIcon /> 新记录
       </Button>
     </header>
@@ -165,7 +171,7 @@ onMounted(async () => {
           @keydown.enter="router.push(`/workouts/${workout.id}`)"
         >
           <div class="workout-card__heading">
-            <span class="workout-card__icon">{{ workoutMeta[workout.type].icon }}</span>
+            <span class="workout-card__icon"><SportIcon :type="workout.type" /></span>
             <div class="workout-card__title">
               <strong>{{ workout.name }}</strong>
               <span
@@ -232,15 +238,13 @@ onMounted(async () => {
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.76rem;
+    font-size: 0.875rem;
     line-height: 1.6;
   }
 }
 
 .new-workout-button.t-button {
-  color: var(--color-ink);
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+  flex: none;
 }
 
 .workout-filter {
@@ -259,16 +263,16 @@ onMounted(async () => {
     flex: 1 0 auto;
     padding: 8px 12px;
     color: var(--color-text-secondary);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     font-weight: 700;
     background: transparent;
     border: 1px solid var(--color-border);
     border-radius: 8px;
 
     &.active {
-      color: var(--color-ink);
+      color: var(--color-text-primary);
       background: var(--color-primary-light);
-      border-color: #d7e9ad;
+      border-color: var(--color-primary-border);
     }
   }
 }
@@ -281,9 +285,13 @@ onMounted(async () => {
 .workout-card {
   padding: 15px;
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
 
   &:active {
     background: var(--color-surface-muted);
+    transform: scale(0.995);
   }
 
   &__heading {
@@ -298,7 +306,8 @@ onMounted(async () => {
     height: 38px;
     flex: none;
     place-items: center;
-    font-size: 1.05rem;
+    color: var(--color-text-primary);
+    font-size: 1.15rem;
     background: var(--color-primary-light);
     border-radius: 10px;
   }
@@ -311,14 +320,14 @@ onMounted(async () => {
 
     strong {
       overflow: hidden;
-      font-size: 0.84rem;
+      font-size: 0.9375rem;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     span {
       color: var(--color-text-tertiary);
-      font-size: 0.65rem;
+      font-size: 0.75rem;
     }
   }
 
@@ -331,7 +340,7 @@ onMounted(async () => {
     small {
       margin-left: 2px;
       color: var(--color-text-tertiary);
-      font-size: 0.6rem;
+      font-size: 0.75rem;
       font-weight: 500;
     }
   }
@@ -353,18 +362,18 @@ onMounted(async () => {
 
     span {
       color: var(--color-text-tertiary);
-      font-size: 0.65rem;
+      font-size: 0.75rem;
     }
 
     strong {
-      font-size: 0.76rem;
+      font-size: 0.875rem;
     }
   }
 
   &__note {
     margin: 11px 0 0;
     color: var(--color-text-secondary);
-    font-size: 0.72rem;
+    font-size: 0.875rem;
     line-height: 1.55;
   }
 

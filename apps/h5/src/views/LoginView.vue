@@ -116,7 +116,14 @@ async function submit(): Promise<void> {
         </label>
 
         <NoticeBar v-if="errorMessage" theme="error" :content="errorMessage" />
-        <Button class="submit-button" type="submit" size="large" block :loading="submitting">
+        <Button
+          class="submit-button"
+          type="submit"
+          theme="primary"
+          size="large"
+          block
+          :loading="submitting"
+        >
           {{ submitting ? '请稍候…' : mode === 'login' ? '登录' : '创建账户' }}
         </Button>
       </form>
@@ -150,7 +157,7 @@ async function submit(): Promise<void> {
     max-width: 280px;
     margin: 0;
     color: rgb(255 255 255 / 52%);
-    font-size: 0.76rem;
+    font-size: 0.875rem;
     line-height: 1.7;
   }
 }
@@ -159,7 +166,7 @@ async function submit(): Promise<void> {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   font-weight: 850;
   letter-spacing: 0.18em;
 }
@@ -211,7 +218,7 @@ async function submit(): Promise<void> {
   > p {
     margin: 0 0 18px;
     color: var(--color-text-secondary);
-    font-size: 0.74rem;
+    font-size: 0.875rem;
   }
 }
 
@@ -224,16 +231,16 @@ async function submit(): Promise<void> {
   button {
     padding: 9px 4px;
     color: var(--color-text-secondary);
-    font-size: 0.72rem;
+    font-size: 0.875rem;
     font-weight: 750;
     background: transparent;
     border: 1px solid var(--color-border);
     border-radius: 8px;
 
     &.active {
-      color: var(--color-ink);
+      color: var(--color-text-primary);
       background: var(--color-primary-light);
-      border-color: #d7e9ad;
+      border-color: var(--color-primary-border);
     }
   }
 }
@@ -252,7 +259,7 @@ label {
 
   span {
     color: var(--color-text-secondary);
-    font-size: 0.72rem;
+    font-size: 0.875rem;
     font-weight: 750;
   }
 }
@@ -274,7 +281,7 @@ label {
     align-items: center;
     margin: 5vh auto;
     overflow: hidden;
-    background: #fff;
+    background: var(--color-surface);
     border-radius: 20px;
     box-shadow: 0 28px 64px rgb(17 23 21 / 14%);
   }

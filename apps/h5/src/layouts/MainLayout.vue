@@ -9,7 +9,7 @@ const router = useRouter();
 const navigation = [
   { path: '/dashboard', label: '首页', icon: HomeIcon },
   { path: '/trends', label: '趋势', icon: ChartLineIcon },
-  { path: '/record', label: '记录', icon: AddIcon, primary: true },
+  { path: '/record', label: '记录', icon: AddIcon, accent: true },
   { path: '/archive', label: '档案', icon: DataIcon },
   { path: '/profile', label: '我的', icon: UserIcon },
 ];
@@ -32,14 +32,18 @@ async function navigate(path: string): Promise<void> {
 <template>
   <div class="app-shell">
     <div class="app-shell__content">
-      <RouterView />
+      <RouterView v-slot="{ Component }">
+        <Transition name="route-fade" mode="out-in">
+          <component :is="Component" />
+        </Transition>
+      </RouterView>
     </div>
     <nav class="bottom-nav" aria-label="主导航">
       <Button
         v-for="item in navigation"
         :key="item.path"
         class="bottom-nav__item"
-        :class="{ active: activePath === item.path, primary: item.primary }"
+        :class="{ active: activePath === item.path, accent: item.accent }"
         variant="text"
         size="large"
         @click="navigate(item.path)"
@@ -58,7 +62,7 @@ async function navigate(path: string): Promise<void> {
   min-height: 100dvh;
   margin: 0 auto;
   background: var(--color-background);
-  box-shadow: 0 0 0 1px rgb(17 23 21 / 4%);
+  box-shadow: 0 0 0 1px var(--color-border);
 
   &__content {
     min-height: 100vh;
@@ -76,9 +80,9 @@ async function navigate(path: string): Promise<void> {
   width: min(100%, 560px);
   grid-template-columns: repeat(5, 1fr);
   padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
-  background: rgb(255 255 255 / 98%);
+  background: var(--color-surface-translucent);
   border-top: 1px solid var(--color-border);
-  box-shadow: 0 -2px 12px rgb(38 55 77 / 5%);
+  box-shadow: 0 -2px 12px rgb(20 28 25 / 6%);
   transform: translateX(-50%);
   backdrop-filter: blur(18px);
 
@@ -93,19 +97,18 @@ async function navigate(path: string): Promise<void> {
       flex-direction: column;
       align-items: center;
       gap: 3px;
-      font-size: 0.64rem;
+      font-size: 0.75rem;
     }
 
     &.active {
-      color: var(--color-ink);
+      color: var(--color-text-primary);
 
-      &:not(.primary) .bottom-nav__icon {
+      .bottom-nav__icon {
         background: var(--color-primary-light);
       }
     }
 
-    &.primary .bottom-nav__icon {
-      color: var(--color-ink);
+    &.accent .bottom-nav__icon {
       background: var(--color-primary-light);
     }
   }

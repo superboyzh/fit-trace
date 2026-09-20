@@ -8,7 +8,7 @@
 html {
   min-width: 320px;
   color: var(--color-text-primary);
-  background: #eef0ed;
+  background: var(--color-background);
   font-family:
     Inter,
     -apple-system,
@@ -19,6 +19,9 @@ html {
     sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  transition:
+    background-color var(--duration-base) var(--ease-standard),
+    color var(--duration-base) var(--ease-standard);
 }
 
 body {
@@ -36,6 +39,40 @@ select {
 
 button {
   -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard);
+}
+
+/* 路由切换：轻微上浮淡入，避免硬切 */
+.route-fade-enter-active {
+  transition:
+    opacity var(--duration-base) var(--ease-standard),
+    transform var(--duration-base) var(--ease-standard);
+}
+
+.route-fade-leave-active {
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.route-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.route-fade-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 .page-container {
@@ -57,7 +94,7 @@ button {
   &__eyebrow {
     display: none;
     color: var(--color-text-secondary);
-    font-size: 0.66rem;
+    font-size: 0.75rem;
     font-weight: 800;
     letter-spacing: 0.17em;
     text-transform: uppercase;
@@ -81,7 +118,7 @@ button {
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.84rem;
+    font-size: 0.9375rem;
     line-height: 1.6;
   }
 }
@@ -99,6 +136,8 @@ button {
   min-width: 0;
   flex-direction: column;
   align-items: stretch;
+  /* TDesign 的 Loading 会把品牌色继承成文字色，这里拉回正文色 */
+  color: var(--color-text-primary);
 }
 
 .t-button {
@@ -120,13 +159,14 @@ button {
 }
 
 .t-button--primary:not(.t-button--text):not(.t-button--outline) {
-  color: #fff;
-  background: var(--color-ink);
-  border-color: var(--color-ink);
+  color: var(--color-on-brand);
+  background: var(--color-brand);
+  border-color: var(--color-brand);
 }
 
 .t-input,
 .t-textarea {
+  background: var(--color-surface);
   border-radius: var(--border-radius-sm);
 }
 

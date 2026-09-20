@@ -126,11 +126,11 @@ onMounted(async () => {
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 
   strong {
-    font-size: 0.82rem;
+    font-size: 0.9375rem;
     font-weight: 600;
   }
 }

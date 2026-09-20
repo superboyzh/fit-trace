@@ -121,7 +121,7 @@ onMounted(async () => {
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
   }
 
   strong {
@@ -130,7 +130,7 @@ onMounted(async () => {
     letter-spacing: -0.05em;
 
     small {
-      font-size: 0.8rem;
+      font-size: 0.9375rem;
       font-weight: 500;
     }
   }
@@ -155,21 +155,21 @@ onMounted(async () => {
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 
   strong {
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-variant-numeric: tabular-nums;
 
     small {
-      font-size: 0.62rem;
+      font-size: 0.75rem;
       font-weight: 500;
     }
 
     &.empty {
       color: var(--color-text-tertiary);
-      font-size: 0.78rem;
+      font-size: 0.875rem;
       font-weight: 500;
     }
   }
@@ -188,11 +188,11 @@ onMounted(async () => {
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 
   strong {
-    font-size: 0.82rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     line-height: 1.6;
   }

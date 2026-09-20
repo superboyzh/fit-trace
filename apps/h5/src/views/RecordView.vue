@@ -100,7 +100,7 @@ const shortcuts = [
     height: 46px;
     flex: none;
     place-items: center;
-    color: var(--color-ink);
+    color: var(--color-text-primary);
     font-size: 1.25rem;
     background: var(--color-primary-light);
     border-radius: 10px;
@@ -115,7 +115,7 @@ const shortcuts = [
 
     > span {
       color: var(--color-text-secondary);
-      font-size: 0.76rem;
+      font-size: 0.875rem;
     }
   }
 
@@ -146,7 +146,7 @@ const shortcuts = [
     }
 
     span {
-      font-size: 0.76rem;
+      font-size: 0.875rem;
       font-weight: 700;
     }
 

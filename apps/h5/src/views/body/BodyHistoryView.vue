@@ -90,7 +90,12 @@ onMounted(async () => {
         <h1>身体数据</h1>
         <p>每一次记录，都会让变化更清晰。</p>
       </div>
-      <Button class="new-record-button" shape="round" @click="router.push('/body/create')">
+      <Button
+        class="new-record-button"
+        theme="primary"
+        shape="round"
+        @click="router.push('/body/create')"
+      >
         <AddIcon /> 新记录
       </Button>
     </header>
@@ -196,14 +201,12 @@ onMounted(async () => {
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.8rem;
+    font-size: 0.9375rem;
   }
 }
 
 .new-record-button.t-button {
-  color: var(--color-ink);
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+  flex: none;
 }
 
 .empty-state {
@@ -237,9 +240,13 @@ onMounted(async () => {
   margin-left: 17px;
   padding: 17px;
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
 
   &:active {
     background: var(--color-surface-muted);
+    transform: scale(0.995);
   }
 
   &::before {
@@ -267,18 +274,18 @@ onMounted(async () => {
     }
 
     strong {
-      color: var(--color-ink);
+      color: var(--color-text-primary);
       font-size: 1.65rem;
       font-variant-numeric: tabular-nums;
 
       small {
-        font-size: 0.78rem;
+        font-size: 0.875rem;
       }
     }
 
     span {
       color: var(--color-text-tertiary);
-      font-size: 0.72rem;
+      font-size: 0.875rem;
     }
   }
 
@@ -300,18 +307,18 @@ onMounted(async () => {
 
     span {
       color: var(--color-text-tertiary);
-      font-size: 0.65rem;
+      font-size: 0.75rem;
     }
 
     strong {
-      font-size: 0.76rem;
+      font-size: 0.875rem;
     }
   }
 
   &__note {
     margin: 12px 0 0;
     color: var(--color-text-secondary);
-    font-size: 0.76rem;
+    font-size: 0.875rem;
     line-height: 1.6;
   }
 

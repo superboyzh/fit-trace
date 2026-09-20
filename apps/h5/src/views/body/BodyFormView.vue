@@ -226,7 +226,7 @@ onMounted(async () => {
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.8rem;
+    font-size: 0.9375rem;
   }
 }
 
@@ -243,13 +243,13 @@ onMounted(async () => {
 
 .field-label {
   color: var(--color-text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   font-weight: 750;
 }
 
 .field-hint {
   color: var(--color-text-tertiary);
-  font-size: 0.66rem;
+  font-size: 0.75rem;
 }
 
 .weight-field {
@@ -272,7 +272,7 @@ onMounted(async () => {
   }
 
   :deep(input) {
-    color: var(--color-ink);
+    color: var(--color-text-primary);
     font-size: 2.4rem;
     font-weight: 850;
     font-variant-numeric: tabular-nums;
@@ -287,7 +287,7 @@ onMounted(async () => {
     align-self: flex-end;
     margin-bottom: 8px;
     color: var(--color-text-secondary);
-    font-size: 0.76rem;
+    font-size: 0.875rem;
     font-weight: 750;
   }
 }

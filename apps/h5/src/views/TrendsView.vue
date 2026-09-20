@@ -22,6 +22,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router';
 import { getBodyTrends } from '@/api/body-records';
 import { getInsightOverview } from '@/api/insights';
+import { resolvedTheme } from '@/utils/theme';
 
 interface MetricOption {
   key: BodyTrendMetric;
@@ -67,6 +68,12 @@ function formatValue(value: number): string {
 
 function formatChange(value: number): string {
   return `${value > 0 ? '+' : ''}${formatValue(value)}`;
+}
+
+/** ECharts 画在 canvas 上，认不了 CSS 变量，这里取值后再用，深浅色切换时重绘 */
+function token(name: string, fallback: string): string {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
 }
 
 const insightCards = computed(() => {
@@ -126,8 +133,8 @@ function createChartOption(): ChartOption {
     tooltip: {
       trigger: 'axis',
       borderWidth: 0,
-      backgroundColor: '#111715',
-      textStyle: { color: '#fff' },
+      backgroundColor: token('--color-ink', '#111715'),
+      textStyle: { color: token('--color-on-ink', '#fff') },
       formatter: (params) => {
         const item = Array.isArray(params) ? params[0] : params;
         const point = points[item?.dataIndex ?? 0];
@@ -139,16 +146,20 @@ function createChartOption(): ChartOption {
       type: 'category',
       boundaryGap: false,
       data: points.map((point) => dayjs(point.recordedAt).format('M/D')),
-      axisLine: { lineStyle: { color: '#dce2dc' } },
+      axisLine: { lineStyle: { color: token('--color-chart-axis', '#dce2dc') } },
       axisTick: { show: false },
-      axisLabel: { color: '#89928e', fontSize: 11, hideOverlap: true },
+      axisLabel: {
+        color: token('--color-chart-label', '#6a746f'),
+        fontSize: 12,
+        hideOverlap: true,
+      },
     },
     yAxis: {
       type: 'value',
       scale: true,
       splitNumber: 3,
-      axisLabel: { color: '#89928e', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#edf0ed', type: 'dashed' } },
+      axisLabel: { color: token('--color-chart-label', '#6a746f'), fontSize: 12 },
+      splitLine: { lineStyle: { color: token('--color-chart-grid', '#edf0ed'), type: 'dashed' } },
     },
     series: [
       {
@@ -158,8 +169,12 @@ function createChartOption(): ChartOption {
         symbol: 'circle',
         symbolSize: 7,
         showSymbol: points.length < 15,
-        lineStyle: { color: '#111715', width: 3 },
-        itemStyle: { color: '#b8f23d', borderColor: '#111715', borderWidth: 2 },
+        lineStyle: { color: token('--color-chart-line', '#151b19'), width: 3 },
+        itemStyle: {
+          color: token('--color-chart-point', '#a8dd35'),
+          borderColor: token('--color-chart-line', '#151b19'),
+          borderWidth: 2,
+        },
         areaStyle: {
           color: {
             type: 'linear',
@@ -186,8 +201,8 @@ function createInsightOption(): ChartOption {
     tooltip: {
       trigger: 'axis',
       borderWidth: 0,
-      backgroundColor: '#111715',
-      textStyle: { color: '#fff' },
+      backgroundColor: token('--color-ink', '#111715'),
+      textStyle: { color: token('--color-on-ink', '#fff') },
       formatter: (params) => {
         const items = Array.isArray(params) ? params : [params];
         const point = points[items[0]?.dataIndex ?? 0];
@@ -203,16 +218,22 @@ function createInsightOption(): ChartOption {
     xAxis: {
       type: 'category',
       data: points.map((point) => dayjs(point.date).format('M/D')),
-      axisLine: { lineStyle: { color: '#dce2dc' } },
+      axisLine: { lineStyle: { color: token('--color-chart-axis', '#dce2dc') } },
       axisTick: { show: false },
-      axisLabel: { color: '#89928e', fontSize: 10, hideOverlap: true },
+      axisLabel: {
+        color: token('--color-chart-label', '#6a746f'),
+        fontSize: 12,
+        hideOverlap: true,
+      },
     },
     yAxis: [
       {
         type: 'value',
         splitNumber: 3,
-        axisLabel: { color: '#89928e', fontSize: 10 },
-        splitLine: { lineStyle: { color: '#edf0ed', type: 'dashed' } },
+        axisLabel: { color: token('--color-chart-label', '#6a746f'), fontSize: 12 },
+        splitLine: {
+          lineStyle: { color: token('--color-chart-grid', '#edf0ed'), type: 'dashed' },
+        },
       },
       {
         type: 'value',
@@ -228,7 +249,10 @@ function createInsightOption(): ChartOption {
         type: 'bar',
         data: points.map((point) => point.calories),
         barMaxWidth: 10,
-        itemStyle: { color: '#dbe9bd', borderRadius: [3, 3, 0, 0] },
+        itemStyle: {
+          color: token('--color-primary-border', '#d7e9ad'),
+          borderRadius: [3, 3, 0, 0],
+        },
       },
       {
         name: '体重',
@@ -239,8 +263,12 @@ function createInsightOption(): ChartOption {
         connectNulls: true,
         symbol: 'circle',
         symbolSize: 6,
-        lineStyle: { color: '#111715', width: 2.5 },
-        itemStyle: { color: '#b8f23d', borderColor: '#111715', borderWidth: 2 },
+        lineStyle: { color: token('--color-chart-line', '#151b19'), width: 2.5 },
+        itemStyle: {
+          color: token('--color-chart-point', '#a8dd35'),
+          borderColor: token('--color-chart-line', '#151b19'),
+          borderWidth: 2,
+        },
       },
     ],
   };
@@ -305,7 +333,7 @@ function statItems(value: BodyTrendStats) {
   ];
 }
 
-watch([series, selectedMetric, insights], renderCharts, { flush: 'post' });
+watch([series, selectedMetric, insights, resolvedTheme], renderCharts, { flush: 'post' });
 
 onMounted(async () => {
   await loadTrends();
@@ -462,7 +490,7 @@ onBeforeUnmount(() => {
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.76rem;
+    font-size: 0.875rem;
   }
 }
 
@@ -475,16 +503,16 @@ onBeforeUnmount(() => {
   button {
     padding: 9px 4px;
     color: var(--color-text-secondary);
-    font-size: 0.7rem;
+    font-size: 0.875rem;
     font-weight: 700;
     background: transparent;
     border: 1px solid var(--color-border);
     border-radius: 8px;
 
     &.active {
-      color: var(--color-ink);
+      color: var(--color-text-primary);
       background: var(--color-primary-light);
-      border-color: #d7e9ad;
+      border-color: var(--color-primary-border);
     }
   }
 }
@@ -506,7 +534,7 @@ onBeforeUnmount(() => {
     position: relative;
     padding: 7px 4px 11px;
     color: var(--color-text-tertiary);
-    font-size: 0.8rem;
+    font-size: 0.9375rem;
     font-weight: 750;
     background: transparent;
     border: 0;
@@ -523,7 +551,7 @@ onBeforeUnmount(() => {
     }
 
     &.active {
-      color: var(--color-ink);
+      color: var(--color-text-primary);
 
       &::after {
         background: var(--color-primary);
@@ -546,17 +574,17 @@ onBeforeUnmount(() => {
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
   }
 
   strong {
-    color: var(--color-ink);
+    color: var(--color-text-primary);
     font-size: 2rem;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.055em;
 
     small {
-      font-size: 0.72rem;
+      font-size: 0.875rem;
       letter-spacing: 0;
     }
   }
@@ -570,13 +598,13 @@ onBeforeUnmount(() => {
   border-radius: 999px;
 
   &.fall {
-    color: #27894f !important;
-    background: #e8f7ed;
+    color: var(--color-success-text) !important;
+    background: var(--color-primary-light);
   }
 
   &.rise {
-    color: #d44d49 !important;
-    background: #fff0ef;
+    color: var(--color-danger-text) !important;
+    background: var(--color-surface-muted);
   }
 }
 
@@ -604,24 +632,24 @@ onBeforeUnmount(() => {
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.62rem;
+    font-size: 0.75rem;
   }
 
   strong {
-    color: var(--color-ink);
-    font-size: 0.78rem;
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
     font-variant-numeric: tabular-nums;
 
     small {
-      font-size: 0.58rem;
+      font-size: 0.75rem;
     }
 
     &.fall {
-      color: #27894f;
+      color: var(--color-success-text);
     }
 
     &.rise {
-      color: #d44d49;
+      color: var(--color-danger-text);
     }
   }
 }
@@ -645,7 +673,7 @@ onBeforeUnmount(() => {
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -667,7 +695,7 @@ onBeforeUnmount(() => {
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 
   strong {
@@ -676,7 +704,7 @@ onBeforeUnmount(() => {
     letter-spacing: -0.03em;
 
     small {
-      font-size: 0.6rem;
+      font-size: 0.75rem;
       font-weight: 500;
     }
   }
@@ -686,7 +714,7 @@ onBeforeUnmount(() => {
   margin: 12px 0 0;
   padding: 13px 14px;
   color: var(--color-text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   line-height: 1.7;
   background: var(--color-surface-muted);
   border-radius: var(--border-radius-md);
@@ -708,7 +736,7 @@ onBeforeUnmount(() => {
   gap: 6px;
   margin: 8px 2px 0;
   color: var(--color-text-tertiary);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
 
   span {
     display: inline-block;
@@ -718,7 +746,7 @@ onBeforeUnmount(() => {
   &__bar {
     width: 10px;
     height: 10px;
-    background: #dbe9bd;
+    background: var(--color-primary-border);
     border-radius: 3px;
   }
 
@@ -733,7 +761,7 @@ onBeforeUnmount(() => {
 .insight-error {
   padding: 22px 14px;
   color: var(--color-text-tertiary);
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   text-align: center;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -747,7 +775,7 @@ onBeforeUnmount(() => {
   align-content: center;
   gap: 14px;
   color: var(--color-text-secondary);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
 }
 
 :deep(.t-empty) {

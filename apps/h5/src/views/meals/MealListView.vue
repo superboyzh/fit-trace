@@ -125,7 +125,11 @@ onMounted(async () => {
         <h1>饮食日记</h1>
         <p>按餐次记录，回顾每天真实的饮食。</p>
       </div>
-      <Button class="new-meal-button" size="small" @click="router.push('/meals/create')"
+      <Button
+        class="new-meal-button"
+        theme="primary"
+        size="small"
+        @click="router.push('/meals/create')"
         ><AddIcon /> 添加</Button
       >
     </header>
@@ -252,14 +256,11 @@ onMounted(async () => {
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.76rem;
+    font-size: 0.875rem;
   }
 }
 .new-meal-button.t-button {
   flex: none;
-  color: var(--color-ink);
-  background: var(--color-primary);
-  border-color: var(--color-primary);
 }
 .meal-filter {
   display: flex;
@@ -275,15 +276,15 @@ onMounted(async () => {
     flex: 0 0 auto;
     padding: 8px 13px;
     color: var(--color-text-secondary);
-    font-size: 0.7rem;
+    font-size: 0.875rem;
     font-weight: 700;
     background: transparent;
     border: 1px solid var(--color-border);
     border-radius: 8px;
     &.active {
-      color: var(--color-ink);
+      color: var(--color-text-primary);
       background: var(--color-primary-light);
-      border-color: #d7e9ad;
+      border-color: var(--color-primary-border);
     }
   }
 }
@@ -312,11 +313,11 @@ onMounted(async () => {
     gap: 8px;
   }
   strong {
-    font-size: 0.92rem;
+    font-size: 1rem;
   }
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 }
 .diary-day__body {
@@ -330,9 +331,13 @@ onMounted(async () => {
   grid-template-columns: 45px minmax(0, 1fr);
   padding: 15px 14px;
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
 
   &:active {
     background: var(--color-surface-muted);
+    transform: scale(0.995);
   }
   + .meal-row {
     border-top: 1px solid var(--color-border);
@@ -340,7 +345,7 @@ onMounted(async () => {
   &__time {
     padding-top: 2px;
     color: var(--color-text-tertiary);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
   }
   &__content {
@@ -353,11 +358,11 @@ onMounted(async () => {
     gap: 10px;
     margin-bottom: 9px;
     strong {
-      font-size: 0.84rem;
+      font-size: 0.9375rem;
     }
     span {
       color: var(--color-text-secondary);
-      font-size: 0.66rem;
+      font-size: 0.75rem;
     }
   }
   &__label {
@@ -377,7 +382,7 @@ onMounted(async () => {
   p {
     margin: 9px 0 0;
     color: var(--color-text-secondary);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     line-height: 1.5;
   }
   &__actions {
@@ -398,21 +403,21 @@ onMounted(async () => {
   span {
     overflow: hidden;
     color: var(--color-text-primary);
-    font-size: 0.72rem;
+    font-size: 0.875rem;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   small {
     flex: none;
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 
   .food-ai-tag {
     margin-left: 5px;
     padding: 1px 4px;
     color: var(--color-text-secondary);
-    font-size: 0.55rem;
+    font-size: 0.75rem;
     font-weight: 750;
     background: var(--color-surface-muted);
     border-radius: 4px;

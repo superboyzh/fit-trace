@@ -100,7 +100,13 @@ onMounted(async () => {
         <h1>身材照片</h1>
         <p>同角度、同光线，隔一段时间再拍一张。</p>
       </div>
-      <Button class="upload-button" size="small" :loading="uploading" @click="pickFile">
+      <Button
+        class="upload-button"
+        theme="primary"
+        size="small"
+        :loading="uploading"
+        @click="pickFile"
+      >
         <CameraIcon /> 上传
       </Button>
     </header>
@@ -201,14 +207,12 @@ onMounted(async () => {
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.76rem;
+    font-size: 0.875rem;
   }
 }
 
 .upload-button.t-button {
-  color: var(--color-ink);
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+  flex: none;
 }
 
 .upload-panel {
@@ -224,7 +228,7 @@ onMounted(async () => {
   &__label {
     flex: none;
     color: var(--color-text-secondary);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     font-weight: 700;
   }
 
@@ -235,16 +239,16 @@ onMounted(async () => {
     button {
       padding: 6px 11px;
       color: var(--color-text-secondary);
-      font-size: 0.66rem;
+      font-size: 0.75rem;
       font-weight: 700;
       background: transparent;
       border: 1px solid var(--color-border);
       border-radius: 7px;
 
       &.active {
-        color: var(--color-ink);
+        color: var(--color-text-primary);
         background: var(--color-primary-light);
-        border-color: #d7e9ad;
+        border-color: var(--color-primary-border);
       }
     }
   }
@@ -266,16 +270,16 @@ onMounted(async () => {
     flex: 1 0 auto;
     padding: 8px 12px;
     color: var(--color-text-secondary);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     font-weight: 700;
     background: transparent;
     border: 1px solid var(--color-border);
     border-radius: 8px;
 
     &.active {
-      color: var(--color-ink);
+      color: var(--color-text-primary);
       background: var(--color-primary-light);
-      border-color: #d7e9ad;
+      border-color: var(--color-primary-border);
     }
   }
 }
@@ -296,12 +300,12 @@ onMounted(async () => {
   margin-bottom: 10px;
 
   strong {
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -335,12 +339,12 @@ onMounted(async () => {
     padding: 8px 8px 0;
 
     strong {
-      font-size: 0.68rem;
+      font-size: 0.75rem;
     }
 
     span {
       color: var(--color-text-tertiary);
-      font-size: 0.58rem;
+      font-size: 0.75rem;
     }
   }
 
@@ -349,7 +353,7 @@ onMounted(async () => {
     margin: 3px 0 0;
     padding: 0 8px 9px;
     color: var(--color-text-secondary);
-    font-size: 0.6rem;
+    font-size: 0.75rem;
     text-overflow: ellipsis;
     white-space: nowrap;
   }

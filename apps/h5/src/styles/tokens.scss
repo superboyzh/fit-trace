@@ -1,21 +1,48 @@
+/*
+ * 设计变量。浅色为默认，深色通过 <html data-theme="dark"> 覆盖，
+ * 由 utils/theme.ts 依据系统偏好或用户选择写入。
+ */
 :root {
+  /* 品牌色：酸绿只做强调，不承担大面积底色 */
   --color-primary: #a8dd35;
-  --color-primary-hover: #98cd2b;
-  --color-primary-active: #86b923;
+  /* 酸绿填充底上的前景色：两种主题下都是墨色 */
+  --color-on-primary: #111715;
+  --color-primary-strong: #7fb01c;
   --color-primary-light: #f0f7df;
+  --color-primary-border: var(--color-primary-border);
   --color-accent: #ff7043;
   --color-success: #33c879;
+  --color-success-text: #1f7a45;
   --color-warning: #ffad32;
   --color-danger: #ef5454;
+  --color-danger-text: #c8342f;
+
+  /* 墨色：深色卡片、深色 hero、强调底 */
   --color-ink: #111715;
   --color-ink-soft: #202825;
+  --color-on-ink: #fff;
+
+  /* 文字：三档均通过 WCAG AA（白底 ≥4.5:1） */
   --color-text-primary: #151b19;
-  --color-text-secondary: #66706c;
-  --color-text-tertiary: #929b97;
+  --color-text-secondary: #525c57;
+  --color-text-tertiary: #656f6a;
   --color-background: #f6f7f5;
   --color-surface: #fff;
+  --color-surface-translucent: rgb(255 255 255 / 94%);
   --color-surface-muted: #f1f3f0;
   --color-border: #e3e6e1;
+
+  /* 主按钮：浅色用墨底白字，深色反过来用酸绿 */
+  --color-brand: #151b19;
+  --color-on-brand: #fff;
+
+  /* 图表 */
+  --color-chart-axis: #dce2dc;
+  --color-chart-grid: #edf0ed;
+  --color-chart-label: #6a746f;
+  --color-chart-line: #151b19;
+  --color-chart-point: #a8dd35;
+
   --border-radius-sm: 8px;
   --border-radius-md: 12px;
   --border-radius-lg: 16px;
@@ -27,13 +54,58 @@
   --bottom-nav-space: calc(64px + env(safe-area-inset-bottom));
   --shadow-card: 0 2px 10px rgb(20 28 25 / 4%);
 
-  --td-brand-color: #151b19;
-  --td-brand-color-hover: #242e2a;
-  --td-brand-color-focus: #e5e9e3;
-  --td-brand-color-active: #090d0c;
+  /* 动效 */
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+  --duration-fast: 140ms;
+  --duration-base: 200ms;
+}
+
+:root[data-theme='dark'] {
+  --color-primary-light: rgb(168 221 53 / 16%);
+  --color-primary-border: rgb(168 221 53 / 38%);
+  --color-primary-strong: #b8f23d;
+  --color-success-text: #5fd992;
+  --color-danger-text: #ff8a80;
+
+  --color-ink: #232a2c;
+  --color-ink-soft: #2b3336;
+  --color-on-ink: #f2f6f3;
+
+  --color-text-primary: #e9eeec;
+  --color-text-secondary: #b6c0bc;
+  --color-text-tertiary: #8f9a95;
+  --color-background: #14181a;
+  --color-surface: #1c2124;
+  --color-surface-translucent: rgb(28 33 36 / 94%);
+  --color-surface-muted: #242a2d;
+  --color-border: #2e3538;
+
+  --color-brand: #a8dd35;
+  --color-on-brand: #111715;
+
+  --color-chart-axis: #2e3538;
+  --color-chart-grid: #262d2f;
+  --color-chart-label: #8f9a95;
+  --color-chart-line: #e9eeec;
+  --color-chart-point: #a8dd35;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 40%);
+}
+
+/* TDesign 变量跟随主题 */
+:root {
+  /* 注意：TDesign 的品牌色会被 Loading 等容器继承为文字色，
+     所以这里保持品牌强调色，主按钮的颜色由 .t-button--primary 单独控制 */
+  --td-brand-color: var(--color-primary);
+  --td-brand-color-hover: var(--color-primary-strong);
+  --td-brand-color-focus: var(--color-surface-muted);
+  --td-brand-color-active: var(--color-brand);
   --td-brand-color-light: var(--color-primary-light);
   --td-success-color: var(--color-success);
   --td-warning-color: var(--color-warning);
   --td-error-color: var(--color-danger);
   --td-radius-default: var(--border-radius-sm);
+  --td-bg-color-container: var(--color-surface);
+  --td-text-color-primary: var(--color-text-primary);
+  --td-text-color-secondary: var(--color-text-secondary);
 }

@@ -260,7 +260,7 @@ onMounted(async () => {
   padding: 22px 0 20px;
   span {
     color: var(--color-text-secondary);
-    font-size: 0.72rem;
+    font-size: 0.875rem;
   }
   h1 {
     margin: 4px 0 0;
@@ -274,10 +274,10 @@ onMounted(async () => {
   width: 40px;
   height: 40px;
   place-items: center;
-  color: var(--color-ink);
+  color: var(--color-text-primary);
   font-weight: 800;
   background: var(--color-primary-light);
-  border: 1px solid #dce9bd;
+  border: 1px solid var(--color-primary-border);
   border-radius: 50%;
 }
 .content-section {
@@ -296,7 +296,7 @@ onMounted(async () => {
   }
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
   }
 }
 .overview-list,
@@ -327,7 +327,7 @@ onMounted(async () => {
     height: 36px;
     flex: none;
     place-items: center;
-    color: var(--color-ink);
+    color: var(--color-text-primary);
     font-size: 1.05rem;
     background: var(--color-primary-light);
     border-radius: 9px;
@@ -338,12 +338,12 @@ onMounted(async () => {
     gap: 2px;
     > span {
       color: var(--color-text-tertiary);
-      font-size: 0.65rem;
+      font-size: 0.75rem;
     }
     strong {
-      font-size: 0.86rem;
+      font-size: 0.9375rem;
       small {
-        font-size: 0.66rem;
+        font-size: 0.75rem;
       }
     }
   }
@@ -351,7 +351,7 @@ onMounted(async () => {
     overflow: hidden;
     flex: 1;
     color: var(--color-text-secondary);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     text-align: right;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -382,7 +382,7 @@ onMounted(async () => {
     width: 38px;
     flex: none;
     color: var(--color-text-tertiary);
-    font-size: 0.7rem;
+    font-size: 0.875rem;
     font-variant-numeric: tabular-nums;
   }
   &__content {
@@ -391,12 +391,12 @@ onMounted(async () => {
     flex: 1;
     gap: 3px;
     strong {
-      font-size: 0.78rem;
+      font-size: 0.875rem;
     }
     span {
       overflow: hidden;
       color: var(--color-text-secondary);
-      font-size: 0.68rem;
+      font-size: 0.75rem;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -404,12 +404,12 @@ onMounted(async () => {
   &__calories {
     display: grid;
     flex: none;
-    font-size: 0.78rem;
+    font-size: 0.875rem;
     font-weight: 700;
     text-align: right;
     small {
       color: var(--color-text-tertiary);
-      font-size: 0.55rem;
+      font-size: 0.75rem;
       font-weight: 500;
     }
   }
@@ -423,14 +423,14 @@ onMounted(async () => {
   text-align: left;
   span {
     color: var(--color-text-secondary);
-    font-size: 0.72rem;
+    font-size: 0.875rem;
   }
   strong {
     display: flex;
     align-items: center;
     gap: 3px;
-    color: var(--color-ink);
-    font-size: 0.74rem;
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
   }
 }
 .latest-row {
@@ -452,11 +452,11 @@ onMounted(async () => {
   span,
   small {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
   strong {
     overflow: hidden;
-    font-size: 0.86rem;
+    font-size: 0.9375rem;
     text-overflow: ellipsis;
     white-space: nowrap;
   }

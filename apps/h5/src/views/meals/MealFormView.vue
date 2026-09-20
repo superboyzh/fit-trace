@@ -478,7 +478,7 @@ onMounted(async () => {
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.8rem;
+    font-size: 0.9375rem;
   }
 }
 
@@ -495,7 +495,7 @@ onMounted(async () => {
 
 .field-label {
   color: var(--color-text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   font-weight: 750;
 }
 
@@ -514,18 +514,18 @@ onMounted(async () => {
   border-radius: var(--border-radius-md);
 
   svg {
-    color: var(--color-ink);
+    color: var(--color-text-primary);
     font-size: 1.4rem;
   }
 
   strong {
-    color: var(--color-ink);
-    font-size: 0.78rem;
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
   }
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -551,7 +551,7 @@ onMounted(async () => {
 .recognizing-hint {
   padding: 12px;
   color: var(--color-text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   text-align: center;
   background: var(--color-surface-muted);
   border-radius: var(--border-radius-md);
@@ -561,7 +561,7 @@ onMounted(async () => {
   margin-top: 3px;
   padding: 13px;
   background: var(--color-primary-light);
-  border: 1px solid #dce9bd;
+  border: 1px solid var(--color-primary-border);
   border-radius: var(--border-radius-md);
 
   > header {
@@ -577,12 +577,12 @@ onMounted(async () => {
     }
 
     strong {
-      font-size: 0.78rem;
+      font-size: 0.875rem;
     }
 
     span {
       color: var(--color-text-secondary);
-      font-size: 0.62rem;
+      font-size: 0.75rem;
     }
   }
 }
@@ -598,7 +598,7 @@ onMounted(async () => {
   align-items: center;
   gap: 9px;
   padding: 10px 11px;
-  background: rgb(255 255 255 / 72%);
+  background: var(--color-surface);
   border: 1px solid transparent;
   border-radius: 9px;
 
@@ -608,9 +608,9 @@ onMounted(async () => {
     height: 18px;
     flex: none;
     place-items: center;
-    color: var(--color-ink);
-    font-size: 0.7rem;
-    background: #fff;
+    color: var(--color-on-primary);
+    font-size: 0.875rem;
+    background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 5px;
   }
@@ -623,7 +623,7 @@ onMounted(async () => {
 
     span {
       color: var(--color-text-tertiary);
-      font-size: 0.62rem;
+      font-size: 0.75rem;
     }
   }
 
@@ -649,21 +649,21 @@ onMounted(async () => {
       height: auto;
       padding: 0;
       color: var(--color-text-primary);
-      font-size: 0.76rem;
+      font-size: 0.875rem;
       font-weight: 750;
     }
   }
 
   &__calories {
     flex: none;
-    font-size: 0.74rem;
+    font-size: 0.875rem;
     font-weight: 750;
     font-variant-numeric: tabular-nums;
 
     small {
       margin-left: 2px;
       color: var(--color-text-tertiary);
-      font-size: 0.55rem;
+      font-size: 0.75rem;
       font-weight: 500;
     }
   }
@@ -681,7 +681,7 @@ onMounted(async () => {
 .suggestion-tip {
   margin: 10px 0 0;
   color: var(--color-text-secondary);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   line-height: 1.6;
 }
 
@@ -706,7 +706,7 @@ onMounted(async () => {
   &__applied {
     margin: 0;
     color: var(--color-text-tertiary);
-    font-size: 0.62rem;
+    font-size: 0.75rem;
     line-height: 1.6;
   }
 }
@@ -729,15 +729,15 @@ onMounted(async () => {
 
     span {
       color: var(--color-text-tertiary);
-      font-size: 0.55rem;
+      font-size: 0.75rem;
     }
 
     strong {
-      font-size: 0.7rem;
+      font-size: 0.875rem;
     }
 
     &.active {
-      color: var(--color-ink);
+      color: var(--color-text-primary);
       background: var(--color-primary-light);
       border-color: var(--color-primary);
     }
@@ -757,7 +757,7 @@ onMounted(async () => {
 
   small {
     color: var(--color-text-tertiary);
-    font-size: 0.62rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -791,8 +791,8 @@ onMounted(async () => {
 
       span {
         padding: 2px 6px;
-        color: var(--color-ink);
-        font-size: 0.58rem;
+        color: var(--color-text-primary);
+        font-size: 0.75rem;
         font-weight: 750;
         background: var(--color-primary-light);
         border-radius: 5px;
@@ -800,7 +800,7 @@ onMounted(async () => {
 
       .food-item__ai {
         color: var(--color-text-secondary);
-        background: #e7ece6;
+        background: var(--color-surface-muted);
       }
     }
   }
@@ -812,7 +812,7 @@ onMounted(async () => {
   }
 
   :deep(.t-input) {
-    background: #fff;
+    background: var(--color-surface);
     border-radius: 9px;
   }
 }

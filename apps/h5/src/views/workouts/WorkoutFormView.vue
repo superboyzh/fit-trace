@@ -15,14 +15,15 @@ import { CalendarIcon, ChevronLeftIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { createWorkout, getWorkout, updateWorkout, type WorkoutInput } from '@/api/workouts';
+import SportIcon from '@/components/SportIcon.vue';
 
-const workoutTypes: Array<{ value: WorkoutType; label: string; icon: string }> = [
-  { value: 'STRENGTH', label: '力量', icon: '🏋️' },
-  { value: 'CARDIO', label: '有氧', icon: '🫀' },
-  { value: 'RUNNING', label: '跑步', icon: '🏃' },
-  { value: 'CYCLING', label: '骑行', icon: '🚴' },
-  { value: 'SWIMMING', label: '游泳', icon: '🏊' },
-  { value: 'OTHER', label: '其他', icon: '🎯' },
+const workoutTypes: Array<{ value: WorkoutType; label: string }> = [
+  { value: 'STRENGTH', label: '力量' },
+  { value: 'CARDIO', label: '有氧' },
+  { value: 'RUNNING', label: '跑步' },
+  { value: 'CYCLING', label: '骑行' },
+  { value: 'SWIMMING', label: '游泳' },
+  { value: 'OTHER', label: '其他' },
 ];
 const durationPresets = [20, 30, 45, 60, 90];
 
@@ -139,7 +140,7 @@ onMounted(async () => {
               :class="{ active: formData.type === item.value }"
               @click="formData.type = item.value"
             >
-              <span class="workout-type-grid__icon">{{ item.icon }}</span>
+              <span class="workout-type-grid__icon"><SportIcon :type="item.value" /></span>
               <strong>{{ item.label }}</strong>
             </button>
           </div>
@@ -234,7 +235,7 @@ onMounted(async () => {
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.8rem;
+    font-size: 0.9375rem;
   }
 }
 
@@ -251,7 +252,7 @@ onMounted(async () => {
 
 .field-label {
   color: var(--color-text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.875rem;
   font-weight: 750;
 }
 
@@ -271,19 +272,19 @@ onMounted(async () => {
     border-radius: 10px;
 
     strong {
-      font-size: 0.72rem;
+      font-size: 0.875rem;
     }
 
     &.active {
-      color: var(--color-ink);
+      color: var(--color-text-primary);
       background: var(--color-primary-light);
       border-color: var(--color-primary);
     }
   }
 
   &__icon {
-    font-size: 1.15rem;
-    line-height: 1;
+    color: var(--color-text-primary);
+    font-size: 1.2rem;
   }
 }
 
@@ -301,16 +302,16 @@ onMounted(async () => {
     flex: 1 0 auto;
     padding: 7px 12px;
     color: var(--color-text-secondary);
-    font-size: 0.66rem;
+    font-size: 0.75rem;
     font-weight: 700;
     background: transparent;
     border: 1px solid var(--color-border);
     border-radius: 8px;
 
     &.active {
-      color: var(--color-ink);
+      color: var(--color-text-primary);
       background: var(--color-primary-light);
-      border-color: #d7e9ad;
+      border-color: var(--color-primary-border);
     }
   }
 }

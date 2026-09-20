@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { BodyRecord } from '@fit-trace/shared';
 import dayjs from 'dayjs';
-import { Button, Skeleton } from 'tdesign-mobile-vue';
+import { Button, Skeleton, ToastPlugin } from 'tdesign-mobile-vue';
 import { LogoutIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -10,6 +10,7 @@ import { getMeals } from '@/api/meals';
 import { getProgressPhotos } from '@/api/progress-photos';
 import { getWorkouts } from '@/api/workouts';
 import { useAuthStore } from '@/stores/auth';
+import { applyTheme, getThemeMode, setThemeMode, type ThemeMode } from '@/utils/theme';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -25,6 +26,19 @@ const stats = computed(() => [
   { label: '训练记录', value: counts.value.workout, unit: '次' },
   { label: '身材照片', value: counts.value.photo, unit: '张' },
 ]);
+const themeMode = ref<ThemeMode>(getThemeMode());
+const themeOptions: Array<{ value: ThemeMode; label: string }> = [
+  { value: 'system', label: '跟随系统' },
+  { value: 'light', label: '浅色' },
+  { value: 'dark', label: '深色' },
+];
+
+function selectTheme(mode: ThemeMode): void {
+  themeMode.value = mode;
+  setThemeMode(mode);
+  applyTheme(mode);
+  ToastPlugin.success(`已切换为${themeOptions.find((item) => item.value === mode)?.label}`);
+}
 const totalRecords = computed(
   () => counts.value.body + counts.value.meal + counts.value.workout + counts.value.photo,
 );
@@ -89,6 +103,24 @@ onMounted(async () => {
       </div>
     </section>
 
+    <section class="content-section">
+      <div class="section-heading">
+        <h2>外观</h2>
+        <span>深色模式</span>
+      </div>
+      <div class="theme-switch">
+        <button
+          v-for="item in themeOptions"
+          :key="item.value"
+          type="button"
+          :class="{ active: themeMode === item.value }"
+          @click="selectTheme(item.value)"
+        >
+          {{ item.label }}
+        </button>
+      </div>
+    </section>
+
     <section class="surface-card meta-card">
       <div>
         <span>当前体重</span>
@@ -133,7 +165,7 @@ onMounted(async () => {
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.76rem;
+    font-size: 0.875rem;
   }
 }
 
@@ -151,14 +183,14 @@ onMounted(async () => {
     gap: 4px;
 
     strong {
-      font-size: 0.95rem;
+      font-size: 1rem;
     }
 
     span {
       overflow: hidden;
       max-width: 100%;
       color: var(--color-text-secondary);
-      font-size: 0.72rem;
+      font-size: 0.875rem;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -171,18 +203,18 @@ onMounted(async () => {
   height: 46px;
   flex: none;
   place-items: center;
-  color: var(--color-ink);
+  color: var(--color-text-primary);
   font-size: 1.1rem;
   font-weight: 800;
   background: var(--color-primary-light);
-  border: 1px solid #dce9bd;
+  border: 1px solid var(--color-primary-border);
   border-radius: 13px;
 }
 
 .version-tag {
   padding: 4px 8px;
   color: var(--color-text-secondary);
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   font-weight: 750;
   background: var(--color-surface-muted);
   border-radius: 6px;
@@ -207,7 +239,7 @@ onMounted(async () => {
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -229,7 +261,7 @@ onMounted(async () => {
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 
   strong {
@@ -238,8 +270,30 @@ onMounted(async () => {
     letter-spacing: -0.03em;
 
     small {
-      font-size: 0.6rem;
+      font-size: 0.75rem;
       font-weight: 500;
+    }
+  }
+}
+
+.theme-switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+
+  button {
+    padding: 11px 6px;
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 700;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+
+    &.active {
+      color: var(--color-text-primary);
+      background: var(--color-primary-light);
+      border-color: var(--color-primary-border);
     }
   }
 }
@@ -261,16 +315,16 @@ onMounted(async () => {
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 
   strong {
-    font-size: 0.82rem;
+    font-size: 0.9375rem;
   }
 
   small {
     color: var(--color-text-tertiary);
-    font-size: 0.6rem;
+    font-size: 0.75rem;
   }
 }
 

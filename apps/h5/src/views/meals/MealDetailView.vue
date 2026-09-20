@@ -144,7 +144,7 @@ onMounted(async () => {
 
   &__type {
     padding: 3px 8px;
-    font-size: 0.66rem;
+    font-size: 0.75rem;
     font-weight: 750;
     background: var(--color-primary-light);
     border-radius: 6px;
@@ -152,7 +152,7 @@ onMounted(async () => {
 
   &__time {
     color: var(--color-text-tertiary);
-    font-size: 0.7rem;
+    font-size: 0.875rem;
   }
 
   &__calories {
@@ -161,14 +161,14 @@ onMounted(async () => {
     letter-spacing: -0.05em;
 
     small {
-      font-size: 0.76rem;
+      font-size: 0.875rem;
       font-weight: 500;
     }
   }
 
   &__hint {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -194,13 +194,13 @@ onMounted(async () => {
 
   h2 {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-weight: 800;
   }
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -217,7 +217,7 @@ onMounted(async () => {
   gap: 10px;
   padding: 13px 14px;
   color: var(--color-text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.875rem;
 
   + .food-row {
     border-top: 1px solid var(--color-border);
@@ -233,7 +233,7 @@ onMounted(async () => {
     strong {
       overflow: hidden;
       color: var(--color-text-primary);
-      font-size: 0.8rem;
+      font-size: 0.9375rem;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -242,7 +242,7 @@ onMounted(async () => {
       flex: none;
       padding: 2px 5px;
       color: var(--color-text-secondary);
-      font-size: 0.55rem;
+      font-size: 0.75rem;
       font-weight: 750;
       background: var(--color-surface-muted);
       border-radius: 4px;
@@ -254,7 +254,7 @@ onMounted(async () => {
   margin: 0;
   padding: 14px;
   color: var(--color-text-secondary);
-  font-size: 0.76rem;
+  font-size: 0.875rem;
   line-height: 1.7;
   background: var(--color-surface);
   border: 1px solid var(--color-border);

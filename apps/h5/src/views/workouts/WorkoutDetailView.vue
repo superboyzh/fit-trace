@@ -135,7 +135,7 @@ onMounted(async () => {
 
     strong {
       overflow: hidden;
-      font-size: 0.86rem;
+      font-size: 0.9375rem;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -144,7 +144,7 @@ onMounted(async () => {
   &__type {
     flex: none;
     padding: 3px 8px;
-    font-size: 0.66rem;
+    font-size: 0.75rem;
     font-weight: 750;
     background: var(--color-primary-light);
     border-radius: 6px;
@@ -156,14 +156,14 @@ onMounted(async () => {
     letter-spacing: -0.05em;
 
     small {
-      font-size: 0.8rem;
+      font-size: 0.9375rem;
       font-weight: 500;
     }
   }
 
   &__hint {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -180,11 +180,11 @@ onMounted(async () => {
 
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 
   strong {
-    font-size: 0.82rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     line-height: 1.6;
   }

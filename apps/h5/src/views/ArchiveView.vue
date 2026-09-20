@@ -134,7 +134,7 @@ onMounted(async () => {
         <h1>记录档案</h1>
         <p>身体与饮食，按真实记录时间排列。</p>
       </div>
-      <Button size="small" @click="router.push('/record')"><AddIcon /> 记录</Button>
+      <Button theme="primary" size="small" @click="router.push('/record')"><AddIcon /> 记录</Button>
     </header>
     <div class="archive-filter">
       <button
@@ -242,12 +242,7 @@ onMounted(async () => {
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.76rem;
-  }
-  .t-button {
-    color: var(--color-ink);
-    background: var(--color-primary);
-    border-color: var(--color-primary);
+    font-size: 0.875rem;
   }
 }
 .archive-filter {
@@ -258,22 +253,22 @@ onMounted(async () => {
   button {
     padding: 8px 14px;
     color: var(--color-text-secondary);
-    font-size: 0.7rem;
+    font-size: 0.875rem;
     font-weight: 700;
     background: transparent;
     border: 1px solid var(--color-border);
     border-radius: 8px;
     &.active {
-      color: var(--color-ink);
+      color: var(--color-text-primary);
       background: var(--color-primary-light);
-      border-color: #d7e9ad;
+      border-color: var(--color-primary-border);
     }
   }
   > span {
     overflow: hidden;
     flex: 1;
     color: var(--color-text-tertiary);
-    font-size: 0.58rem;
+    font-size: 0.75rem;
     text-align: right;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -289,11 +284,11 @@ onMounted(async () => {
   gap: 8px;
   margin-bottom: 9px;
   strong {
-    font-size: 0.92rem;
+    font-size: 1rem;
   }
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.64rem;
+    font-size: 0.75rem;
   }
 }
 .archive-group__body {
@@ -318,7 +313,7 @@ onMounted(async () => {
     width: 36px;
     flex: none;
     color: var(--color-text-tertiary);
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
   }
   &__icon {
@@ -327,7 +322,7 @@ onMounted(async () => {
     height: 34px;
     flex: none;
     place-items: center;
-    color: var(--color-ink);
+    color: var(--color-text-primary);
     background: var(--color-primary-light);
     border-radius: 9px;
 
@@ -349,7 +344,7 @@ onMounted(async () => {
     gap: 2px;
     small {
       color: var(--color-text-tertiary);
-      font-size: 0.6rem;
+      font-size: 0.75rem;
     }
     strong,
     span {
@@ -358,11 +353,11 @@ onMounted(async () => {
       white-space: nowrap;
     }
     strong {
-      font-size: 0.78rem;
+      font-size: 0.875rem;
     }
     span {
       color: var(--color-text-secondary);
-      font-size: 0.64rem;
+      font-size: 0.75rem;
     }
   }
 }

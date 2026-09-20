@@ -16,6 +16,9 @@ const nickname = ref('');
 const submitting = ref(false);
 const errorMessage = ref('');
 const title = computed(() => (mode.value === 'login' ? '欢迎回来' : '开始记录改变'));
+const subtitle = computed(() =>
+  mode.value === 'login' ? '登录后继续你的记录。' : '创建账户，从今天的第一条记录开始。',
+);
 
 function switchMode(nextMode: 'login' | 'register'): void {
   mode.value = nextMode;
@@ -64,39 +67,25 @@ async function submit(): Promise<void> {
         <span class="brand-mark"><i></i><i></i><i></i></span>
         <span>FITTRACE</span>
       </div>
-      <div class="auth-hero__copy">
-        <span>BUILD YOUR TRACE</span>
-        <h1>记录行动，<br />看见改变。</h1>
-        <p>身体、饮食与训练，汇成属于你的长期轨迹。</p>
-      </div>
-      <svg class="pulse-line" viewBox="0 0 400 70" preserveAspectRatio="none" aria-hidden="true">
-        <polyline
-          points="0,45 72,45 94,45 110,8 128,62 148,31 163,45 230,45 250,45 268,20 285,52 302,45 400,45"
-        />
-      </svg>
+      <h1>记录行动，<br />看见改变。</h1>
+      <p>身体、饮食与训练，汇成属于你的长期轨迹。</p>
     </section>
+
     <section class="auth-card">
-      <span class="auth-card__eyebrow">MEMBER ACCESS</span>
       <h2>{{ title }}</h2>
-      <p>登录后继续你的运动记录。</p>
+      <p>{{ subtitle }}</p>
 
       <div class="mode-switch" aria-label="账户操作">
-        <Button
-          type="button"
-          :theme="mode === 'login' ? 'primary' : 'default'"
-          :variant="mode === 'login' ? 'base' : 'text'"
-          @click="switchMode('login')"
-        >
+        <button type="button" :class="{ active: mode === 'login' }" @click="switchMode('login')">
           登录
-        </Button>
-        <Button
+        </button>
+        <button
           type="button"
-          :theme="mode === 'register' ? 'primary' : 'default'"
-          :variant="mode === 'register' ? 'base' : 'text'"
+          :class="{ active: mode === 'register' }"
           @click="switchMode('register')"
         >
           注册
-        </Button>
+        </button>
       </div>
 
       <form @submit.prevent="submit">
@@ -127,14 +116,7 @@ async function submit(): Promise<void> {
         </label>
 
         <NoticeBar v-if="errorMessage" theme="error" :content="errorMessage" />
-        <Button
-          class="submit-button"
-          type="submit"
-          theme="primary"
-          size="large"
-          block
-          :loading="submitting"
-        >
+        <Button class="submit-button" type="submit" size="large" block :loading="submitting">
           {{ submitting ? '请稍候…' : mode === 'login' ? '登录' : '创建账户' }}
         </Button>
       </form>
@@ -151,50 +133,25 @@ async function submit(): Promise<void> {
 .auth-hero {
   position: relative;
   overflow: hidden;
-  min-height: 330px;
-  padding: 28px 24px 78px;
+  padding: 26px 22px 64px;
   color: #fff;
   background:
-    radial-gradient(circle at 86% 16%, rgb(184 242 61 / 15%), transparent 30%), var(--color-ink);
+    radial-gradient(circle at 88% 12%, rgb(168 221 53 / 13%), transparent 34%), var(--color-ink);
 
-  &::after {
-    position: absolute;
-    right: -38px;
-    bottom: -72px;
-    width: 180px;
-    height: 180px;
-    border: 34px solid rgb(184 242 61 / 8%);
-    border-radius: 50%;
-    content: '';
+  h1 {
+    margin: 44px 0 10px;
+    font-size: 2rem;
+    font-weight: 850;
+    line-height: 1.14;
+    letter-spacing: -0.05em;
   }
 
-  &__copy {
-    position: relative;
-    z-index: 1;
-    margin-top: 58px;
-
-    > span {
-      color: var(--color-primary);
-      font-size: 0.62rem;
-      font-weight: 850;
-      letter-spacing: 0.2em;
-    }
-
-    h1 {
-      margin: 8px 0 10px;
-      font-size: 2.5rem;
-      font-weight: 900;
-      line-height: 1.08;
-      letter-spacing: -0.06em;
-    }
-
-    p {
-      max-width: 290px;
-      margin: 0;
-      color: rgb(255 255 255 / 52%);
-      font-size: 0.76rem;
-      line-height: 1.65;
-    }
+  p {
+    max-width: 280px;
+    margin: 0;
+    color: rgb(255 255 255 / 52%);
+    font-size: 0.76rem;
+    line-height: 1.7;
   }
 }
 
@@ -202,14 +159,14 @@ async function submit(): Promise<void> {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 0.72rem;
-  font-weight: 900;
+  font-size: 0.7rem;
+  font-weight: 850;
   letter-spacing: 0.18em;
 }
 
 .brand-mark {
   display: flex;
-  height: 18px;
+  height: 16px;
   align-items: flex-end;
   gap: 2px;
 
@@ -220,33 +177,16 @@ async function submit(): Promise<void> {
     transform: skewX(-12deg);
 
     &:nth-child(1) {
-      height: 9px;
+      height: 8px;
     }
 
     &:nth-child(2) {
-      height: 14px;
+      height: 12px;
     }
 
     &:nth-child(3) {
-      height: 18px;
+      height: 16px;
     }
-  }
-}
-
-.pulse-line {
-  position: absolute;
-  right: 0;
-  bottom: 8px;
-  left: 0;
-  width: 100%;
-  height: 70px;
-
-  polyline {
-    fill: none;
-    stroke: var(--color-primary);
-    stroke-linejoin: round;
-    stroke-width: 2;
-    vector-effect: non-scaling-stroke;
   }
 }
 
@@ -254,46 +194,47 @@ async function submit(): Promise<void> {
   position: relative;
   z-index: 2;
   width: calc(100% - 32px);
-  margin: -42px auto 0;
-  padding: 24px 22px 26px;
+  margin: -38px auto 24px;
+  padding: 22px 20px 24px;
   background: var(--color-surface);
-  border: 1px solid rgb(17 23 21 / 6%);
-  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-card);
 
-  &__eyebrow {
-    color: var(--color-text-tertiary);
-    font-size: 0.6rem;
-    font-weight: 800;
-    letter-spacing: 0.17em;
-  }
-
   h2 {
-    margin: 6px 0 4px;
-    font-size: 1.5rem;
+    margin: 0 0 4px;
+    font-size: 1.35rem;
     font-weight: 850;
     letter-spacing: -0.04em;
   }
 
   > p {
-    margin: 0 0 20px;
+    margin: 0 0 18px;
     color: var(--color-text-secondary);
-    font-size: 0.78rem;
+    font-size: 0.74rem;
   }
 }
 
 .mode-switch {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
+  gap: 6px;
   margin-bottom: var(--spacing-lg);
-  padding: 4px;
-  background: var(--color-surface-muted);
-  border-radius: 10px;
 
-  :deep(.t-button) {
-    width: 100%;
+  button {
+    padding: 9px 4px;
+    color: var(--color-text-secondary);
+    font-size: 0.72rem;
+    font-weight: 750;
+    background: transparent;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
+
+    &.active {
+      color: var(--color-ink);
+      background: var(--color-primary-light);
+      border-color: #d7e9ad;
+    }
   }
 }
 
@@ -310,8 +251,9 @@ label {
   gap: 7px;
 
   span {
-    font-size: 0.8rem;
-    font-weight: 600;
+    color: var(--color-text-secondary);
+    font-size: 0.72rem;
+    font-weight: 750;
   }
 }
 
@@ -321,47 +263,34 @@ label {
 
 .submit-button {
   margin-top: 2px;
-
-  &.t-button {
-    color: var(--color-ink);
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-  }
-
-  &.t-button--disabled {
-    color: var(--color-ink);
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-    opacity: 0.78;
-  }
 }
 
 @media (min-width: 560px) {
   .auth-page {
     display: grid;
-    width: min(100%, 920px);
-    min-height: 680px;
+    width: min(100%, 880px);
+    min-height: 620px;
     grid-template-columns: 1.05fr 0.95fr;
     align-items: center;
     margin: 5vh auto;
     overflow: hidden;
     background: #fff;
-    border-radius: 22px;
-    box-shadow: 0 30px 70px rgb(17 23 21 / 16%);
+    border-radius: 20px;
+    box-shadow: 0 28px 64px rgb(17 23 21 / 14%);
   }
 
   .auth-hero {
     min-height: 100%;
-    padding: 36px;
+    padding: 34px;
 
-    &__copy {
-      margin-top: 120px;
+    h1 {
+      margin-top: 110px;
     }
   }
 
   .auth-card {
     width: auto;
-    margin: 0 36px;
+    margin: 0 34px;
     border: 0;
     box-shadow: none;
   }

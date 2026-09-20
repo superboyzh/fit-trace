@@ -1,8 +1,8 @@
 :root {
-  --color-primary: #b8f23d;
-  --color-primary-hover: #a8e42e;
-  --color-primary-active: #96d11e;
-  --color-primary-light: #eefbd4;
+  --color-primary: #a8dd35;
+  --color-primary-hover: #98cd2b;
+  --color-primary-active: #86b923;
+  --color-primary-light: #f0f7df;
   --color-accent: #ff7043;
   --color-success: #33c879;
   --color-warning: #ffad32;
@@ -12,20 +12,20 @@
   --color-text-primary: #151b19;
   --color-text-secondary: #66706c;
   --color-text-tertiary: #929b97;
-  --color-background: #f1f3ef;
+  --color-background: #f6f7f5;
   --color-surface: #fff;
-  --color-surface-muted: #e8ebe6;
-  --color-border: #dfe3dd;
+  --color-surface-muted: #f1f3f0;
+  --color-border: #e3e6e1;
   --border-radius-sm: 8px;
-  --border-radius-md: 14px;
-  --border-radius-lg: 18px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 16px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 40px;
-  --bottom-nav-space: calc(68px + env(safe-area-inset-bottom));
-  --shadow-card: 0 12px 32px rgb(20 28 25 / 8%);
+  --bottom-nav-space: calc(64px + env(safe-area-inset-bottom));
+  --shadow-card: 0 2px 10px rgb(20 28 25 / 4%);
 
   --td-brand-color: #151b19;
   --td-brand-color-hover: #242e2a;

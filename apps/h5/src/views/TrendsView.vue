@@ -4,9 +4,10 @@ import type {
   BodyTrendDays,
   BodyTrendMetric,
   BodyTrendStats,
+  InsightOverview,
 } from '@fit-trace/shared';
 import dayjs from 'dayjs';
-import { LineChart, type LineSeriesOption } from 'echarts/charts';
+import { BarChart, LineChart, type BarSeriesOption, type LineSeriesOption } from 'echarts/charts';
 import {
   GridComponent,
   TooltipComponent,
@@ -20,6 +21,7 @@ import { ChartLineIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { getBodyTrends } from '@/api/body-records';
+import { getInsightOverview } from '@/api/insights';
 
 interface MetricOption {
   key: BodyTrendMetric;
@@ -27,9 +29,11 @@ interface MetricOption {
   unit: string;
 }
 
-type ChartOption = ComposeOption<LineSeriesOption | GridComponentOption | TooltipComponentOption>;
+type ChartOption = ComposeOption<
+  BarSeriesOption | LineSeriesOption | GridComponentOption | TooltipComponentOption
+>;
 
-use([LineChart, GridComponent, TooltipComponent, CanvasRenderer]);
+use([LineChart, BarChart, GridComponent, TooltipComponent, CanvasRenderer]);
 
 const router = useRouter();
 const ranges: BodyTrendDays[] = [7, 30, 90];
@@ -41,10 +45,14 @@ const metrics: MetricOption[] = [
 const selectedRange = ref<BodyTrendDays>(30);
 const selectedMetric = ref<BodyTrendMetric>('weight');
 const trendData = ref<BodyTrendData | null>(null);
+const insights = ref<InsightOverview | null>(null);
 const loading = ref(true);
 const errorMessage = ref('');
+const insightError = ref(false);
 const chartElement = ref<HTMLDivElement | null>(null);
+const insightElement = ref<HTMLDivElement | null>(null);
 let chart: EChartsType | null = null;
+let insightChart: EChartsType | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
 const metric = computed(
@@ -60,6 +68,55 @@ function formatValue(value: number): string {
 function formatChange(value: number): string {
   return `${value > 0 ? '+' : ''}${formatValue(value)}`;
 }
+
+const insightCards = computed(() => {
+  const data = insights.value;
+  if (!data) return [];
+  return [
+    {
+      label: '平均每日热量',
+      value: data.calories.average === null ? '—' : String(data.calories.average),
+      unit: 'kcal',
+    },
+    { label: '训练次数', value: String(data.workouts.count), unit: '次' },
+    { label: '训练时长', value: String(data.workouts.totalMinutes), unit: '分钟' },
+    { label: '记录饮食天数', value: String(data.meals.recordedDays), unit: `/${data.days} 天` },
+  ];
+});
+
+const insightSummary = computed(() => {
+  const data = insights.value;
+  if (!data) return '';
+  const sentences: string[] = [];
+
+  if (data.weight.change !== null) {
+    const direction = data.weight.change > 0 ? '上升' : data.weight.change < 0 ? '下降' : '持平';
+    const amount = Math.abs(data.weight.change).toFixed(1);
+    sentences.push(
+      data.weight.change === 0
+        ? `这 ${data.days} 天体重基本持平。`
+        : `这 ${data.days} 天体重${direction} ${amount} kg。`,
+    );
+  } else {
+    sentences.push(`这 ${data.days} 天还没有身体数据。`);
+  }
+
+  if (data.calories.average !== null) {
+    sentences.push(
+      `有记录的 ${data.calories.recordedDays} 天里，平均每天摄入约 ${data.calories.average} kcal。`,
+    );
+  } else {
+    sentences.push('饮食记录里还没有可统计的热量。');
+  }
+
+  sentences.push(
+    data.workouts.count > 0
+      ? `完成了 ${data.workouts.count} 次训练，共 ${data.workouts.totalMinutes} 分钟。`
+      : '这段区间里还没有训练记录。',
+  );
+
+  return sentences.join('');
+});
 
 function createChartOption(): ChartOption {
   const points = series.value?.points ?? [];
@@ -121,25 +178,110 @@ function createChartOption(): ChartOption {
   };
 }
 
-async function renderChart(): Promise<void> {
+function createInsightOption(): ChartOption {
+  const points = insights.value?.series ?? [];
+  return {
+    animationDuration: 450,
+    grid: { top: 26, right: 42, bottom: 28, left: 44 },
+    tooltip: {
+      trigger: 'axis',
+      borderWidth: 0,
+      backgroundColor: '#111715',
+      textStyle: { color: '#fff' },
+      formatter: (params) => {
+        const items = Array.isArray(params) ? params : [params];
+        const point = points[items[0]?.dataIndex ?? 0];
+        if (!point) return '';
+        const lines = [dayjs(point.date).format('M月D日')];
+        if (point.weight !== null) lines.push(`体重：${point.weight} kg`);
+        if (point.calories !== null) lines.push(`热量：${point.calories} kcal`);
+        lines.push(`训练：${point.workoutMinutes} 分钟`);
+        if (point.mealCount === 0) lines.push('饮食：未记录');
+        return lines.join('<br/>');
+      },
+    },
+    xAxis: {
+      type: 'category',
+      data: points.map((point) => dayjs(point.date).format('M/D')),
+      axisLine: { lineStyle: { color: '#dce2dc' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#89928e', fontSize: 10, hideOverlap: true },
+    },
+    yAxis: [
+      {
+        type: 'value',
+        splitNumber: 3,
+        axisLabel: { color: '#89928e', fontSize: 10 },
+        splitLine: { lineStyle: { color: '#edf0ed', type: 'dashed' } },
+      },
+      {
+        type: 'value',
+        scale: true,
+        splitNumber: 3,
+        axisLabel: { show: false },
+        splitLine: { show: false },
+      },
+    ],
+    series: [
+      {
+        name: '每日热量',
+        type: 'bar',
+        data: points.map((point) => point.calories),
+        barMaxWidth: 10,
+        itemStyle: { color: '#dbe9bd', borderRadius: [3, 3, 0, 0] },
+      },
+      {
+        name: '体重',
+        type: 'line',
+        yAxisIndex: 1,
+        data: points.map((point) => point.weight),
+        smooth: true,
+        connectNulls: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { color: '#111715', width: 2.5 },
+        itemStyle: { color: '#b8f23d', borderColor: '#111715', borderWidth: 2 },
+      },
+    ],
+  };
+}
+
+async function renderCharts(): Promise<void> {
   await nextTick();
+
   if (!chartElement.value || !series.value?.points.length) {
     chart?.dispose();
     chart = null;
-    return;
+  } else {
+    chart ??= init(chartElement.value);
+    chart.setOption(createChartOption(), true);
+    chart.resize();
   }
-  chart ??= init(chartElement.value);
-  chart.setOption(createChartOption(), true);
-  chart.resize();
+
+  if (!insightElement.value) {
+    insightChart?.dispose();
+    insightChart = null;
+  } else if (insights.value) {
+    insightChart ??= init(insightElement.value);
+    insightChart.setOption(createInsightOption(), true);
+    insightChart.resize();
+  }
 }
 
 async function loadTrends(): Promise<void> {
   loading.value = true;
   errorMessage.value = '';
   try {
-    trendData.value = await getBodyTrends(selectedRange.value);
+    const [trend, insight] = await Promise.all([
+      getBodyTrends(selectedRange.value),
+      getInsightOverview(selectedRange.value).catch(() => null),
+    ]);
+    trendData.value = trend;
+    insights.value = insight;
+    insightError.value = insight === null;
   } catch {
     trendData.value = null;
+    insights.value = null;
     errorMessage.value = '趋势数据加载失败，请稍后重试';
   } finally {
     loading.value = false;
@@ -163,38 +305,43 @@ function statItems(value: BodyTrendStats) {
   ];
 }
 
-watch([series, selectedMetric], renderChart, { flush: 'post' });
+watch([series, selectedMetric, insights], renderCharts, { flush: 'post' });
 
 onMounted(async () => {
   await loadTrends();
-  resizeObserver = new ResizeObserver(() => chart?.resize());
-  if (chartElement.value) resizeObserver.observe(chartElement.value);
+  resizeObserver = new ResizeObserver(() => {
+    chart?.resize();
+    insightChart?.resize();
+  });
+  for (const element of [chartElement.value, insightElement.value]) {
+    if (element) resizeObserver.observe(element);
+  }
 });
 
 onBeforeUnmount(() => {
   resizeObserver?.disconnect();
   chart?.dispose();
+  insightChart?.dispose();
 });
 </script>
 
 <template>
   <main class="view-page trends-page">
-    <header class="page-header">
-      <span class="page-header__eyebrow">Insights</span>
+    <header class="trends-header">
       <h1>数据趋势</h1>
-      <p>用 7 / 30 / 90 天视角观察真实变化。</p>
+      <p>把身体、饮食与训练放在同一条时间轴上观察。</p>
     </header>
 
     <div class="range-switch" aria-label="趋势时间范围">
-      <Button
+      <button
         v-for="range in ranges"
         :key="range"
-        :theme="selectedRange === range ? 'primary' : 'default'"
-        :variant="selectedRange === range ? 'base' : 'text'"
+        type="button"
+        :class="{ active: selectedRange === range }"
         @click="selectRange(range)"
       >
         {{ range }} 天
-      </Button>
+      </button>
     </div>
 
     <Loading class="page-loading" :loading="loading" text="正在计算趋势">
@@ -264,6 +411,35 @@ onBeforeUnmount(() => {
           </template>
         </Empty>
       </section>
+
+      <section class="content-section">
+        <div class="section-heading">
+          <h2>生活节奏</h2>
+          <span>同期饮食与训练</span>
+        </div>
+
+        <div v-if="insightError" class="insight-error">生活节奏数据暂时无法加载。</div>
+        <template v-else-if="insights">
+          <div class="insight-grid">
+            <div v-for="card in insightCards" :key="card.label">
+              <span>{{ card.label }}</span>
+              <strong
+                >{{ card.value }} <small>{{ card.unit }}</small></strong
+              >
+            </div>
+          </div>
+          <p class="insight-summary">{{ insightSummary }}</p>
+          <div
+            ref="insightElement"
+            class="insight-chart"
+            role="img"
+            :aria-label="`${selectedRange} 天热量与体重对照图`"
+          />
+          <p class="insight-legend">
+            <span class="insight-legend__bar" />每日热量 <span class="insight-legend__line" />体重
+          </p>
+        </template>
+      </section>
     </Loading>
   </main>
 </template>
@@ -273,18 +449,43 @@ onBeforeUnmount(() => {
   padding-bottom: 24px;
 }
 
+.trends-header {
+  padding: 24px 0 16px;
+
+  h1 {
+    margin: 0 0 4px;
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+
+  p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.76rem;
+  }
+}
+
 .range-switch {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
+  gap: 6px;
   margin-bottom: 14px;
-  padding: 4px;
-  background: var(--color-surface-muted);
-  border-radius: 12px;
 
-  :deep(.t-button) {
-    width: 100%;
-    border-radius: 9px;
+  button {
+    padding: 9px 4px;
+    color: var(--color-text-secondary);
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+
+    &.active {
+      color: var(--color-ink);
+      background: var(--color-primary-light);
+      border-color: #d7e9ad;
+    }
   }
 }
 
@@ -423,6 +624,120 @@ onBeforeUnmount(() => {
       color: #d44d49;
     }
   }
+}
+
+.content-section {
+  margin-top: 26px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  span {
+    color: var(--color-text-tertiary);
+    font-size: 0.68rem;
+  }
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  background: var(--color-border);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+
+  > div {
+    display: grid;
+    gap: 5px;
+    padding: 13px 14px;
+    background: var(--color-surface);
+  }
+
+  span {
+    color: var(--color-text-tertiary);
+    font-size: 0.64rem;
+  }
+
+  strong {
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+
+    small {
+      font-size: 0.6rem;
+      font-weight: 500;
+    }
+  }
+}
+
+.insight-summary {
+  margin: 12px 0 0;
+  padding: 13px 14px;
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.7;
+  background: var(--color-surface-muted);
+  border-radius: var(--border-radius-md);
+}
+
+.insight-chart {
+  width: 100%;
+  height: 200px;
+  margin-top: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+}
+
+.insight-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 8px 2px 0;
+  color: var(--color-text-tertiary);
+  font-size: 0.62rem;
+
+  span {
+    display: inline-block;
+    margin-left: 8px;
+  }
+
+  &__bar {
+    width: 10px;
+    height: 10px;
+    background: #dbe9bd;
+    border-radius: 3px;
+  }
+
+  &__line {
+    width: 14px;
+    height: 2.5px;
+    background: var(--color-ink);
+    border-radius: 2px;
+  }
+}
+
+.insight-error {
+  padding: 22px 14px;
+  color: var(--color-text-tertiary);
+  font-size: 0.72rem;
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
 }
 
 .error-state {

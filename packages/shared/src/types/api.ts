@@ -102,3 +102,89 @@ export interface MealRecord {
   createdAt: string;
   updatedAt: string;
 }
+
+export type WorkoutType = 'STRENGTH' | 'CARDIO' | 'RUNNING' | 'CYCLING' | 'SWIMMING' | 'OTHER';
+
+export interface WorkoutRecord {
+  id: string;
+  type: WorkoutType;
+  name: string;
+  startedAt: string;
+  durationMinutes: number;
+  calories: number | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PhotoType = 'FRONT' | 'SIDE' | 'BACK' | 'OTHER';
+
+export interface ProgressPhoto {
+  id: string;
+  type: PhotoType;
+  imageUrl: string;
+  recordedAt: string;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UploadResult {
+  url: string;
+  key: string;
+}
+
+export type InsightDays = 7 | 30 | 90;
+
+export interface InsightSeriesPoint {
+  date: string;
+  weight: number | null;
+  calories: number | null;
+  workoutMinutes: number;
+  mealCount: number;
+}
+
+export interface InsightWeightSummary {
+  start: number | null;
+  current: number | null;
+  change: number | null;
+  lowest: number | null;
+  highest: number | null;
+  recordCount: number;
+}
+
+export interface InsightCaloriesSummary {
+  average: number | null;
+  highest: number | null;
+  recordedDays: number;
+}
+
+export interface InsightWorkoutSummary {
+  count: number;
+  totalMinutes: number;
+  totalCalories: number | null;
+  byType: Array<{ type: WorkoutType; count: number; minutes: number }>;
+}
+
+export interface InsightMealSummary {
+  count: number;
+  recordedDays: number;
+  byType: Array<{ type: MealType; count: number }>;
+}
+
+export interface InsightPhotoSummary {
+  count: number;
+  latestRecordedAt: string | null;
+}
+
+export interface InsightOverview {
+  days: InsightDays;
+  from: string;
+  to: string;
+  series: InsightSeriesPoint[];
+  weight: InsightWeightSummary;
+  calories: InsightCaloriesSummary;
+  workouts: InsightWorkoutSummary;
+  meals: InsightMealSummary;
+  photos: InsightPhotoSummary;
+}

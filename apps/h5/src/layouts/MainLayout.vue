@@ -10,14 +10,16 @@ const navigation = [
   { path: '/dashboard', label: '首页', icon: HomeIcon },
   { path: '/trends', label: '趋势', icon: ChartLineIcon },
   { path: '/record', label: '记录', icon: AddIcon, primary: true },
-  { path: '/body/history', label: '数据', icon: DataIcon },
+  { path: '/archive', label: '档案', icon: DataIcon },
   { path: '/profile', label: '我的', icon: UserIcon },
 ];
 
 const activePath = computed(() => {
   if (route.path.startsWith('/meals')) return '/record';
+  if (route.path.startsWith('/workouts') || route.path.startsWith('/photos')) return '/record';
   if (route.path === '/body/create' || route.path.includes('/edit')) return '/record';
-  if (route.path.startsWith('/body')) return '/body/history';
+  if (route.path.startsWith('/body/history') || route.path.startsWith('/archive'))
+    return '/archive';
   return navigation.find((item) => route.path.startsWith(item.path))?.path ?? '/dashboard';
 });
 
@@ -72,10 +74,10 @@ async function navigate(path: string): Promise<void> {
   display: grid;
   width: min(100%, 560px);
   grid-template-columns: repeat(5, 1fr);
-  padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
-  background: rgb(255 255 255 / 96%);
+  padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
+  background: rgb(255 255 255 / 98%);
   border-top: 1px solid var(--color-border);
-  box-shadow: 0 -10px 32px rgb(38 55 77 / 7%);
+  box-shadow: 0 -2px 12px rgb(38 55 77 / 5%);
   transform: translateX(-50%);
   backdrop-filter: blur(18px);
 
@@ -101,18 +103,9 @@ async function navigate(path: string): Promise<void> {
       }
     }
 
-    &.primary {
-      margin-top: -17px;
-
-      .bottom-nav__icon {
-        width: 42px;
-        height: 42px;
-        color: var(--color-ink);
-        background: var(--color-primary);
-        border: 4px solid #fff;
-        border-radius: 50%;
-        box-shadow: 0 8px 18px rgb(17 23 21 / 20%);
-      }
+    &.primary .bottom-nav__icon {
+      color: var(--color-ink);
+      background: var(--color-primary-light);
     }
   }
 

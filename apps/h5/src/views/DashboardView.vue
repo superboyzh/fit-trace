@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import type { BodyRecord } from '@fit-trace/shared';
+import type {
+  BodyRecord,
+  MealRecord,
+  MealType,
+  ProgressPhoto,
+  WorkoutRecord,
+  WorkoutType,
+} from '@fit-trace/shared';
 import dayjs from 'dayjs';
-import { Button, Skeleton, Tag } from 'tdesign-mobile-vue';
+import { Button, Skeleton } from 'tdesign-mobile-vue';
 import {
   ActivityIcon,
   CameraIcon,
@@ -12,19 +19,39 @@ import {
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getBodyRecords } from '@/api/body-records';
+import { getMeals } from '@/api/meals';
+import { getProgressPhotos } from '@/api/progress-photos';
+import { getWorkouts } from '@/api/workouts';
 import { useAuthStore } from '@/stores/auth';
 
+const mealLabels: Record<MealType, string> = {
+  BREAKFAST: '早餐',
+  LUNCH: '午餐',
+  DINNER: '晚餐',
+  SNACK: '加餐',
+};
+const workoutLabels: Record<WorkoutType, string> = {
+  STRENGTH: '力量',
+  CARDIO: '有氧',
+  RUNNING: '跑步',
+  CYCLING: '骑行',
+  SWIMMING: '游泳',
+  OTHER: '其他',
+};
 const auth = useAuthStore();
 const router = useRouter();
 const loading = ref(true);
-const records = ref<BodyRecord[]>([]);
-const latest = computed(() => records.value[0] ?? null);
-const previous = computed(() => records.value[1] ?? null);
-const oldest = computed(() => records.value.at(-1) ?? null);
+const bodyRecords = ref<BodyRecord[]>([]);
+const meals = ref<MealRecord[]>([]);
+const workouts = ref<WorkoutRecord[]>([]);
+const photos = ref<ProgressPhoto[]>([]);
 const displayName = computed(
   () => auth.user?.nickname || auth.user?.email?.split('@')[0] || '朋友',
 );
-const todayLabel = dayjs().format('M月D日 dddd');
+const todayLabel = computed(() => {
+  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+  return `${dayjs().format('M月D日')} ${weekdays[dayjs().day()]}`;
+});
 const greeting = computed(() => {
   const hour = dayjs().hour();
   if (hour < 11) return '早上好';
@@ -32,51 +59,43 @@ const greeting = computed(() => {
   if (hour < 18) return '下午好';
   return '晚上好';
 });
+const latestBody = computed(() => bodyRecords.value[0] ?? null);
+const previousBody = computed(() => bodyRecords.value[1] ?? null);
 const weightChange = computed(() => {
-  if (!latest.value || !previous.value) return null;
-  return latest.value.weight - previous.value.weight;
+  if (!latestBody.value || !previousBody.value) return null;
+  return latestBody.value.weight - previousBody.value.weight;
 });
-const periodChange = computed(() => {
-  if (!latest.value || !oldest.value || latest.value.id === oldest.value.id) return null;
-  return latest.value.weight - oldest.value.weight;
+const todayMeals = computed(() =>
+  meals.value.filter((meal) => dayjs(meal.recordedAt).isSame(dayjs(), 'day')),
+);
+const todayCalories = computed(() => {
+  const values = todayMeals.value.flatMap((meal) =>
+    meal.totalCalories === null ? [] : [meal.totalCalories],
+  );
+  return values.length ? values.reduce((sum, value) => sum + value, 0) : null;
 });
-const chartPoints = computed(() => {
-  const values = [...records.value].reverse().map((item) => item.weight);
-  if (values.length < 2) return '10,58 290,58';
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  return values
-    .map((value, index) => {
-      const x = 10 + (index / (values.length - 1)) * 280;
-      const y = 66 - ((value - min) / range) * 52;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
-});
-const quickEntries = [
-  {
-    title: '身体',
-    subtitle: '体重与围度',
-    icon: MeasurementIcon,
-    path: '/body/create',
-    enabled: true,
-  },
-  {
-    title: '饮食',
-    subtitle: '记录每一餐',
-    icon: ForkIcon,
-    path: '/meals/create',
-    enabled: true,
-  },
-  { title: '训练', subtitle: '组数与强度', icon: ActivityIcon, enabled: false },
-  { title: '照片', subtitle: '追踪身材变化', icon: CameraIcon, enabled: false },
-];
+const latestMeal = computed(() => meals.value[0] ?? null);
+const todayWorkouts = computed(() =>
+  workouts.value.filter((workout) => dayjs(workout.startedAt).isSame(dayjs(), 'day')),
+);
+const todayWorkoutMinutes = computed(() =>
+  todayWorkouts.value.reduce((sum, workout) => sum + workout.durationMinutes, 0),
+);
+const latestWorkout = computed(() => workouts.value[0] ?? null);
+const latestPhoto = computed(() => photos.value[0] ?? null);
 
 onMounted(async () => {
   try {
-    const result = await getBodyRecords({ page: 1, pageSize: 30 });
-    records.value = result.data;
+    const [bodyResult, mealResult, workoutResult, photoResult] = await Promise.all([
+      getBodyRecords({ page: 1, pageSize: 30, recordedAtOrder: 'desc' }),
+      getMeals({ page: 1, pageSize: 30 }),
+      getWorkouts({ page: 1, pageSize: 30 }),
+      getProgressPhotos({ page: 1, pageSize: 30 }),
+    ]);
+    bodyRecords.value = bodyResult.data;
+    meals.value = mealResult.data;
+    workouts.value = workoutResult.data;
+    photos.value = photoResult.data;
   } finally {
     loading.value = false;
   }
@@ -89,131 +108,140 @@ onMounted(async () => {
       <div>
         <span>{{ todayLabel }}</span>
         <h1>{{ greeting }}，{{ displayName }}</h1>
-        <p>保持记录，看见每一次进步。</p>
       </div>
-      <button class="dashboard-header__avatar" type="button" @click="router.push('/profile')">
+      <button class="avatar" type="button" @click="router.push('/profile')">
         {{ displayName.slice(0, 1).toUpperCase() }}
       </button>
     </header>
 
     <Skeleton v-if="loading" :loading="true" animation="gradient" :row-col="[1, 1, 1]" />
-
     <template v-else>
-      <section class="performance-card">
-        <div class="performance-card__header">
+      <section class="content-section">
+        <div class="section-heading">
           <div>
-            <span>BODY PERFORMANCE</span>
-            <strong>身体趋势</strong>
+            <h2>今日概览</h2>
+            <span>把重要的变化留在今天</span>
           </div>
-          <Tag variant="outline">最近 30 条</Tag>
+          <Button variant="text" size="small" @click="router.push('/record')"
+            >记录 <ChevronRightIcon
+          /></Button>
         </div>
-
-        <div class="performance-card__summary">
-          <div>
-            <span>当前体重</span>
-            <div v-if="latest" class="performance-card__weight metric-number">
-              {{ latest.weight }}<small>kg</small>
-            </div>
-            <div v-else class="performance-card__empty">等待首次记录</div>
-          </div>
-          <div v-if="weightChange !== null" class="change-pill" :class="{ up: weightChange > 0 }">
-            {{ weightChange > 0 ? '↑' : '↓' }} {{ Math.abs(weightChange).toFixed(1) }} kg
-            <small>较上次</small>
-          </div>
-        </div>
-
-        <div class="trend-chart" aria-hidden="true">
-          <svg viewBox="0 0 300 80" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="trendArea" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0" stop-color="#b8f23d" stop-opacity=".28" />
-                <stop offset="1" stop-color="#b8f23d" stop-opacity="0" />
-              </linearGradient>
-            </defs>
-            <line x1="0" y1="68" x2="300" y2="68" class="trend-chart__grid" />
-            <polyline
-              :points="`10,68 ${chartPoints} 290,68`"
-              fill="url(#trendArea)"
-              stroke="none"
-            />
-            <polyline :points="chartPoints" class="trend-chart__line" />
-          </svg>
-        </div>
-
-        <div class="performance-card__footer">
-          <div>
-            <span>阶段变化</span>
-            <strong class="metric-number">
+        <div class="overview-list">
+          <button type="button" class="overview-row" @click="router.push('/body/create')">
+            <span class="overview-row__icon"><MeasurementIcon /></span>
+            <span class="overview-row__main"
+              ><span>身体</span
+              ><strong v-if="latestBody">{{ latestBody.weight }} <small>kg</small></strong
+              ><strong v-else>尚未记录</strong></span
+            >
+            <span v-if="weightChange !== null" class="overview-row__meta"
+              >较上次 {{ weightChange > 0 ? '+' : '' }}{{ weightChange.toFixed(1) }} kg</span
+            >
+            <span v-else class="overview-row__meta">记录体重</span><ChevronRightIcon />
+          </button>
+          <button type="button" class="overview-row" @click="router.push('/meals')">
+            <span class="overview-row__icon"><ForkIcon /></span>
+            <span class="overview-row__main"
+              ><span>饮食</span><strong>{{ todayMeals.length }} <small>餐</small></strong></span
+            >
+            <span class="overview-row__meta">{{
+              todayCalories === null ? '查看饮食日记' : `${todayCalories} kcal`
+            }}</span
+            ><ChevronRightIcon />
+          </button>
+          <button type="button" class="overview-row" @click="router.push('/workouts')">
+            <span class="overview-row__icon"><ActivityIcon /></span>
+            <span class="overview-row__main">
+              <span>训练</span>
+              <strong> {{ todayWorkouts.length }} <small>次</small> </strong>
+            </span>
+            <span class="overview-row__meta">
+              {{ todayWorkoutMinutes > 0 ? `${todayWorkoutMinutes} 分钟` : '今天还没有训练记录' }}
+            </span>
+            <ChevronRightIcon />
+          </button>
+          <button type="button" class="overview-row" @click="router.push('/photos')">
+            <span class="overview-row__icon"><CameraIcon /></span>
+            <span class="overview-row__main">
+              <span>照片</span>
+              <strong>{{ photos.length }} <small>张</small></strong>
+            </span>
+            <span class="overview-row__meta">
               {{
-                periodChange === null
-                  ? '—'
-                  : `${periodChange > 0 ? '+' : ''}${periodChange.toFixed(1)} kg`
+                latestPhoto
+                  ? `最近 ${dayjs(latestPhoto.recordedAt).format('M月D日')}`
+                  : '上传第一张照片'
               }}
-            </strong>
-          </div>
-          <div>
-            <span>体脂率</span>
-            <strong class="metric-number">{{
-              latest?.bodyFat ? `${latest.bodyFat}%` : '—'
-            }}</strong>
-          </div>
-          <div>
-            <span>腰围</span>
-            <strong class="metric-number">{{ latest?.waist ? `${latest.waist} cm` : '—' }}</strong>
-          </div>
-        </div>
-
-        <Button
-          class="performance-card__action"
-          block
-          size="large"
-          @click="router.push('/body/create')"
-        >
-          {{ latest ? '记录今日数据' : '开始第一次记录' }}
-        </Button>
-      </section>
-
-      <section class="dashboard-section">
-        <div class="section-title">
-          <div>
-            <span>QUICK LOG</span>
-            <h2>今天记录什么？</h2>
-          </div>
-          <Button variant="text" size="small" @click="router.push('/record')">
-            全部 <ChevronRightIcon />
-          </Button>
-        </div>
-        <div class="quick-grid">
-          <button
-            v-for="entry in quickEntries"
-            :key="entry.title"
-            class="quick-entry"
-            :class="{ disabled: !entry.enabled }"
-            type="button"
-            :disabled="!entry.enabled"
-            @click="entry.path && router.push(entry.path)"
-          >
-            <span class="quick-entry__icon"><component :is="entry.icon" /></span>
-            <strong>{{ entry.title }}</strong>
-            <small>{{ entry.enabled ? entry.subtitle : '即将开放' }}</small>
+            </span>
+            <ChevronRightIcon />
           </button>
         </div>
       </section>
 
-      <section class="dashboard-section weekly-section">
-        <div class="section-title">
+      <section class="content-section">
+        <div class="section-heading">
           <div>
-            <span>THIS WEEK</span>
-            <h2>本周状态</h2>
+            <h2>饮食日记</h2>
+            <span>{{ todayMeals.length ? '今天已经记录的餐次' : '从今天第一餐开始记录' }}</span>
           </div>
+          <Button variant="text" size="small" @click="router.push('/meals')">全部</Button>
         </div>
-        <div class="weekly-card">
-          <div class="weekly-card__score">
-            <strong>{{ records.length }}</strong
-            ><span>身体记录</span>
+        <div v-if="todayMeals.length" class="meal-preview">
+          <button
+            v-for="meal in todayMeals.slice(0, 4)"
+            :key="meal.id"
+            type="button"
+            @click="router.push(`/meals/${meal.id}`)"
+          >
+            <span class="meal-preview__time">{{ dayjs(meal.recordedAt).format('HH:mm') }}</span>
+            <span class="meal-preview__content"
+              ><strong>{{ mealLabels[meal.type] }}</strong
+              ><span>{{ meal.foods.map((food) => food.name).join('、') }}</span></span
+            >
+            <span class="meal-preview__calories"
+              >{{ meal.totalCalories === null ? '—' : meal.totalCalories }}<small>kcal</small></span
+            >
+          </button>
+        </div>
+        <button v-else class="empty-prompt" type="button" @click="router.push('/meals/create')">
+          <span>还没有记录今天的饮食</span><strong>添加一餐 <ChevronRightIcon /></strong>
+        </button>
+      </section>
+
+      <section class="content-section">
+        <div class="section-heading">
+          <div>
+            <h2>最近记录</h2>
+            <span>身体、饮食、训练与照片</span>
           </div>
-          <div><strong>—</strong><span>训练次数</span></div>
-          <div><strong>—</strong><span>饮食记录</span></div>
+          <Button variant="text" size="small" @click="router.push('/archive')">查看档案</Button>
+        </div>
+        <div class="latest-row">
+          <div>
+            <span>身体</span
+            ><strong>{{ latestBody ? `${latestBody.weight} kg` : '暂无数据' }}</strong
+            ><small>{{
+              latestBody ? dayjs(latestBody.recordedAt).format('M月D日 HH:mm') : '—'
+            }}</small>
+          </div>
+          <div>
+            <span>饮食</span
+            ><strong>{{ latestMeal ? mealLabels[latestMeal.type] : '暂无数据' }}</strong
+            ><small>{{
+              latestMeal ? dayjs(latestMeal.recordedAt).format('M月D日 HH:mm') : '—'
+            }}</small>
+          </div>
+          <div>
+            <span>训练</span
+            ><strong>{{ latestWorkout ? workoutLabels[latestWorkout.type] : '暂无数据' }}</strong
+            ><small>{{
+              latestWorkout ? dayjs(latestWorkout.startedAt).format('M月D日 HH:mm') : '—'
+            }}</small>
+          </div>
+          <div>
+            <span>照片</span><strong>{{ latestPhoto ? '已记录' : '暂无数据' }}</strong
+            ><small>{{ latestPhoto ? dayjs(latestPhoto.recordedAt).format('M月D日') : '—' }}</small>
+          </div>
         </div>
       </section>
     </template>
@@ -222,307 +250,215 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .dashboard {
-  min-height: calc(100vh - var(--bottom-nav-space));
   min-height: calc(100dvh - var(--bottom-nav-space));
-  padding: 0 var(--spacing-md) var(--spacing-xl);
+  padding: 0 var(--spacing-md) 28px;
 }
-
 .dashboard-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 28px 0 20px;
-
+  padding: 22px 0 20px;
   span {
     color: var(--color-text-secondary);
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
+    font-size: 0.72rem;
   }
-
   h1 {
-    margin: 4px 0 2px;
-    font-size: 1.5rem;
-    font-weight: 850;
-    letter-spacing: -0.04em;
-  }
-
-  p {
-    margin: 0;
-    color: var(--color-text-tertiary);
-    font-size: 0.74rem;
-  }
-
-  &__avatar {
-    display: grid;
-    width: 44px;
-    height: 44px;
-    flex: none;
-    place-items: center;
-    color: var(--color-ink);
-    font-weight: 850;
-    background: var(--color-primary);
-    border: 0;
-    border-radius: 12px;
-    box-shadow: 4px 4px 0 var(--color-ink);
-  }
-}
-
-.performance-card {
-  padding: 20px;
-  color: #fff;
-  background:
-    radial-gradient(circle at 92% 6%, rgb(184 242 61 / 16%), transparent 29%), var(--color-ink);
-  border-radius: var(--border-radius-lg);
-  box-shadow: 0 18px 36px rgb(17 23 21 / 20%);
-
-  &__header,
-  &__summary,
-  &__footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  &__header {
-    > div {
-      display: grid;
-      gap: 3px;
-    }
-
-    span {
-      color: var(--color-primary);
-      font-size: 0.6rem;
-      font-weight: 850;
-      letter-spacing: 0.16em;
-    }
-
-    strong {
-      font-size: 0.88rem;
-    }
-
-    :deep(.t-tag) {
-      color: rgb(255 255 255 / 72%);
-      border-color: rgb(255 255 255 / 18%);
-    }
-  }
-
-  &__summary {
-    align-items: flex-end;
-    margin-top: 27px;
-
-    > div:first-child > span {
-      color: rgb(255 255 255 / 55%);
-      font-size: 0.7rem;
-    }
-  }
-
-  &__weight {
-    margin-top: 2px;
-    font-size: 3.25rem;
-    font-weight: 850;
-    line-height: 1;
-
-    small {
-      margin-left: 6px;
-      color: rgb(255 255 255 / 56%);
-      font-size: 0.8rem;
-      letter-spacing: 0;
-    }
-  }
-
-  &__empty {
-    margin-top: 7px;
+    margin: 4px 0 0;
     font-size: 1.45rem;
     font-weight: 800;
-  }
-
-  &__footer {
-    gap: 8px;
-    padding: 14px 0 17px;
-    border-top: 1px solid rgb(255 255 255 / 9%);
-
-    > div {
-      display: grid;
-      min-width: 0;
-      flex: 1;
-      gap: 4px;
-    }
-
-    span {
-      color: rgb(255 255 255 / 46%);
-      font-size: 0.62rem;
-    }
-
-    strong {
-      font-size: 0.82rem;
-    }
-  }
-
-  &__action.t-button {
-    color: var(--color-ink);
-    background: var(--color-primary);
-    border-color: var(--color-primary);
+    letter-spacing: -0.035em;
   }
 }
-
-.change-pill {
+.avatar {
   display: grid;
-  gap: 1px;
-  color: var(--color-primary);
-  font-size: 0.82rem;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  color: var(--color-ink);
   font-weight: 800;
-  text-align: right;
-
-  &.up {
-    color: var(--color-accent);
-  }
-
-  small {
-    color: rgb(255 255 255 / 42%);
-    font-size: 0.6rem;
-    font-weight: 500;
-  }
+  background: var(--color-primary-light);
+  border: 1px solid #dce9bd;
+  border-radius: 50%;
 }
-
-.trend-chart {
-  height: 80px;
-  margin: 7px -4px 2px;
-
-  svg {
-    width: 100%;
-    height: 100%;
-    overflow: visible;
-  }
-
-  &__grid {
-    stroke: rgb(255 255 255 / 10%);
-    stroke-dasharray: 4 5;
-  }
-
-  &__line {
-    fill: none;
-    stroke: var(--color-primary);
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 3;
-    vector-effect: non-scaling-stroke;
-  }
+.content-section {
+  margin-bottom: 26px;
 }
-
-.dashboard-section {
-  margin-top: 28px;
-}
-
-.section-title {
+.section-heading {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 12px;
-
+  gap: 12px;
+  margin-bottom: 11px;
+  h2 {
+    margin: 0 0 3px;
+    font-size: 1rem;
+    font-weight: 800;
+  }
   span {
     color: var(--color-text-tertiary);
-    font-size: 0.6rem;
-    font-weight: 850;
-    letter-spacing: 0.16em;
-  }
-
-  h2 {
-    margin: 3px 0 0;
-    font-size: 1.05rem;
-    font-weight: 850;
+    font-size: 0.68rem;
   }
 }
-
-.quick-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+.overview-list,
+.meal-preview,
+.latest-row,
+.empty-prompt {
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
 }
-
-.quick-entry {
+.overview-row {
   display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 11px 9px;
+  width: 100%;
+  min-height: 70px;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
   text-align: left;
-  background: #fff;
-  border: 1px solid rgb(17 23 21 / 6%);
-  border-radius: 12px;
-  box-shadow: 0 7px 20px rgb(17 23 21 / 5%);
-
+  background: transparent;
+  border: 0;
+  + .overview-row {
+    border-top: 1px solid var(--color-border);
+  }
   &__icon {
     display: grid;
-    width: 32px;
-    height: 32px;
-    margin-bottom: 13px;
+    width: 36px;
+    height: 36px;
+    flex: none;
     place-items: center;
     color: var(--color-ink);
-    font-size: 1rem;
-    background: var(--color-primary);
+    font-size: 1.05rem;
+    background: var(--color-primary-light);
     border-radius: 9px;
   }
-
-  strong {
-    font-size: 0.75rem;
+  &__main {
+    display: grid;
+    min-width: 76px;
+    gap: 2px;
+    > span {
+      color: var(--color-text-tertiary);
+      font-size: 0.65rem;
+    }
+    strong {
+      font-size: 0.86rem;
+      small {
+        font-size: 0.66rem;
+      }
+    }
   }
-
-  small {
+  &__meta {
     overflow: hidden;
-    width: 100%;
-    margin-top: 3px;
-    color: var(--color-text-tertiary);
-    font-size: 0.58rem;
+    flex: 1;
+    color: var(--color-text-secondary);
+    font-size: 0.68rem;
+    text-align: right;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
-  &.disabled {
-    opacity: 0.48;
-
-    .quick-entry__icon {
-      background: var(--color-surface-muted);
-    }
+  > svg {
+    flex: none;
+    color: var(--color-text-tertiary);
+  }
+  &--disabled {
+    opacity: 0.55;
   }
 }
-
-.weekly-card {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  background: var(--color-ink-soft);
-  border-radius: 14px;
-  padding: 17px 8px;
-
-  div {
+.meal-preview {
+  button {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    + button {
+      border-top: 1px solid var(--color-border);
+    }
+  }
+  &__time {
+    width: 38px;
+    flex: none;
+    color: var(--color-text-tertiary);
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+  }
+  &__content {
     display: grid;
+    min-width: 0;
+    flex: 1;
     gap: 3px;
-    text-align: center;
-
-    + div {
-      border-left: 1px solid rgb(255 255 255 / 10%);
+    strong {
+      font-size: 0.78rem;
+    }
+    span {
+      overflow: hidden;
+      color: var(--color-text-secondary);
+      font-size: 0.68rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
-
-  strong {
-    color: #fff;
-    font-size: 1.15rem;
-  }
-
-  span {
-    color: rgb(255 255 255 / 45%);
-    font-size: 0.62rem;
+  &__calories {
+    display: grid;
+    flex: none;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: right;
+    small {
+      color: var(--color-text-tertiary);
+      font-size: 0.55rem;
+      font-weight: 500;
+    }
   }
 }
-
-@media (max-width: 390px) {
-  .quick-grid {
-    grid-template-columns: repeat(2, 1fr);
+.empty-prompt {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 15px;
+  text-align: left;
+  span {
+    color: var(--color-text-secondary);
+    font-size: 0.72rem;
   }
+  strong {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--color-ink);
+    font-size: 0.74rem;
+  }
+}
+.latest-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  > div {
+    display: grid;
+    gap: 4px;
+    padding: 15px;
 
-  .quick-entry {
-    min-height: 120px;
+    &:nth-child(even) {
+      border-left: 1px solid var(--color-border);
+    }
+
+    &:nth-child(n + 3) {
+      border-top: 1px solid var(--color-border);
+    }
+  }
+  span,
+  small {
+    color: var(--color-text-tertiary);
+    font-size: 0.64rem;
+  }
+  strong {
+    overflow: hidden;
+    font-size: 0.86rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 </style>

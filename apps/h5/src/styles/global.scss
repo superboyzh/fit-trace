@@ -8,7 +8,7 @@
 html {
   min-width: 320px;
   color: var(--color-text-primary);
-  background: #e7eae5;
+  background: #eef0ed;
   font-family:
     Inter,
     -apple-system,
@@ -52,12 +52,10 @@ button {
 }
 
 .page-header {
-  padding: 30px 0 22px;
+  padding: 24px 0 18px;
 
   &__eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
+    display: none;
     color: var(--color-text-secondary);
     font-size: 0.66rem;
     font-weight: 800;
@@ -73,9 +71,9 @@ button {
   }
 
   h1 {
-    margin: 7px 0 5px;
-    font-size: 1.85rem;
-    font-weight: 850;
+    margin: 0 0 5px;
+    font-size: 1.55rem;
+    font-weight: 800;
     line-height: 1.15;
     letter-spacing: -0.04em;
   }
@@ -91,7 +89,7 @@ button {
 .surface-card {
   overflow: hidden;
   background: var(--color-surface);
-  border: 1px solid rgb(20 28 25 / 6%);
+  border: 1px solid var(--color-border);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-card);
 }

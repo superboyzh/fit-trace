@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, Tag } from 'tdesign-mobile-vue';
+import { Button } from 'tdesign-mobile-vue';
 import {
   ActivityIcon,
   CameraIcon,
@@ -16,26 +16,40 @@ const entries = [
     description: '体重、体脂和身体围度',
     icon: MeasurementIcon,
     path: '/body/create',
-    enabled: true,
   },
   {
     title: '饮食记录',
     description: '记录每一餐和食物',
     icon: ForkIcon,
     path: '/meals/create',
-    enabled: true,
   },
-  { title: '训练记录', description: '保存训练类型和强度', icon: ActivityIcon, enabled: false },
-  { title: '身材照片', description: '留下不同阶段的变化', icon: CameraIcon, enabled: false },
+  {
+    title: '训练记录',
+    description: '训练类型、时长与消耗',
+    icon: ActivityIcon,
+    path: '/workouts/create',
+  },
+  {
+    title: '身材照片',
+    description: '留下不同阶段的变化',
+    icon: CameraIcon,
+    path: '/photos',
+  },
+];
+const shortcuts = [
+  { label: '身体数据历史', path: '/body/history' },
+  { label: '饮食日记', path: '/meals' },
+  { label: '训练记录', path: '/workouts' },
+  { label: '照片档案', path: '/photos' },
+  { label: '全部记录档案', path: '/archive' },
 ];
 </script>
 
 <template>
   <main class="view-page">
     <header class="page-header">
-      <span class="page-header__eyebrow">Quick Log</span>
-      <h1>记录训练轨迹</h1>
-      <p>选择记录类型，用最少的步骤留下今天的数据。</p>
+      <h1>添加记录</h1>
+      <p>选择今天想要记录的内容。</p>
     </header>
 
     <div class="entry-list">
@@ -44,25 +58,26 @@ const entries = [
         <div class="entry-card__content">
           <div class="entry-card__title">
             <strong>{{ entry.title }}</strong>
-            <Tag v-if="!entry.enabled" size="small" variant="light">即将开放</Tag>
           </div>
           <span>{{ entry.description }}</span>
         </div>
-        <Button
-          variant="text"
-          :disabled="!entry.enabled"
-          shape="round"
-          @click="entry.path && router.push(entry.path)"
-        >
+        <Button variant="text" shape="round" @click="router.push(entry.path)">
           <ChevronRightIcon />
         </Button>
       </section>
     </div>
 
-    <div class="history-links">
-      <Button variant="text" block @click="router.push('/body/history')">身体数据历史</Button>
-      <Button variant="text" block @click="router.push('/meals')">饮食记录历史</Button>
-    </div>
+    <section class="surface-card shortcut-card">
+      <button
+        v-for="shortcut in shortcuts"
+        :key="shortcut.path + shortcut.label"
+        type="button"
+        @click="router.push(shortcut.path)"
+      >
+        <span>{{ shortcut.label }}</span>
+        <ChevronRightIcon />
+      </button>
+    </section>
   </main>
 </template>
 
@@ -87,8 +102,8 @@ const entries = [
     place-items: center;
     color: var(--color-ink);
     font-size: 1.25rem;
-    background: var(--color-primary);
-    border-radius: 12px;
+    background: var(--color-primary-light);
+    border-radius: 10px;
   }
 
   &__content {
@@ -109,19 +124,36 @@ const entries = [
     align-items: center;
     gap: 7px;
   }
-
-  &:has(.t-button:disabled) {
-    opacity: 0.54;
-
-    .entry-card__symbol {
-      background: var(--color-surface-muted);
-    }
-  }
 }
 
-.history-links {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+.shortcut-card {
+  margin-top: var(--spacing-md);
+
+  button {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 15px;
+    color: var(--color-text-primary);
+    text-align: left;
+    background: transparent;
+    border: 0;
+
+    + button {
+      border-top: 1px solid var(--color-border);
+    }
+
+    span {
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    svg {
+      flex: none;
+      color: var(--color-text-tertiary);
+    }
+  }
 }
 </style>

@@ -1,39 +1,26 @@
 <script setup lang="ts">
+import type { ApiErrorResponse, BodyRecord } from '@fit-trace/shared';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import {
   Button,
   DateTimePicker,
-  Form,
-  FormItem,
   Input,
   Loading,
   Popup,
   Textarea,
   ToastPlugin,
-  type FormRules,
-  type SubmitContext,
 } from 'tdesign-mobile-vue';
 import { CalendarIcon, ChevronLeftIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import type { ApiErrorResponse } from '@fit-trace/shared';
 import {
   createBodyRecord,
   getBodyRecord,
+  getLatestBodyRecord,
   updateBodyRecord,
   type BodyRecordInput,
 } from '@/api/body-records';
-
-interface BodyFormData {
-  weight?: number | string;
-  bodyFat?: number | string;
-  waist?: number | string;
-  chest?: number | string;
-  hip?: number | string;
-  recordedAt: string;
-  note: string;
-}
 
 const route = useRoute();
 const router = useRouter();
@@ -42,50 +29,31 @@ const isEdit = computed(() => Boolean(recordId.value));
 const loading = ref(Boolean(recordId.value));
 const submitting = ref(false);
 const datePickerVisible = ref(false);
-const formData = reactive<BodyFormData>({
-  weight: undefined,
-  bodyFat: undefined,
-  waist: undefined,
-  chest: undefined,
-  hip: undefined,
+const previousRecord = ref<BodyRecord | null>(null);
+const formData = reactive({
+  weight: '' as number | string,
+  bodyFat: '' as number | string,
+  waist: '' as number | string,
+  chest: '' as number | string,
+  hip: '' as number | string,
   recordedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
   note: '',
 });
-
-const rules: FormRules<BodyFormData> = {
-  weight: [
-    { required: true, message: '请输入体重' },
-    { min: 1, message: '体重必须大于 0' },
-  ],
-  recordedAt: [{ required: true, message: '请选择记录时间' }],
-};
-
-onMounted(async () => {
-  if (!recordId.value) return;
-  try {
-    const record = await getBodyRecord(recordId.value);
-    Object.assign(formData, {
-      weight: record.weight,
-      bodyFat: record.bodyFat ?? undefined,
-      waist: record.waist ?? undefined,
-      chest: record.chest ?? undefined,
-      hip: record.hip ?? undefined,
-      recordedAt: dayjs(record.recordedAt).format('YYYY-MM-DD HH:mm:ss'),
-      note: record.note ?? '',
-    });
-  } catch {
-    await router.replace('/body/history');
-  } finally {
-    loading.value = false;
-  }
+const recordedAtDisplay = computed(() => dayjs(formData.recordedAt).format('YYYY-MM-DD HH:mm'));
+const previousHint = computed(() => {
+  const record = previousRecord.value;
+  if (!record) return '还没有历史记录，这是第一条。';
+  const days = dayjs().startOf('day').diff(dayjs(record.recordedAt).startOf('day'), 'day');
+  const when = days <= 0 ? '今天' : days === 1 ? '昨天' : `${days} 天前`;
+  const diff = Number(formData.weight) - record.weight;
+  const base = `上次 ${record.weight} kg · ${when}`;
+  if (formData.weight === '' || !Number.isFinite(Number(formData.weight))) return base;
+  const change = diff === 0 ? '与上次持平' : `较上次 ${diff > 0 ? '+' : ''}${diff.toFixed(1)} kg`;
+  return `${base} · ${change}`;
 });
 
-const recordedAtDisplay = computed(() =>
-  formData.recordedAt ? dayjs(formData.recordedAt).format('YYYY-MM-DD HH:mm') : '',
-);
-
-function optionalNumber(value: number | string | undefined): number | undefined {
-  if (value === undefined || value === '') return undefined;
+function optionalNumber(value: number | string): number | undefined {
+  if (value === '') return undefined;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
 }
@@ -95,13 +63,22 @@ function confirmRecordedAt(value: string | number): void {
   datePickerVisible.value = false;
 }
 
-async function submit(context: SubmitContext): Promise<void> {
+async function submit(): Promise<void> {
+  if (submitting.value) return;
   const weight = optionalNumber(formData.weight);
-  if (context.validateResult !== true || submitting.value || weight === undefined) return;
-  submitting.value = true;
+  if (weight === undefined || weight <= 0) {
+    ToastPlugin.warning('请输入正确的体重');
+    return;
+  }
+  const bodyFat = optionalNumber(formData.bodyFat);
+  if (bodyFat !== undefined && (bodyFat < 0 || bodyFat > 100)) {
+    ToastPlugin.warning('体脂率需要在 0 到 100 之间');
+    return;
+  }
+
   const input: BodyRecordInput = {
     weight,
-    bodyFat: optionalNumber(formData.bodyFat),
+    bodyFat,
     waist: optionalNumber(formData.waist),
     chest: optionalNumber(formData.chest),
     hip: optionalNumber(formData.hip),
@@ -109,6 +86,7 @@ async function submit(context: SubmitContext): Promise<void> {
     note: formData.note.trim() || undefined,
   };
 
+  submitting.value = true;
   try {
     if (recordId.value) {
       await updateBodyRecord(recordId.value, input);
@@ -127,103 +105,93 @@ async function submit(context: SubmitContext): Promise<void> {
     submitting.value = false;
   }
 }
+
+onMounted(async () => {
+  if (!recordId.value) {
+    try {
+      previousRecord.value = await getLatestBodyRecord();
+    } catch {
+      previousRecord.value = null;
+    }
+    return;
+  }
+
+  try {
+    const record = await getBodyRecord(recordId.value);
+    Object.assign(formData, {
+      weight: record.weight,
+      bodyFat: record.bodyFat ?? '',
+      waist: record.waist ?? '',
+      chest: record.chest ?? '',
+      hip: record.hip ?? '',
+      recordedAt: dayjs(record.recordedAt).format('YYYY-MM-DD HH:mm:ss'),
+      note: record.note ?? '',
+    });
+  } catch {
+    await router.replace('/body/history');
+  } finally {
+    loading.value = false;
+  }
+});
 </script>
 
 <template>
   <main class="view-page body-form-page">
-    <header class="form-header">
+    <header class="body-form-header">
       <Button variant="text" shape="round" @click="router.back()">
         <ChevronLeftIcon /> 返回
       </Button>
-      <div>
-        <span class="page-header__eyebrow">Body Record</span>
-        <h1>{{ isEdit ? '编辑身体数据' : '记录身体数据' }}</h1>
-        <p>体重是必填项，其他指标可以稍后补充。</p>
-      </div>
+      <h1>{{ isEdit ? '编辑身体数据' : '记录身体数据' }}</h1>
+      <p>体重是必填项，其他指标可以稍后补充。</p>
     </header>
 
     <Loading class="page-loading" :loading="loading" text="正在读取记录">
-      <section class="surface-card form-card">
-        <Form :data="formData" :rules="rules" label-align="top" @submit="submit">
-          <FormItem class="weight-item" label="今日体重" name="weight">
-            <div class="weight-control">
-              <Input
-                v-model="formData.weight"
-                class="metric-input"
-                align="left"
-                type="number"
-                inputmode="decimal"
-                suffix="kg"
-                placeholder="70.5"
-              />
-              <span>建议在相同时段、相同状态下记录</span>
-            </div>
-          </FormItem>
-
-          <div class="metric-grid">
-            <FormItem label="体脂率" name="bodyFat">
-              <Input
-                v-model="formData.bodyFat"
-                type="number"
-                inputmode="decimal"
-                suffix="%"
-                placeholder="可选"
-              />
-            </FormItem>
-            <FormItem label="腰围" name="waist">
-              <Input
-                v-model="formData.waist"
-                type="number"
-                inputmode="decimal"
-                suffix="cm"
-                placeholder="可选"
-              />
-            </FormItem>
-            <FormItem label="胸围" name="chest">
-              <Input
-                v-model="formData.chest"
-                type="number"
-                inputmode="decimal"
-                suffix="cm"
-                placeholder="可选"
-              />
-            </FormItem>
-            <FormItem label="臀围" name="hip">
-              <Input
-                v-model="formData.hip"
-                type="number"
-                inputmode="decimal"
-                suffix="cm"
-                placeholder="可选"
-              />
-            </FormItem>
-          </div>
-
-          <FormItem label="记录时间" name="recordedAt">
+      <section class="surface-card body-form-card">
+        <div class="field-block">
+          <span class="field-label">今日体重</span>
+          <div class="weight-field">
             <Input
-              :model-value="recordedAtDisplay"
-              class="full-width-control"
-              readonly
-              placeholder="选择记录时间"
-              @click="datePickerVisible = true"
-            >
-              <template #suffix-icon><CalendarIcon /></template>
-            </Input>
-          </FormItem>
-
-          <FormItem label="备注" name="note">
-            <Textarea
-              v-model="formData.note"
-              :maxlength="500"
-              :autosize="{ minRows: 3, maxRows: 6 }"
-              placeholder="例如：晨起空腹、训练后等"
+              v-model="formData.weight"
+              class="weight-input"
+              type="number"
+              inputmode="decimal"
+              suffix="kg"
+              placeholder="70.5"
             />
-          </FormItem>
+          </div>
+          <small v-if="!isEdit" class="field-hint">{{ previousHint }}</small>
+        </div>
 
-          <Button type="submit" theme="primary" block size="large" :loading="submitting">
-            {{ isEdit ? '保存修改' : '保存记录' }}
-          </Button>
-        </Form>
+        <div class="field-block">
+          <span class="field-label">身体围度（可选）</span>
+          <div class="metric-grid">
+            <Input v-model="formData.bodyFat" type="number" suffix="%" placeholder="体脂率" />
+            <Input v-model="formData.waist" type="number" suffix="cm" placeholder="腰围" />
+            <Input v-model="formData.chest" type="number" suffix="cm" placeholder="胸围" />
+            <Input v-model="formData.hip" type="number" suffix="cm" placeholder="臀围" />
+          </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">记录时间</span>
+          <Input :model-value="recordedAtDisplay" readonly @click="datePickerVisible = true">
+            <template #suffix-icon><CalendarIcon /></template>
+          </Input>
+        </div>
+
+        <div class="field-block note-field">
+          <span class="field-label">备注</span>
+          <Textarea
+            v-model="formData.note"
+            :maxlength="500"
+            :autosize="{ minRows: 3, maxRows: 6 }"
+            placeholder="例如：晨起空腹、训练后等"
+          />
+        </div>
+
+        <Button theme="primary" size="large" block :loading="submitting" @click="submit">
+          {{ isEdit ? '保存修改' : '保存记录' }}
+        </Button>
       </section>
     </Loading>
 
@@ -241,7 +209,7 @@ async function submit(context: SubmitContext): Promise<void> {
 </template>
 
 <style scoped lang="scss">
-.form-header {
+.body-form-header {
   padding: 18px 0 20px;
 
   > .t-button {
@@ -249,37 +217,47 @@ async function submit(context: SubmitContext): Promise<void> {
   }
 
   h1 {
-    margin: 5px 0;
+    margin: 6px 0 5px;
     font-size: 1.7rem;
-    font-weight: 850;
     letter-spacing: -0.04em;
   }
 
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.82rem;
+    font-size: 0.8rem;
   }
 }
 
-.form-card {
-  padding: 20px;
+.body-form-card {
+  width: 100%;
+  padding: 18px;
 }
 
-.weight-item {
-  margin: -20px -20px 22px;
-  padding: 22px 20px 20px;
-  background: radial-gradient(circle at 94% 0, rgb(184 242 61 / 48%), transparent 34%), #eff5e8;
-  border-bottom: 1px solid #dfe8d4;
+.field-block {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 20px;
+}
 
-  :deep(.t-form__label) {
-    color: var(--color-text-secondary);
-    font-size: 0.72rem;
-    letter-spacing: 0.04em;
-  }
+.field-label {
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.field-hint {
+  color: var(--color-text-tertiary);
+  font-size: 0.66rem;
+}
+
+.weight-field {
+  padding: 14px 14px 10px;
+  background: var(--color-surface-muted);
+  border-radius: var(--border-radius-md);
 
   :deep(.t-input) {
-    height: 64px;
+    height: auto;
     padding: 0;
     background: transparent;
     border: 0;
@@ -294,59 +272,40 @@ async function submit(context: SubmitContext): Promise<void> {
 
   :deep(input) {
     color: var(--color-ink);
-    font-size: 3rem;
-    font-weight: 900;
+    font-size: 2.4rem;
+    font-weight: 850;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.06em;
+    letter-spacing: -0.05em;
 
     &::placeholder {
-      color: rgb(17 23 21 / 20%);
+      color: rgb(17 23 21 / 18%);
     }
   }
 
   :deep(.t-input__wrap--suffix) {
     align-self: flex-end;
-    margin-bottom: 11px;
-    color: var(--color-ink);
-    font-size: 0.82rem;
-    font-weight: 850;
-  }
-}
-
-.weight-control {
-  width: 100%;
-
-  > span {
-    display: block;
-    margin-top: 2px;
-    color: var(--color-text-tertiary);
-    font-size: 0.65rem;
+    margin-bottom: 8px;
+    color: var(--color-text-secondary);
+    font-size: 0.76rem;
+    font-weight: 750;
   }
 }
 
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 12px;
+  gap: 8px;
+
+  :deep(.t-input) {
+    width: 100%;
+  }
 }
 
-.metric-input,
-.full-width-control,
-:deep(.t-input) {
-  width: 100%;
+.note-field {
+  margin-bottom: 22px;
 }
 
-:deep(.t-form__item) {
-  margin-bottom: 18px;
-}
-
-:deep(.t-form__label) {
-  color: var(--color-text-secondary);
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-@media (max-width: 380px) {
+@media (max-width: 360px) {
   .metric-grid {
     grid-template-columns: 1fr;
   }

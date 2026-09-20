@@ -38,6 +38,11 @@ const router = createRouter({
           component: () => import('@/views/ProfileView.vue'),
         },
         {
+          path: 'archive',
+          name: 'archive',
+          component: () => import('@/views/ArchiveView.vue'),
+        },
+        {
           path: 'body',
           redirect: '/body/history',
         },
@@ -70,6 +75,26 @@ const router = createRouter({
           path: 'meals/:id',
           name: 'meal-edit',
           component: () => import('@/views/meals/MealFormView.vue'),
+        },
+        {
+          path: 'workouts',
+          name: 'workouts',
+          component: () => import('@/views/workouts/WorkoutListView.vue'),
+        },
+        {
+          path: 'workouts/create',
+          name: 'workout-create',
+          component: () => import('@/views/workouts/WorkoutFormView.vue'),
+        },
+        {
+          path: 'workouts/:id',
+          name: 'workout-edit',
+          component: () => import('@/views/workouts/WorkoutFormView.vue'),
+        },
+        {
+          path: 'photos',
+          name: 'photos',
+          component: () => import('@/views/photos/PhotoArchiveView.vue'),
         },
       ],
     },

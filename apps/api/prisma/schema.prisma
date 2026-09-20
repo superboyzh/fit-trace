@@ -8,15 +8,17 @@ datasource db {
 }
 
 model User {
-  id           String       @id @default(uuid())
-  email        String       @unique
-  passwordHash String
-  nickname     String?
-  avatarUrl    String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  bodyRecords  BodyRecord[]
-  mealRecords  MealRecord[]
+  id             String          @id @default(uuid())
+  email          String          @unique
+  passwordHash   String
+  nickname       String?
+  avatarUrl      String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  bodyRecords    BodyRecord[]
+  mealRecords    MealRecord[]
+  workoutRecords WorkoutRecord[]
+  progressPhotos ProgressPhoto[]
 
   @@map("users")
 }
@@ -78,4 +80,54 @@ model FoodItem {
 
   @@index([mealRecordId])
   @@map("food_items")
+}
+
+enum WorkoutType {
+  STRENGTH
+  CARDIO
+  RUNNING
+  CYCLING
+  SWIMMING
+  OTHER
+}
+
+model WorkoutRecord {
+  id              String      @id @default(uuid())
+  userId          String
+  type            WorkoutType
+  name            String
+  startedAt       DateTime
+  durationMinutes Int
+  calories        Int?
+  note            String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt])
+  @@map("workout_records")
+}
+
+enum PhotoType {
+  FRONT
+  SIDE
+  BACK
+  OTHER
+}
+
+model ProgressPhoto {
+  id         String    @id @default(uuid())
+  userId     String
+  type       PhotoType
+  imageUrl   String
+  recordedAt DateTime
+  note       String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordedAt])
+  @@map("progress_photos")
 }

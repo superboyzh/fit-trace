@@ -23,11 +23,11 @@ interface EditableFood {
   calories: string | number;
 }
 
-const mealTypes: Array<{ value: MealType; label: string; emoji: string }> = [
-  { value: 'BREAKFAST', label: '早餐', emoji: '☀️' },
-  { value: 'LUNCH', label: '午餐', emoji: '🥗' },
-  { value: 'DINNER', label: '晚餐', emoji: '🌙' },
-  { value: 'SNACK', label: '加餐', emoji: '🍎' },
+const mealTypes: Array<{ value: MealType; label: string; time: string }> = [
+  { value: 'BREAKFAST', label: '早餐', time: '06:00–10:00' },
+  { value: 'LUNCH', label: '午餐', time: '11:00–14:00' },
+  { value: 'DINNER', label: '晚餐', time: '17:00–21:00' },
+  { value: 'SNACK', label: '加餐', time: '其他时间' },
 ];
 
 const route = useRoute();
@@ -142,7 +142,6 @@ onMounted(async () => {
       <Button variant="text" shape="round" @click="router.back()">
         <ChevronLeftIcon /> 返回
       </Button>
-      <span class="page-header__eyebrow">Meal Log</span>
       <h1>{{ isEdit ? '编辑饮食记录' : '记录这一餐' }}</h1>
       <p>先如实记录，不必追求每一项都绝对精确。</p>
     </header>
@@ -159,8 +158,8 @@ onMounted(async () => {
               :class="{ active: formData.type === item.value }"
               @click="formData.type = item.value"
             >
-              <span>{{ item.emoji }}</span
-              ><strong>{{ item.label }}</strong>
+              <strong>{{ item.label }}</strong>
+              <span>{{ item.time }}</span>
             </button>
           </div>
         </div>
@@ -275,17 +274,18 @@ onMounted(async () => {
 
   button {
     display: grid;
-    place-items: center;
-    gap: 4px;
+    place-items: start;
+    gap: 3px;
     min-width: 0;
     padding: 12px 4px;
     color: var(--color-text-secondary);
     background: var(--color-surface-muted);
     border: 1px solid transparent;
-    border-radius: 12px;
+    border-radius: 9px;
 
     span {
-      font-size: 1.15rem;
+      color: var(--color-text-tertiary);
+      font-size: 0.55rem;
     }
 
     strong {

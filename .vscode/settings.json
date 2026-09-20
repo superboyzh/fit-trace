@@ -43,5 +43,8 @@
     "**/.uploads/**": true,
     "**/.pnpm-store/**": true
   },
-  "files.associations": { "*.prisma": "prisma" }
+  "files.associations": {
+    "*.prisma": "prisma"
+  },
+  "js/ts.tsdk.path": "node_modules/typescript/lib"
 }

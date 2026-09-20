@@ -2,6 +2,9 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
+# Node 版本不满足 root package.json 的 engines 时直接拒绝安装
+engineStrict: true
+
 allowBuilds:
   '@parcel/watcher': true
   '@prisma/client': true

@@ -4,7 +4,7 @@ FitTrace 是一个用于长期记录身体数据、饮食、训练和身材变�
 
 ## 环境要求
 
-- Node.js 22+
+- Node.js 22.12+（下限来自 Vite 7；`.nvmrc` 固定为 24，`pnpm install` 会按 `engines` 校验）
 - pnpm 11+
 - PostgreSQL 16+
 

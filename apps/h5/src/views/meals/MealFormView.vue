@@ -294,30 +294,44 @@ onMounted(async () => {
                 <span>{{
                   recognitionProvider === 'mock'
                     ? '当前为模拟识别，不会分析照片，请手动调整'
-                    : `${recognitionProvider} 识别，请核对份量与热量`
+                    : `${recognitionProvider} 识别，点名称可直接修改`
                 }}</span>
               </div>
               <Button size="small" variant="outline" @click="applySuggestions">添加所选</Button>
             </header>
             <div class="suggestion-list">
-              <button
+              <div
                 v-for="item in suggestions"
                 :key="item.key"
-                type="button"
                 class="suggestion-item"
                 :class="{ selected: item.selected }"
-                @click="toggleSuggestion(item.key)"
               >
-                <span class="suggestion-item__check"><CheckIcon v-if="item.selected" /></span>
+                <button
+                  type="button"
+                  class="suggestion-item__check"
+                  :aria-pressed="item.selected"
+                  :aria-label="item.selected ? `取消选择${item.name}` : `选择${item.name}`"
+                  @click="toggleSuggestion(item.key)"
+                >
+                  <CheckIcon v-if="item.selected" />
+                </button>
                 <span class="suggestion-item__main">
-                  <strong>{{ item.name }}</strong>
+                  <Input
+                    v-model="item.name"
+                    class="suggestion-item__name"
+                    :maxlength="100"
+                    placeholder="食物名称"
+                  />
                   <span>{{ item.amount || '份量未知' }}</span>
                 </span>
                 <span class="suggestion-item__calories">
                   {{ item.calories === '' ? '—' : item.calories }}<small>kcal</small>
                 </span>
-              </button>
+              </div>
             </div>
+            <p class="suggestion-tip">
+              识别有误时直接改上面的名称，或取消勾选后手动添加；改名后热量仍按原来那道菜估算，加入明细后请随手核对。
+            </p>
           </div>
         </div>
 
@@ -547,7 +561,6 @@ onMounted(async () => {
   align-items: center;
   gap: 9px;
   padding: 10px 11px;
-  text-align: left;
   background: rgb(255 255 255 / 72%);
   border: 1px solid transparent;
   border-radius: 9px;
@@ -571,16 +584,36 @@ onMounted(async () => {
     flex: 1;
     gap: 2px;
 
-    strong {
-      overflow: hidden;
-      font-size: 0.76rem;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
     span {
       color: var(--color-text-tertiary);
       font-size: 0.62rem;
+    }
+  }
+
+  &__name {
+    width: 100%;
+
+    :deep(.t-input) {
+      height: auto;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+
+      &:hover,
+      &:focus-within {
+        border: 0;
+        box-shadow: none;
+      }
+    }
+
+    :deep(input) {
+      height: auto;
+      padding: 0;
+      color: var(--color-text-primary);
+      font-size: 0.76rem;
+      font-weight: 750;
     }
   }
 
@@ -606,6 +639,13 @@ onMounted(async () => {
       border-color: var(--color-primary);
     }
   }
+}
+
+.suggestion-tip {
+  margin: 10px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.62rem;
+  line-height: 1.6;
 }
 
 .meal-type-grid {

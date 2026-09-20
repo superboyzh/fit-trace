@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MockFoodRecognitionProvider } from './mock-food-recognition.provider';
+import { OpenAiFoodRecognitionProvider } from './openai-food-recognition.provider';
 import { FOOD_RECOGNITION_PROVIDER } from './food-recognition.types';
 
 /**
@@ -10,16 +11,22 @@ import { FOOD_RECOGNITION_PROVIDER } from './food-recognition.types';
 @Module({
   providers: [
     MockFoodRecognitionProvider,
+    OpenAiFoodRecognitionProvider,
     {
       provide: FOOD_RECOGNITION_PROVIDER,
-      inject: [ConfigService, MockFoodRecognitionProvider],
-      useFactory: (config: ConfigService, mock: MockFoodRecognitionProvider) => {
+      inject: [ConfigService, MockFoodRecognitionProvider, OpenAiFoodRecognitionProvider],
+      useFactory: (
+        config: ConfigService,
+        mock: MockFoodRecognitionProvider,
+        openai: OpenAiFoodRecognitionProvider,
+      ) => {
         const provider = config.get<string>('AI_PROVIDER', 'mock');
         if (provider === 'mock') return mock;
+        if (provider === 'openai') return openai;
         throw new Error(`不支持的 AI_PROVIDER：${provider}`);
       },
     },
   ],
-  exports: [FOOD_RECOGNITION_PROVIDER],
+  exports: [FOOD_RECOGNITION_PROVIDER, OpenAiFoodRecognitionProvider],
 })
 export class AiProviderModule {}

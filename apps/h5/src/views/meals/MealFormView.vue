@@ -293,8 +293,8 @@ onMounted(async () => {
                 <strong>识别结果</strong>
                 <span>{{
                   recognitionProvider === 'mock'
-                    ? '当前为模拟识别，请按实际情况调整'
-                    : '确认后加入下方食物明细'
+                    ? '当前为模拟识别，不会分析照片，请手动调整'
+                    : `${recognitionProvider} 识别，请核对份量与热量`
                 }}</span>
               </div>
               <Button size="small" variant="outline" @click="applySuggestions">添加所选</Button>

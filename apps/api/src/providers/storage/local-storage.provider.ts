@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -59,15 +59,43 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
   async deleteByUrl(url: string): Promise<void> {
-    const marker = `${this.publicPrefix}/`;
-    const index = url.indexOf(marker);
-    if (index === -1) return;
-    const key = url.slice(index + marker.length).split('?')[0];
+    const key = this.keyFromUrl(url);
     if (key) await this.delete(key);
+  }
+
+  async resolveExternalRef(url: string): Promise<string> {
+    const key = this.keyFromUrl(url);
+    const target = key ? this.resolveKey(key) : null;
+    if (!key || !target) return url;
+    try {
+      const file = await readFile(target);
+      return `data:${this.contentTypeOf(key)};base64,${file.toString('base64')}`;
+    } catch {
+      return url;
+    }
   }
 
   toPublicUrl(key: string): string {
     return `${this.publicBaseUrl}${this.publicPrefix}/${key}`;
+  }
+
+  private keyFromUrl(url: string): string | null {
+    const marker = `${this.publicPrefix}/`;
+    const index = url.indexOf(marker);
+    if (index === -1) return null;
+    return url.slice(index + marker.length).split('?')[0] || null;
+  }
+
+  private contentTypeOf(key: string): string {
+    const extension = key.slice(key.lastIndexOf('.') + 1).toLowerCase();
+    const types: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      webp: 'image/webp',
+      heic: 'image/heic',
+    };
+    return types[extension] ?? 'application/octet-stream';
   }
 
   private resolveKey(key: string): string | null {

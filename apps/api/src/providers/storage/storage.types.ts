@@ -18,6 +18,11 @@ export interface StorageProvider {
   delete(key: string): Promise<void>;
   /** 按公开地址删除文件；地址不属于当前存储层时静默跳过。 */
   deleteByUrl(url: string): Promise<void>;
+  /**
+   * 返回可交给外部服务读取的图片引用。
+   * 本地存储的文件无法被第三方服务访问，需要转成 base64 data URL。
+   */
+  resolveExternalRef(url: string): Promise<string>;
 }
 
 export const STORAGE_PROVIDER = Symbol('STORAGE_PROVIDER');

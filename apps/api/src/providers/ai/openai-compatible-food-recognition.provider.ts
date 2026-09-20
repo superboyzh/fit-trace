@@ -141,14 +141,16 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
     const output =
       mode === 'responses' ? this.extractResponsesText(payload) : this.extractChatText(payload);
     if (!output) {
+      this.logger.error(`识别服务没有返回文本内容：${JSON.stringify(payload).slice(0, 300)}`);
       throw new BadGatewayException({
         code: 'AI_EMPTY_RESULT',
         message: 'AI 没有返回识别结果，请重试或改用手动填写',
       });
     }
 
-    const foods = this.parseFoods(output);
+    // 先记用量，这样即使后面解析失败也留有本次调用的成本与耗时。
     this.logUsage(mode, model, payload, startedAt);
+    const foods = this.parseFoods(output);
     this.logger.log(
       foods.length === 0
         ? '识别结果为空（照片中未发现食物）'
@@ -284,14 +286,16 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
     // 不支持 JSON 模式的模型会在 JSON 前后夹带解释文字，这里兜底截取对象部分。
     const parsed = this.tryParse(raw) ?? this.tryParse(this.extractJsonObject(raw));
     if (parsed === undefined) {
+      this.logger.error(`识别结果无法解析，原始输出：${raw.slice(0, 500)}`);
       throw new BadGatewayException({
         code: 'AI_INVALID_RESULT',
         message: 'AI 返回的结果无法解析，请重试',
       });
     }
 
-    const foods = (parsed as { foods?: unknown }).foods;
-    if (!Array.isArray(foods)) {
+    const foods = this.extractFoods(parsed);
+    if (!foods) {
+      this.logger.error(`识别结果结构不符合预期，原始输出：${raw.slice(0, 500)}`);
       throw new BadGatewayException({
         code: 'AI_INVALID_RESULT',
         message: 'AI 返回的结果格式不正确，请重试',
@@ -311,6 +315,32 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
         },
       ];
     });
+  }
+
+  /**
+   * 兼容各端点对结构的自由发挥：顶层数组、包一层 foods/items/result/data、
+   * 单个食物对象、甚至把 JSON 再转义成字符串的情况都见过。
+   */
+  private extractFoods(parsed: unknown, depth = 0): unknown[] | null {
+    if (depth > 3) return null;
+    if (typeof parsed === 'string') {
+      const again = this.tryParse(parsed);
+      return again === undefined ? null : this.extractFoods(again, depth + 1);
+    }
+    if (Array.isArray(parsed)) return parsed;
+    if (!parsed || typeof parsed !== 'object') return null;
+
+    const record = parsed as Record<string, unknown>;
+    for (const key of ['foods', 'items', 'food_list', 'foodList', 'result', 'data']) {
+      const value = record[key];
+      if (Array.isArray(value)) return value;
+      if (value && typeof value === 'object') {
+        const nested = this.extractFoods(value, depth + 1);
+        if (nested) return nested;
+      }
+    }
+    // 只识别出一项时，有些模型会把对象本身当作结果返回。
+    return typeof record.name === 'string' ? [record] : null;
   }
 
   private tryParse(text: string): unknown {

@@ -1,26 +1,27 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Button } from 'tdesign-mobile-vue';
-import { AddIcon, ChartLineIcon, DataIcon, HomeIcon, UserIcon } from 'tdesign-icons-vue-next';
+import { ChartLineIcon, DataIcon, HomeIcon, UserIcon } from 'tdesign-icons-vue-next';
 import { useRoute, useRouter } from 'vue-router';
+import RecordFab from '@/components/RecordFab.vue';
 
 const route = useRoute();
 const router = useRouter();
 const navigation = [
   { path: '/dashboard', label: '首页', icon: HomeIcon },
   { path: '/trends', label: '趋势', icon: ChartLineIcon },
-  { path: '/record', label: '记录', icon: AddIcon, accent: true },
   { path: '/archive', label: '档案', icon: DataIcon },
   { path: '/profile', label: '我的', icon: UserIcon },
 ];
 
 const activePath = computed(() => {
-  if (route.path.startsWith('/meals')) return '/record';
-  if (route.path.startsWith('/workouts') || route.path.startsWith('/photos')) return '/record';
-  if (route.path === '/body/create' || route.path.includes('/edit')) return '/record';
+  if (route.path.startsWith('/meals')) return '/dashboard';
+  if (route.path.startsWith('/workouts') || route.path.startsWith('/photos')) return '/dashboard';
+  if (route.path === '/body/create' || route.path.includes('/edit')) return '/dashboard';
   if (/^\/body\/[^/]+$/.test(route.path)) return '/archive';
   if (route.path.startsWith('/body/history') || route.path.startsWith('/archive'))
     return '/archive';
+  if (route.path.startsWith('/record')) return '/dashboard';
   return navigation.find((item) => route.path.startsWith(item.path))?.path ?? '/dashboard';
 });
 
@@ -38,12 +39,13 @@ async function navigate(path: string): Promise<void> {
         </Transition>
       </RouterView>
     </div>
+    <RecordFab />
     <nav class="bottom-nav" aria-label="主导航">
       <Button
         v-for="item in navigation"
         :key="item.path"
         class="bottom-nav__item"
-        :class="{ active: activePath === item.path, accent: item.accent }"
+        :class="{ active: activePath === item.path }"
         variant="text"
         size="large"
         @click="navigate(item.path)"
@@ -67,7 +69,8 @@ async function navigate(path: string): Promise<void> {
   &__content {
     min-height: 100vh;
     min-height: 100dvh;
-    padding-bottom: var(--bottom-nav-space);
+    /* 留出悬浮按钮的高度，避免盖住卡片右下角的操作 */
+    padding-bottom: calc(var(--bottom-nav-space) + 64px);
   }
 }
 
@@ -78,7 +81,7 @@ async function navigate(path: string): Promise<void> {
   left: 50%;
   display: grid;
   width: min(100%, 560px);
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
   background: var(--color-surface-translucent);
   border-top: 1px solid var(--color-border);
@@ -106,10 +109,6 @@ async function navigate(path: string): Promise<void> {
       .bottom-nav__icon {
         background: var(--color-primary-light);
       }
-    }
-
-    &.accent .bottom-nav__icon {
-      background: var(--color-primary-light);
     }
   }
 

@@ -7,6 +7,8 @@
   --color-primary: #a8dd35;
   /* 酸绿填充底上的前景色：两种主题下都是墨色 */
   --color-on-primary: #111715;
+  /* 强调色当文字/图标时的可读版本（浅色下压深，满足 4.5:1） */
+  --color-accent-text: #557f0d;
   --color-primary-strong: #7fb01c;
   --color-primary-light: #f0f7df;
   --color-primary-border: var(--color-primary-border);
@@ -51,7 +53,7 @@
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 40px;
-  --bottom-nav-space: calc(64px + env(safe-area-inset-bottom));
+  --bottom-nav-space: calc(78px + env(safe-area-inset-bottom));
   --shadow-card: 0 2px 10px rgb(20 28 25 / 4%);
 
   /* 动效 */
@@ -64,6 +66,7 @@
   --color-primary-light: rgb(168 221 53 / 16%);
   --color-primary-border: rgb(168 221 53 / 38%);
   --color-primary-strong: #b8f23d;
+  --color-accent-text: #a8dd35;
   --color-success-text: #5fd992;
   --color-danger-text: #ff8a80;
 
@@ -121,6 +124,7 @@
   --color-primary-border: #c2ddd0;
   --color-chart-point: #2f7d5b;
   --color-on-primary: #fff;
+  --color-accent-text: #2f7d5b;
 }
 
 :root[data-theme='dark'][data-accent='pine'] {
@@ -130,6 +134,7 @@
   --color-primary-border: rgb(78 203 148 / 40%);
   --color-chart-point: #4ecb94;
   --color-on-primary: #0c1512;
+  --color-accent-text: #6fd7a6;
 }
 
 :root[data-accent='teal'] {
@@ -139,6 +144,7 @@
   --color-primary-border: #b7d9d6;
   --color-chart-point: #0b7a73;
   --color-on-primary: #fff;
+  --color-accent-text: #0b7a73;
 }
 
 :root[data-theme='dark'][data-accent='teal'] {
@@ -148,6 +154,7 @@
   --color-primary-border: rgb(63 208 196 / 40%);
   --color-chart-point: #3fd0c4;
   --color-on-primary: #06201e;
+  --color-accent-text: #5fd8ce;
 }
 
 :root[data-accent='indigo'] {
@@ -157,6 +164,7 @@
   --color-primary-border: #c2d1f8;
   --color-chart-point: #2a5fe0;
   --color-on-primary: #fff;
+  --color-accent-text: #2a5fe0;
 }
 
 :root[data-theme='dark'][data-accent='indigo'] {
@@ -166,6 +174,7 @@
   --color-primary-border: rgb(122 162 255 / 40%);
   --color-chart-point: #7aa2ff;
   --color-on-primary: #0a1020;
+  --color-accent-text: #9ab8ff;
 }
 
 :root[data-accent='amber'] {
@@ -175,6 +184,7 @@
   --color-primary-border: #ffd9b0;
   --color-chart-point: #ff9f43;
   --color-on-primary: #111715;
+  --color-accent-text: #a95c14;
 }
 
 :root[data-theme='dark'][data-accent='amber'] {
@@ -184,4 +194,5 @@
   --color-primary-border: rgb(255 176 102 / 40%);
   --color-chart-point: #ffb066;
   --color-on-primary: #1a1206;
+  --color-accent-text: #ffc189;
 }

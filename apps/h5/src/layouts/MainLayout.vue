@@ -77,47 +77,60 @@ async function navigate(path: string): Promise<void> {
 .bottom-nav {
   position: fixed;
   z-index: 20;
-  bottom: 0;
   left: 50%;
+  /* 悬浮胶囊：离底边留白，比贴边通栏更接近 iOS 26 的观感 */
+  bottom: max(10px, env(safe-area-inset-bottom));
   display: grid;
-  width: min(100%, 560px);
+  width: min(calc(100% - 24px), 520px);
   grid-template-columns: repeat(4, 1fr);
-  padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
+  gap: 2px;
+  padding: 6px;
   background: var(--color-surface-translucent);
-  border-top: 1px solid var(--color-border);
-  box-shadow: 0 -2px 12px rgb(20 28 25 / 6%);
+  border: 1px solid var(--color-border);
+  border-radius: 26px;
+  box-shadow: 0 12px 32px rgb(20 28 25 / 14%);
   transform: translateX(-50%);
-  backdrop-filter: blur(18px);
+  backdrop-filter: saturate(180%) blur(24px);
 
   &__item.t-button {
-    height: 54px;
-    padding: 4px;
+    min-width: 0;
+    height: auto;
+    min-height: 50px;
+    padding: 6px 4px;
     color: var(--color-text-tertiary);
-    border-radius: 10px;
+    background: transparent;
+    border: 0;
+    border-radius: 20px;
+    transition:
+      color var(--duration-fast) var(--ease-standard),
+      background-color var(--duration-base) var(--ease-standard);
 
     :deep(.t-button__content) {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 3px;
-      font-size: 0.75rem;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
     }
 
     &.active {
-      color: var(--color-text-primary);
+      color: var(--color-accent-text);
+      background: var(--color-primary-light);
 
-      .bottom-nav__icon {
-        background: var(--color-primary-light);
+      :deep(.t-button__content) {
+        font-weight: 650;
       }
     }
   }
 
   &__icon {
     display: grid;
-    width: 30px;
-    height: 26px;
+    width: 25px;
+    height: 25px;
     place-items: center;
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     line-height: 1;
   }
 }

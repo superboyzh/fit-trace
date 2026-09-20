@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { ProgressPhoto as ProgressPhotoResponse } from '@fit-trace/shared';
 import type { Prisma, ProgressPhoto } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,6 +8,8 @@ import { ListProgressPhotosDto } from './dto/list-progress-photos.dto';
 
 @Injectable()
 export class ProgressPhotosService {
+  private readonly logger = new Logger('ProgressPhotos');
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly uploads: UploadsService,
@@ -23,6 +25,9 @@ export class ProgressPhotosService {
         note: dto.note?.trim() || null,
       },
     });
+    this.logger.log(
+      `新增身材照片 user=${this.short(userId)} id=${this.short(photo.id)} 类型=${photo.type}`,
+    );
     return this.toResponse(photo);
   }
 
@@ -60,6 +65,11 @@ export class ProgressPhotosService {
     const photo = await this.findOwnedPhoto(userId, id);
     await this.prisma.progressPhoto.delete({ where: { id } });
     await this.uploads.removeByUrl(photo.imageUrl);
+    this.logger.log(`删除身材照片 user=${this.short(userId)} id=${this.short(id)}`);
+  }
+
+  private short(id: string): string {
+    return id.slice(0, 8);
   }
 
   private async findOwnedPhoto(userId: string, id: string): Promise<ProgressPhoto> {

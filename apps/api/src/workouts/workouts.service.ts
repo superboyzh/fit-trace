@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { WorkoutRecord as WorkoutRecordResponse } from '@fit-trace/shared';
 import type { Prisma, WorkoutRecord } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,6 +8,8 @@ import { UpdateWorkoutDto } from './dto/update-workout.dto';
 
 @Injectable()
 export class WorkoutsService {
+  private readonly logger = new Logger('Workouts');
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, dto: CreateWorkoutDto): Promise<WorkoutRecordResponse> {
@@ -22,6 +24,9 @@ export class WorkoutsService {
         note: dto.note?.trim() || null,
       },
     });
+    this.logger.log(
+      `新增训练记录 user=${this.short(userId)} id=${this.short(workout.id)} 类型=${workout.type} 时长=${workout.durationMinutes}min`,
+    );
     return this.toResponse(workout);
   }
 
@@ -68,12 +73,18 @@ export class WorkoutsService {
         ...(dto.note !== undefined ? { note: dto.note.trim() || null } : {}),
       },
     });
+    this.logger.log(`更新训练记录 user=${this.short(userId)} id=${this.short(id)}`);
     return this.toResponse(workout);
   }
 
   async remove(userId: string, id: string): Promise<void> {
     await this.findOwnedWorkout(userId, id);
     await this.prisma.workoutRecord.delete({ where: { id } });
+    this.logger.log(`删除训练记录 user=${this.short(userId)} id=${this.short(id)}`);
+  }
+
+  private short(id: string): string {
+    return id.slice(0, 8);
   }
 
   private async findOwnedWorkout(userId: string, id: string): Promise<WorkoutRecord> {

@@ -104,6 +104,8 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
     // 环境变量读出来是字符串，必须显式转成数字，否则 AbortSignal.timeout 会直接抛错。
     const timeoutMs = this.positiveNumber(this.config.get<string>('AI_TIMEOUT_MS'), 45_000);
     const path = mode === 'responses' ? '/responses' : '/chat/completions';
+    const startedAt = Date.now();
+    this.logger.log(`开始识别 model=${model} mode=${mode} 图片=${this.describeImage(imageUrl)}`);
 
     let response: Response;
     try {
@@ -140,8 +142,22 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
       });
     }
 
-    this.logUsage(mode, model, payload);
-    return { provider: model, imageUrl, foods: this.parseFoods(output) };
+    const foods = this.parseFoods(output);
+    this.logUsage(mode, model, payload, startedAt);
+    this.logger.log(
+      foods.length === 0
+        ? '识别结果为空（照片中未发现食物）'
+        : `识别到 ${foods.length} 项：${foods.map((food) => food.name).join('、')}`,
+    );
+    return { provider: model, imageUrl, foods };
+  }
+
+  /** 只记录图片的格式与体积，避免把 base64 内容打进日志。 */
+  private describeImage(imageUrl: string): string {
+    const match = imageUrl.match(/^data:([^;]+);base64,(.*)$/s);
+    if (!match) return imageUrl.slice(0, 80);
+    const kind = match[1].replace('image/', '').toUpperCase();
+    return `${kind} ${Math.round(match[2].length / 1024)}KB(base64)`;
   }
 
   private buildBody(mode: ApiMode, model: string, imageUrl: string): Record<string, unknown> {
@@ -331,16 +347,22 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
     return typeof value === 'string' ? value.trim() : '';
   }
 
-  private logUsage(mode: ApiMode, model: string, payload: ResponsesPayload & ChatPayload): void {
+  private logUsage(
+    mode: ApiMode,
+    model: string,
+    payload: ResponsesPayload & ChatPayload,
+    startedAt: number,
+  ): void {
+    const elapsed = `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
     if (mode === 'responses' && payload.usage) {
       this.logger.log(
-        `识别完成 mode=responses model=${model} input=${payload.usage.input_tokens ?? 0} output=${payload.usage.output_tokens ?? 0}`,
+        `识别完成 model=${model} 耗时=${elapsed} input=${payload.usage.input_tokens ?? 0} output=${payload.usage.output_tokens ?? 0}`,
       );
       return;
     }
     if (mode === 'chat' && payload.usage) {
       this.logger.log(
-        `识别完成 mode=chat model=${model} input=${payload.usage.prompt_tokens ?? 0} output=${payload.usage.completion_tokens ?? 0}`,
+        `识别完成 model=${model} 耗时=${elapsed} input=${payload.usage.prompt_tokens ?? 0} output=${payload.usage.completion_tokens ?? 0}`,
       );
     }
   }

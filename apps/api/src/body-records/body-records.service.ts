@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type {
   BodyRecord as BodyRecordResponse,
   BodyTrendData,
@@ -14,6 +14,8 @@ import { UpdateBodyRecordDto } from './dto/update-body-record.dto';
 
 @Injectable()
 export class BodyRecordsService {
+  private readonly logger = new Logger('BodyRecords');
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, dto: CreateBodyRecordDto): Promise<BodyRecordResponse> {
@@ -29,6 +31,9 @@ export class BodyRecordsService {
         note: dto.note?.trim() || null,
       },
     });
+    this.logger.log(
+      `新增身体数据 user=${this.short(userId)} id=${this.short(record.id)} weight=${record.weight} 记录时间=${record.recordedAt.toISOString()}`,
+    );
     return this.toResponse(record);
   }
 
@@ -96,12 +101,19 @@ export class BodyRecordsService {
       ...(dto.recordedAt !== undefined ? { recordedAt: new Date(dto.recordedAt) } : {}),
       ...(dto.note !== undefined ? { note: dto.note.trim() || null } : {}),
     };
-    return this.toResponse(await this.prisma.bodyRecord.update({ where: { id }, data }));
+    const record = await this.prisma.bodyRecord.update({ where: { id }, data });
+    this.logger.log(`更新身体数据 user=${this.short(userId)} id=${this.short(id)}`);
+    return this.toResponse(record);
   }
 
   async remove(userId: string, id: string): Promise<void> {
     await this.findOwnedRecord(userId, id);
     await this.prisma.bodyRecord.delete({ where: { id } });
+    this.logger.log(`删除身体数据 user=${this.short(userId)} id=${this.short(id)}`);
+  }
+
+  private short(id: string): string {
+    return id.slice(0, 8);
   }
 
   private async findOwnedRecord(userId: string, id: string): Promise<PrismaBodyRecord> {

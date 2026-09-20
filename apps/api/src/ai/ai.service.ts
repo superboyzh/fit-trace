@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { FoodRecognitionResult } from '@fit-trace/shared';
 import {
   FOOD_RECOGNITION_PROVIDER,
@@ -8,6 +8,8 @@ import { STORAGE_PROVIDER, type StorageProvider } from '../providers/storage/sto
 
 @Injectable()
 export class AiService {
+  private readonly logger = new Logger('Ai');
+
   constructor(
     @Inject(FOOD_RECOGNITION_PROVIDER)
     private readonly foodRecognition: FoodRecognitionProvider,
@@ -22,6 +24,9 @@ export class AiService {
    */
   async recognizeFood(imageUrl: string): Promise<FoodRecognitionResult> {
     const externalRef = await this.storage.resolveExternalRef(imageUrl);
+    if (externalRef === imageUrl && /^https?:\/\//i.test(imageUrl)) {
+      this.logger.warn(`图片未能转成内联数据（文件可能已不存在），将直接使用地址：${imageUrl}`);
+    }
     const result = await this.foodRecognition.recognize(externalRef);
     return { ...result, imageUrl };
   }

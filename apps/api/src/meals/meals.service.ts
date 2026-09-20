@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { MealRecord as MealRecordResponse } from '@fit-trace/shared';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,6 +10,8 @@ type MealWithFoods = Prisma.MealRecordGetPayload<{ include: { foods: true } }>;
 
 @Injectable()
 export class MealsService {
+  private readonly logger = new Logger('Meals');
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, dto: CreateMealDto): Promise<MealRecordResponse> {
@@ -24,6 +26,9 @@ export class MealsService {
       },
       include: { foods: true },
     });
+    this.logger.log(
+      `新增饮食记录 user=${this.short(userId)} id=${this.short(meal.id)} 餐次=${meal.type} 食物=${meal.foods.length} 张照片=${meal.imageUrl ? '有' : '无'}`,
+    );
     return this.toResponse(meal);
   }
 
@@ -78,12 +83,18 @@ export class MealsService {
       },
       include: { foods: { orderBy: { createdAt: 'asc' } } },
     });
+    this.logger.log(`更新饮食记录 user=${this.short(userId)} id=${this.short(id)}`);
     return this.toResponse(meal);
   }
 
   async remove(userId: string, id: string): Promise<void> {
     await this.findOwnedMeal(userId, id);
     await this.prisma.mealRecord.delete({ where: { id } });
+    this.logger.log(`删除饮食记录 user=${this.short(userId)} id=${this.short(id)}`);
+  }
+
+  private short(id: string): string {
+    return id.slice(0, 8);
   }
 
   private async findOwnedMeal(userId: string, id: string): Promise<MealWithFoods> {

@@ -1,7 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MockFoodRecognitionProvider } from './mock-food-recognition.provider';
-import { OpenAiFoodRecognitionProvider } from './openai-food-recognition.provider';
+import { OpenAiCompatibleFoodRecognitionProvider } from './openai-compatible-food-recognition.provider';
 import { FOOD_RECOGNITION_PROVIDER } from './food-recognition.types';
 
 /**
@@ -11,14 +11,14 @@ import { FOOD_RECOGNITION_PROVIDER } from './food-recognition.types';
 @Module({
   providers: [
     MockFoodRecognitionProvider,
-    OpenAiFoodRecognitionProvider,
+    OpenAiCompatibleFoodRecognitionProvider,
     {
       provide: FOOD_RECOGNITION_PROVIDER,
-      inject: [ConfigService, MockFoodRecognitionProvider, OpenAiFoodRecognitionProvider],
+      inject: [ConfigService, MockFoodRecognitionProvider, OpenAiCompatibleFoodRecognitionProvider],
       useFactory: (
         config: ConfigService,
         mock: MockFoodRecognitionProvider,
-        openai: OpenAiFoodRecognitionProvider,
+        openai: OpenAiCompatibleFoodRecognitionProvider,
       ) => {
         const provider = config.get<string>('AI_PROVIDER', 'mock');
         if (provider === 'mock') return mock;
@@ -27,6 +27,6 @@ import { FOOD_RECOGNITION_PROVIDER } from './food-recognition.types';
       },
     },
   ],
-  exports: [FOOD_RECOGNITION_PROVIDER, OpenAiFoodRecognitionProvider],
+  exports: [FOOD_RECOGNITION_PROVIDER, OpenAiCompatibleFoodRecognitionProvider],
 })
 export class AiProviderModule {}

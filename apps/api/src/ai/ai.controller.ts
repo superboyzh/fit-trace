@@ -11,6 +11,6 @@ export class AiController {
 
   @Post('food-recognition')
   async recognizeFood(@Body() dto: FoodRecognitionDto): Promise<{ data: FoodRecognitionResult }> {
-    return { data: await this.ai.recognizeFood(dto.imageUrl) };
+    return { data: await this.ai.recognizeFood(dto.imageUrl, dto.hint) };
   }
 }

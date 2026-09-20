@@ -22,12 +22,12 @@ export class AiService {
    * 本地存储的图片无法被外部服务读取，因此先换成可访问的引用，
    * 返回给前端时仍然是原始的存储地址。
    */
-  async recognizeFood(imageUrl: string): Promise<FoodRecognitionResult> {
+  async recognizeFood(imageUrl: string, hint?: string): Promise<FoodRecognitionResult> {
     const externalRef = await this.storage.resolveExternalRef(imageUrl);
     if (externalRef === imageUrl && /^https?:\/\//i.test(imageUrl)) {
       this.logger.warn(`图片未能转成内联数据（文件可能已不存在），将直接使用地址：${imageUrl}`);
     }
-    const result = await this.foodRecognition.recognize(externalRef);
+    const result = await this.foodRecognition.recognize(externalRef, hint);
     return { ...result, imageUrl };
   }
 }

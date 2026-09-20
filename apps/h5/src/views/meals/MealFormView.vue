@@ -56,6 +56,8 @@ const recognizing = ref(false);
 const imageUrl = ref('');
 const recognitionProvider = ref('');
 const suggestions = ref<FoodSuggestion[]>([]);
+const hintText = ref('');
+const appliedHint = ref('');
 const fileInput = ref<HTMLInputElement | null>(null);
 let foodKey = 1;
 const formData = reactive({
@@ -112,12 +114,14 @@ async function onPhotoChange(event: Event): Promise<void> {
   }
 }
 
-async function recognizePhoto(): Promise<void> {
+async function recognizePhoto(hint?: string): Promise<void> {
   if (!imageUrl.value || recognizing.value) return;
+  const correction = hint?.trim() ?? '';
   recognizing.value = true;
   try {
-    const result = await recognizeFood(imageUrl.value);
+    const result = await recognizeFood(imageUrl.value, correction || undefined);
     recognitionProvider.value = result.provider;
+    appliedHint.value = correction;
     suggestions.value = result.foods.map((food) => ({
       key: ++foodKey,
       name: food.name,
@@ -136,10 +140,21 @@ async function recognizePhoto(): Promise<void> {
   }
 }
 
+function applyHint(): void {
+  const correction = hintText.value.trim();
+  if (!correction) {
+    ToastPlugin.warning('请先说明哪里识别错了');
+    return;
+  }
+  void recognizePhoto(correction);
+}
+
 function removePhoto(): void {
   imageUrl.value = '';
   recognitionProvider.value = '';
   suggestions.value = [];
+  hintText.value = '';
+  appliedHint.value = '';
 }
 
 function toggleSuggestion(key: number): void {
@@ -268,7 +283,12 @@ onMounted(async () => {
           <div v-if="imageUrl" class="photo-preview">
             <img :src="imageUrl" alt="餐食照片" />
             <div class="photo-preview__actions">
-              <Button size="small" variant="outline" :loading="recognizing" @click="recognizePhoto">
+              <Button
+                size="small"
+                variant="outline"
+                :loading="recognizing"
+                @click="recognizePhoto()"
+              >
                 重新识别
               </Button>
               <Button size="small" variant="text" theme="danger" @click="removePhoto">
@@ -331,6 +351,22 @@ onMounted(async () => {
             </div>
             <p class="suggestion-tip">
               识别有误时直接改上面的名称，或取消勾选后手动添加；改名后热量仍按原来那道菜估算，加入明细后请随手核对。
+            </p>
+          </div>
+
+          <div v-if="imageUrl" class="correct-block">
+            <div class="correct-block__row">
+              <Input
+                v-model="hintText"
+                :maxlength="200"
+                placeholder="识别不对？直接告诉它，比如：左边那碗是鸡蛋羹"
+              />
+              <Button size="small" variant="outline" :loading="recognizing" @click="applyHint">
+                纠正
+              </Button>
+            </div>
+            <p v-if="appliedHint" class="correct-block__applied">
+              已按你的说明重新识别：{{ appliedHint }}
             </p>
           </div>
         </div>
@@ -646,6 +682,32 @@ onMounted(async () => {
   color: var(--color-text-secondary);
   font-size: 0.62rem;
   line-height: 1.6;
+}
+
+.correct-block {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    :deep(.t-input) {
+      flex: 1;
+      min-width: 0;
+      background: var(--color-surface-muted);
+      border-radius: 9px;
+    }
+  }
+
+  &__applied {
+    margin: 0;
+    color: var(--color-text-tertiary);
+    font-size: 0.62rem;
+    line-height: 1.6;
+  }
 }
 
 .meal-type-grid {

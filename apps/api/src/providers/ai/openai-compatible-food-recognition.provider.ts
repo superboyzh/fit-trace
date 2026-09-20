@@ -22,8 +22,10 @@ const INSTRUCTION = [
   '   高脂与油炸：油条约 390、炸鸡约 280、花生约 580。',
   '5. 克数按画面中的容器与份数估计。portion 只写简短份量，例如“1 盘（约 350g）”，',
   '   不要描述食材构成，也不要写超过 15 个字。',
-  '6. 同一道菜里的配料（花生、葱花、酱汁等）已经包含在这道菜里，不要单独再列一条。',
-  '7. 如果照片里没有食物、看不清或明显不是餐食，foods 返回空数组。',
+  '6. 不要只凭颜色下结论：颜色相近的菜要结合质地与容器区分。蒸蛋羹（鸡蛋羹）表面光滑、有凝固边缘与汤匙挖痕，',
+  '   容易被误认成番茄汤；汤类则有液面反光与流动感。拿不准时选更符合质地的那一个。',
+  '7. 同一道菜里的配料（花生、葱花、酱汁等）已经包含在这道菜里，不要单独再列一条。',
+  '8. 如果照片里没有食物、看不清或明显不是餐食，foods 返回空数组。',
   '只输出 JSON，不要输出解释文字。',
 ].join('\n');
 
@@ -86,7 +88,7 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
 
   constructor(private readonly config: ConfigService) {}
 
-  async recognize(imageUrl: string): Promise<FoodRecognitionResult> {
+  async recognize(imageUrl: string, hint?: string): Promise<FoodRecognitionResult> {
     const apiKey = this.config.get<string>('AI_API_KEY')?.trim();
     if (!apiKey) {
       throw new ServiceUnavailableException({
@@ -105,14 +107,17 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
     const timeoutMs = this.positiveNumber(this.config.get<string>('AI_TIMEOUT_MS'), 45_000);
     const path = mode === 'responses' ? '/responses' : '/chat/completions';
     const startedAt = Date.now();
-    this.logger.log(`开始识别 model=${model} mode=${mode} 图片=${this.describeImage(imageUrl)}`);
+    const instruction = this.buildInstruction(hint);
+    this.logger.log(
+      `开始识别 model=${model} mode=${mode} 图片=${this.describeImage(imageUrl)}${hint?.trim() ? ` 用户纠正=${hint.trim()}` : ''}`,
+    );
 
     let response: Response;
     try {
       response = await fetch(`${baseUrl}${path}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(this.buildBody(mode, model, imageUrl)),
+        body: JSON.stringify(this.buildBody(mode, model, imageUrl, instruction)),
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (error) {
@@ -160,7 +165,23 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
     return `${kind} ${Math.round(match[2].length / 1024)}KB(base64)`;
   }
 
-  private buildBody(mode: ApiMode, model: string, imageUrl: string): Record<string, unknown> {
+  /** 用户在界面上给出的更正说明优先级最高，直接追加到指令末尾。 */
+  private buildInstruction(hint?: string): string {
+    const correction = hint?.trim();
+    if (!correction) return INSTRUCTION;
+    return [
+      INSTRUCTION,
+      '',
+      `用户补充说明（用户已确认，优先于你的判断，必须据此修正结果）：${correction}`,
+    ].join('\n');
+  }
+
+  private buildBody(
+    mode: ApiMode,
+    model: string,
+    imageUrl: string,
+    instruction: string,
+  ): Record<string, unknown> {
     if (mode === 'responses') {
       return {
         model,
@@ -168,7 +189,7 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
           {
             role: 'user',
             content: [
-              { type: 'input_text', text: INSTRUCTION },
+              { type: 'input_text', text: instruction },
               { type: 'input_image', image_url: imageUrl, detail: 'auto' },
             ],
           },
@@ -195,7 +216,7 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
         {
           role: 'user',
           content: [
-            { type: 'text', text: INSTRUCTION },
+            { type: 'text', text: instruction },
             // 兼容端点对多余字段比较敏感，chat 模式只传 url。
             { type: 'image_url', image_url: { url: imageUrl } },
           ],

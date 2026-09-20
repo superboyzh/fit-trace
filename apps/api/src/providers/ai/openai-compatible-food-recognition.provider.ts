@@ -244,10 +244,9 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
     const fenced = output.match(/```(?:json)?\s*([\s\S]*?)```/i);
     const raw = (fenced?.[1] ?? output).trim();
 
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
+    // 不支持 JSON 模式的模型会在 JSON 前后夹带解释文字，这里兜底截取对象部分。
+    const parsed = this.tryParse(raw) ?? this.tryParse(this.extractJsonObject(raw));
+    if (parsed === undefined) {
       throw new BadGatewayException({
         code: 'AI_INVALID_RESULT',
         message: 'AI 返回的结果无法解析，请重试',
@@ -275,6 +274,21 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
         },
       ];
     });
+  }
+
+  private tryParse(text: string): unknown {
+    if (!text) return undefined;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return undefined;
+    }
+  }
+
+  private extractJsonObject(text: string): string {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    return start === -1 || end <= start ? '' : text.slice(start, end + 1);
   }
 
   /**

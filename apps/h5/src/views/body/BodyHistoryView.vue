@@ -108,7 +108,15 @@ onMounted(async () => {
       </Empty>
 
       <div v-else class="record-list">
-        <section v-for="record in records" :key="record.id" class="surface-card record-card">
+        <section
+          v-for="record in records"
+          :key="record.id"
+          class="surface-card record-card"
+          role="button"
+          tabindex="0"
+          @click="router.push(`/body/${record.id}`)"
+          @keydown.enter="router.push(`/body/${record.id}`)"
+        >
           <div class="record-card__heading">
             <div>
               <strong>{{ record.weight }} <small>kg</small></strong>
@@ -144,10 +152,14 @@ onMounted(async () => {
 
           <p v-if="record.note" class="record-card__note">{{ record.note }}</p>
           <div class="record-card__actions">
-            <Button size="small" variant="text" @click="router.push(`/body/${record.id}/edit`)">
+            <Button
+              size="small"
+              variant="text"
+              @click.stop="router.push(`/body/${record.id}/edit`)"
+            >
               <EditIcon /> 编辑
             </Button>
-            <Button size="small" variant="text" theme="danger" @click="confirmDelete(record)"
+            <Button size="small" variant="text" theme="danger" @click.stop="confirmDelete(record)"
               ><DeleteIcon /> 删除</Button
             >
           </div>
@@ -224,6 +236,11 @@ onMounted(async () => {
   min-width: 0;
   margin-left: 17px;
   padding: 17px;
+  cursor: pointer;
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
 
   &::before {
     position: absolute;

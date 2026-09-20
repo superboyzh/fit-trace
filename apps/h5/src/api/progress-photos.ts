@@ -26,6 +26,11 @@ export async function createProgressPhoto(input: ProgressPhotoInput): Promise<Pr
   return response.data.data;
 }
 
+export async function getProgressPhoto(id: string): Promise<ProgressPhoto> {
+  const response = await http.get<ApiResponse<ProgressPhoto>>(`/progress-photos/${id}`);
+  return response.data.data;
+}
+
 export async function deleteProgressPhoto(id: string): Promise<void> {
   await http.delete(`/progress-photos/${id}`);
 }

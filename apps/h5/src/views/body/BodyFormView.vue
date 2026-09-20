@@ -91,11 +91,12 @@ async function submit(): Promise<void> {
     if (recordId.value) {
       await updateBodyRecord(recordId.value, input);
       ToastPlugin.success('身体数据已更新');
+      await router.replace(`/body/${recordId.value}`);
     } else {
-      await createBodyRecord(input);
+      const created = await createBodyRecord(input);
       ToastPlugin.success('身体数据已保存');
+      await router.replace(`/body/${created.id}`);
     }
-    await router.replace('/body/history');
   } catch (error) {
     const message = axios.isAxiosError<ApiErrorResponse>(error)
       ? error.response?.data.message

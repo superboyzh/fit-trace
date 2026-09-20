@@ -83,11 +83,12 @@ async function submit(): Promise<void> {
     if (workoutId.value) {
       await updateWorkout(workoutId.value, input);
       ToastPlugin.success('训练记录已更新');
+      await router.replace(`/workouts/${workoutId.value}`);
     } else {
-      await createWorkout(input);
+      const created = await createWorkout(input);
       ToastPlugin.success('训练记录已保存');
+      await router.replace(`/workouts/${created.id}`);
     }
-    await router.replace('/workouts');
   } catch (error) {
     const message = axios.isAxiosError<ApiErrorResponse>(error)
       ? error.response?.data.message

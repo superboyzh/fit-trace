@@ -104,10 +104,10 @@ function dateTitle(date: string): string {
   return value.format('M月D日');
 }
 function openItem(item: ArchiveItem): void {
-  if (item.kind === 'BODY') return void router.push(`/body/${item.body.id}/edit`);
+  if (item.kind === 'BODY') return void router.push(`/body/${item.body.id}`);
   if (item.kind === 'MEAL') return void router.push(`/meals/${item.meal.id}`);
   if (item.kind === 'WORKOUT') return void router.push(`/workouts/${item.workout.id}`);
-  router.push('/photos');
+  router.push(`/photos/${item.photo.id}`);
 }
 onMounted(async () => {
   try {

@@ -155,7 +155,15 @@ onMounted(async () => {
       </Empty>
 
       <div v-else class="workout-list">
-        <section v-for="workout in workouts" :key="workout.id" class="surface-card workout-card">
+        <section
+          v-for="workout in workouts"
+          :key="workout.id"
+          class="surface-card workout-card"
+          role="button"
+          tabindex="0"
+          @click="router.push(`/workouts/${workout.id}`)"
+          @keydown.enter="router.push(`/workouts/${workout.id}`)"
+        >
           <div class="workout-card__heading">
             <span class="workout-card__icon">{{ workoutMeta[workout.type].icon }}</span>
             <div class="workout-card__title">
@@ -178,10 +186,14 @@ onMounted(async () => {
           <p v-if="workout.note" class="workout-card__note">{{ workout.note }}</p>
 
           <div class="workout-card__actions">
-            <Button size="small" variant="text" @click="router.push(`/workouts/${workout.id}`)">
+            <Button
+              size="small"
+              variant="text"
+              @click.stop="router.push(`/workouts/${workout.id}/edit`)"
+            >
               <EditIcon /> 编辑
             </Button>
-            <Button size="small" variant="text" theme="danger" @click="confirmDelete(workout)">
+            <Button size="small" variant="text" theme="danger" @click.stop="confirmDelete(workout)">
               <DeleteIcon /> 删除
             </Button>
           </div>
@@ -268,6 +280,11 @@ onMounted(async () => {
 
 .workout-card {
   padding: 15px;
+  cursor: pointer;
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
 
   &__heading {
     display: flex;

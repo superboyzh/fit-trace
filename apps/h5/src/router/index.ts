@@ -57,6 +57,11 @@ const router = createRouter({
           component: () => import('@/views/body/BodyHistoryView.vue'),
         },
         {
+          path: 'body/:id',
+          name: 'body-detail',
+          component: () => import('@/views/body/BodyDetailView.vue'),
+        },
+        {
           path: 'body/:id/edit',
           name: 'body-edit',
           component: () => import('@/views/body/BodyFormView.vue'),
@@ -73,6 +78,11 @@ const router = createRouter({
         },
         {
           path: 'meals/:id',
+          name: 'meal-detail',
+          component: () => import('@/views/meals/MealDetailView.vue'),
+        },
+        {
+          path: 'meals/:id/edit',
           name: 'meal-edit',
           component: () => import('@/views/meals/MealFormView.vue'),
         },
@@ -88,6 +98,11 @@ const router = createRouter({
         },
         {
           path: 'workouts/:id',
+          name: 'workout-detail',
+          component: () => import('@/views/workouts/WorkoutDetailView.vue'),
+        },
+        {
+          path: 'workouts/:id/edit',
           name: 'workout-edit',
           component: () => import('@/views/workouts/WorkoutFormView.vue'),
         },
@@ -95,6 +110,11 @@ const router = createRouter({
           path: 'photos',
           name: 'photos',
           component: () => import('@/views/photos/PhotoArchiveView.vue'),
+        },
+        {
+          path: 'photos/:id',
+          name: 'photo-detail',
+          component: () => import('@/views/photos/PhotoDetailView.vue'),
         },
       ],
     },

@@ -2,10 +2,11 @@
 import type { ApiErrorResponse, PhotoType, ProgressPhoto } from '@fit-trace/shared';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import { Button, DialogPlugin, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
+import { Button, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
 import { CameraIcon, ImageIcon, UploadIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, ref } from 'vue';
-import { createProgressPhoto, deleteProgressPhoto, getProgressPhotos } from '@/api/progress-photos';
+import { useRouter } from 'vue-router';
+import { createProgressPhoto, getProgressPhotos } from '@/api/progress-photos';
 import { uploadImage } from '@/api/uploads';
 
 const photoTypes: Array<{ value: PhotoType; label: string }> = [
@@ -20,6 +21,7 @@ const typeLabels = Object.fromEntries(photoTypes.map((item) => [item.value, item
 >;
 
 const photos = ref<ProgressPhoto[]>([]);
+const router = useRouter();
 const loading = ref(true);
 const uploading = ref(false);
 const activeType = ref<PhotoType | 'ALL'>('ALL');
@@ -78,34 +80,6 @@ function resolveErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError<ApiErrorResponse>(error)) return error.response?.data.message ?? fallback;
   if (error instanceof Error && error.message) return error.message;
   return fallback;
-}
-
-function confirmDelete(photo: ProgressPhoto): void {
-  let deleting = false;
-  const dialog = DialogPlugin.confirm({
-    title: '删除这张照片？',
-    content: `${dayjs(photo.recordedAt).format('YYYY年M月D日')} · ${typeLabels[photo.type]}，删除后无法恢复。`,
-    confirmBtn: { content: '删除', theme: 'danger' },
-    cancelBtn: '取消',
-    onConfirm: async () => {
-      if (deleting) return;
-      deleting = true;
-      dialog.update({ confirmBtn: { content: '删除中…', theme: 'danger', loading: true } });
-      try {
-        await deleteProgressPhoto(photo.id);
-        photos.value = photos.value.filter((item) => item.id !== photo.id);
-        ToastPlugin.success('照片已删除');
-        dialog.destroy();
-      } catch (error) {
-        const message = axios.isAxiosError<ApiErrorResponse>(error)
-          ? error.response?.data.message
-          : undefined;
-        ToastPlugin.error(message ?? '删除失败，请稍后重试');
-        deleting = false;
-        dialog.update({ confirmBtn: { content: '删除', theme: 'danger' } });
-      }
-    },
-  });
 }
 
 onMounted(async () => {
@@ -193,7 +167,7 @@ onMounted(async () => {
               :key="photo.id"
               type="button"
               class="photo-card"
-              @click="confirmDelete(photo)"
+              @click="router.push(`/photos/${photo.id}`)"
             >
               <img :src="photo.imageUrl" :alt="`${typeLabels[photo.type]}记录`" loading="lazy" />
               <span class="photo-card__meta">

@@ -167,7 +167,15 @@ onMounted(async () => {
             <span>{{ group.items.length }} 条记录</span>
           </div>
           <div class="diary-day__body">
-            <article v-for="meal in group.items" :key="meal.id" class="meal-row">
+            <article
+              v-for="meal in group.items"
+              :key="meal.id"
+              class="meal-row"
+              role="button"
+              tabindex="0"
+              @click="router.push(`/meals/${meal.id}`)"
+              @keydown.enter="router.push(`/meals/${meal.id}`)"
+            >
               <div class="meal-row__time">{{ dayjs(meal.recordedAt).format('HH:mm') }}</div>
               <div class="meal-row__content">
                 <div class="meal-row__title">
@@ -196,10 +204,17 @@ onMounted(async () => {
                 </div>
                 <p v-if="meal.note">{{ meal.note }}</p>
                 <div class="meal-row__actions">
-                  <Button size="small" variant="text" @click="router.push(`/meals/${meal.id}`)"
+                  <Button
+                    size="small"
+                    variant="text"
+                    @click.stop="router.push(`/meals/${meal.id}/edit`)"
                     ><EditIcon /> 编辑</Button
                   >
-                  <Button size="small" variant="text" theme="danger" @click="confirmDelete(meal)"
+                  <Button
+                    size="small"
+                    variant="text"
+                    theme="danger"
+                    @click.stop="confirmDelete(meal)"
                     ><DeleteIcon /> 删除</Button
                   >
                 </div>
@@ -314,6 +329,11 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: 45px minmax(0, 1fr);
   padding: 15px 14px;
+  cursor: pointer;
+
+  &:active {
+    background: var(--color-surface-muted);
+  }
   + .meal-row {
     border-top: 1px solid var(--color-border);
   }

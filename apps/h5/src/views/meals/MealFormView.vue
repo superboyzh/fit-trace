@@ -230,11 +230,12 @@ async function submit(): Promise<void> {
     if (mealId.value) {
       await updateMeal(mealId.value, input);
       ToastPlugin.success('饮食记录已更新');
+      await router.replace(`/meals/${mealId.value}`);
     } else {
-      await createMeal(input);
+      const created = await createMeal(input);
       ToastPlugin.success('饮食记录已保存');
+      await router.replace(`/meals/${created.id}`);
     }
-    await router.replace('/meals');
   } catch (error) {
     ToastPlugin.error(resolveErrorMessage(error, '保存失败，请稍后重试'));
   } finally {

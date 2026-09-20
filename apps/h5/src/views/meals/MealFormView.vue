@@ -172,9 +172,9 @@ function applySuggestions(): void {
 }
 
 function resolveErrorMessage(error: unknown, fallback: string): string {
-  return axios.isAxiosError<ApiErrorResponse>(error)
-    ? (error.response?.data.message ?? fallback)
-    : fallback;
+  if (axios.isAxiosError<ApiErrorResponse>(error)) return error.response?.data.message ?? fallback;
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
 }
 
 function buildInput(): MealInput | null {
@@ -325,7 +325,7 @@ onMounted(async () => {
           ref="fileInput"
           class="file-input"
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic"
+          accept="image/jpeg,image/png,image/webp"
           capture="environment"
           @change="onPhotoChange"
         />

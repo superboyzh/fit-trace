@@ -68,13 +68,16 @@ async function onFileChange(event: Event): Promise<void> {
     activeType.value = 'ALL';
     ToastPlugin.success('照片已保存');
   } catch (error) {
-    const message = axios.isAxiosError<ApiErrorResponse>(error)
-      ? error.response?.data.message
-      : undefined;
-    ToastPlugin.error(message ?? '照片上传失败，请稍后重试');
+    ToastPlugin.error(resolveErrorMessage(error, '照片上传失败，请稍后重试'));
   } finally {
     uploading.value = false;
   }
+}
+
+function resolveErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError<ApiErrorResponse>(error)) return error.response?.data.message ?? fallback;
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
 }
 
 function confirmDelete(photo: ProgressPhoto): void {
@@ -162,7 +165,7 @@ onMounted(async () => {
       ref="fileInput"
       class="file-input"
       type="file"
-      accept="image/jpeg,image/png,image/webp,image/heic"
+      accept="image/jpeg,image/png,image/webp"
       @change="onFileChange"
     />
 

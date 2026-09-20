@@ -13,9 +13,17 @@ const INSTRUCTION = [
   '要求：',
   '1. 只输出画面中确实存在的食物，不要臆测餐具、背景或不存在的配菜。',
   '2. 名称使用简体中文的常见叫法，例如“鸡胸肉”“番茄炒蛋”“白米饭”。',
-  '3. 份量按中国家庭常见餐具与分量估计，例如“150g”“1 碗”“2 片”。',
-  '4. 热量按估计份量给出整数千卡；实在无法估计时返回 null。',
-  '5. 如果照片里没有食物、看不清或明显不是餐食，foods 返回空数组。',
+  '3. 每项都要估计：克数 grams（整数）与能量密度 kcalPer100g（每 100 克的整数千卡）。',
+  '   乘法由程序完成，你只需要给出这两个数，不要自己算总热量。',
+  '4. 能量密度按食物性质给，注意区分类型，不要一律按主食估：',
+  '   高水分：白粥约 30、清汤约 15、水煮蔬菜约 25；',
+  '   熟主食：米饭约 116、熟面条约 110、馒头约 220、包子约 220；',
+  '   蛋白质：鸡胸肉约 165、瘦牛肉约 180、鱼肉约 120、鸡蛋约 140；',
+  '   高脂与油炸：油条约 390、炸鸡约 280、花生约 580。',
+  '5. 克数按画面中的容器与份数估计。portion 只写简短份量，例如“1 盘（约 350g）”，',
+  '   不要描述食材构成，也不要写超过 15 个字。',
+  '6. 同一道菜里的配料（花生、葱花、酱汁等）已经包含在这道菜里，不要单独再列一条。',
+  '7. 如果照片里没有食物、看不清或明显不是餐食，foods 返回空数组。',
   '只输出 JSON，不要输出解释文字。',
 ].join('\n');
 
@@ -33,13 +41,17 @@ const RESPONSE_SCHEMA = {
         required: ['name', 'estimatedAmount', 'estimatedCalories'],
         properties: {
           name: { type: 'string', description: '食物的简体中文名称' },
-          estimatedAmount: {
+          portion: {
             type: ['string', 'null'],
-            description: '估计份量，例如 150g、1 碗、2 片',
+            description: '可读的份量描述，例如 1 碗（约 200g）',
           },
-          estimatedCalories: {
+          grams: {
             type: ['integer', 'null'],
-            description: '估计热量，单位 kcal',
+            description: '估计重量，单位克',
+          },
+          kcalPer100g: {
+            type: ['integer', 'null'],
+            description: '该食物的能量密度，单位千卡/100 克',
           },
         },
       },
@@ -254,20 +266,55 @@ export class OpenAiCompatibleFoodRecognitionProvider implements FoodRecognitionP
       const record = item as Record<string, unknown>;
       const name = typeof record.name === 'string' ? record.name.trim() : '';
       if (!name) return [];
-      const amount =
-        typeof record.estimatedAmount === 'string' ? record.estimatedAmount.trim() : '';
-      const calories = Number(record.estimatedCalories);
+      const amount = this.pickString(record, ['portion', 'estimatedAmount', 'amount', 'quantity']);
       return [
         {
           name,
           estimatedAmount: amount || null,
-          estimatedCalories:
-            Number.isFinite(calories) && calories >= 0 && calories <= 5000
-              ? Math.round(calories)
-              : null,
+          estimatedCalories: this.estimateCalories(record),
         },
       ];
     });
+  }
+
+  /**
+   * 模型只负责感知（估多少克、每 100 克多少能量），乘法在代码里做，
+   * 避免模型自己算总热量时出现「300g 白粥 = 270 kcal」这类明显错误。
+   */
+  private estimateCalories(record: Record<string, unknown>): number | null {
+    const grams = Number(this.pickValue(record, ['grams', 'weight', 'estimatedGrams']));
+    const density = Number(
+      this.pickValue(record, ['kcalPer100g', 'caloriesPer100g', 'energyDensity', 'kcal100g']),
+    );
+    if (Number.isFinite(grams) && Number.isFinite(density) && grams > 0 && density > 0) {
+      return this.clampCalories((grams * density) / 100);
+    }
+    const direct = Number(
+      this.pickValue(record, ['estimatedCalories', 'calories', 'kcal', 'energy', 'estimatedKcal']),
+    );
+    return Number.isFinite(direct) ? this.clampCalories(direct) : null;
+  }
+
+  private clampCalories(value: number): number | null {
+    if (!Number.isFinite(value) || value < 0 || value > 5000) return null;
+    return Math.round(value);
+  }
+
+  /**
+   * 不是所有兼容端点都会严格遵守 schema：实测有模型把份量叫 quantity、热量叫 calories，
+   * 这里做一层别名兜底，避免辛苦识别出的数值被丢掉。
+   */
+  private pickValue(record: Record<string, unknown>, keys: string[]): unknown {
+    for (const key of keys) {
+      const value = record[key];
+      if (value !== undefined && value !== null && value !== '') return value;
+    }
+    return null;
+  }
+
+  private pickString(record: Record<string, unknown>, keys: string[]): string {
+    const value = this.pickValue(record, keys);
+    return typeof value === 'string' ? value.trim() : '';
   }
 
   private logUsage(mode: ApiMode, model: string, payload: ResponsesPayload & ChatPayload): void {

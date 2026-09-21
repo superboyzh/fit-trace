@@ -3,7 +3,7 @@ import type { ApiErrorResponse, MealRecord, MealType } from '@fit-trace/shared';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { Button, DialogPlugin, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
-import { DeleteIcon, EditIcon, ForkIcon } from 'tdesign-icons-vue-next';
+import { AddIcon, DeleteIcon, EditIcon, ForkIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteMeal, getMeals } from '@/api/meals';
@@ -201,6 +201,14 @@ onMounted(async () => {
                 </div>
                 <p v-if="meal.note">{{ meal.note }}</p>
                 <div class="meal-row__actions">
+                  <Button
+                    size="small"
+                    variant="text"
+                    @click.stop="
+                      router.push({ path: '/meals/create', query: { copyFrom: meal.id } })
+                    "
+                    ><AddIcon /> 再记一次</Button
+                  >
                   <Button
                     size="small"
                     variant="text"

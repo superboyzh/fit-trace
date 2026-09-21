@@ -3,7 +3,7 @@ import type { ApiErrorResponse, WorkoutRecord, WorkoutType } from '@fit-trace/sh
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { Button, DialogPlugin, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
-import { DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
+import { AddIcon, DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteWorkout, getWorkouts } from '@/api/workouts';
@@ -185,6 +185,15 @@ onMounted(async () => {
           <p v-if="workout.note" class="workout-card__note">{{ workout.note }}</p>
 
           <div class="workout-card__actions">
+            <Button
+              size="small"
+              variant="text"
+              @click.stop="
+                router.push({ path: '/workouts/create', query: { copyFrom: workout.id } })
+              "
+            >
+              <AddIcon /> 再练一次
+            </Button>
             <Button
               size="small"
               variant="text"

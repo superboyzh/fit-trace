@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ApiErrorResponse, MealType } from '@fit-trace/shared';
+import type { ApiErrorResponse, MealRecord, MealType } from '@fit-trace/shared';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import {
@@ -22,7 +22,7 @@ import {
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { recognizeFood } from '@/api/ai';
-import { createMeal, getMeal, updateMeal, type MealInput } from '@/api/meals';
+import { createMeal, getMeal, getMeals, updateMeal, type MealInput } from '@/api/meals';
 import { uploadImage } from '@/api/uploads';
 
 interface EditableFood {
@@ -47,8 +47,11 @@ const mealTypes: Array<{ value: MealType; label: string; time: string }> = [
 const route = useRoute();
 const router = useRouter();
 const mealId = computed(() => (typeof route.params.id === 'string' ? route.params.id : null));
+const copyFromId = computed(() =>
+  typeof route.query.copyFrom === 'string' ? route.query.copyFrom : null,
+);
 const isEdit = computed(() => Boolean(mealId.value));
-const loading = ref(Boolean(mealId.value));
+const loading = ref(Boolean(mealId.value || copyFromId.value));
 const submitting = ref(false);
 const datePickerVisible = ref(false);
 const uploadingPhoto = ref(false);
@@ -59,6 +62,8 @@ const suggestions = ref<FoodSuggestion[]>([]);
 const hintText = ref('');
 const appliedHint = ref('');
 const fileInput = ref<HTMLInputElement | null>(null);
+const recentMeals = ref<MealRecord[]>([]);
+const templateSource = ref('');
 let foodKey = 1;
 const formData = reactive({
   type: 'BREAKFAST' as MealType,
@@ -72,6 +77,21 @@ const recordedAtDisplay = computed(() => dayjs(formData.recordedAt).format('YYYY
 const selectedMealLabel = computed(
   () => mealTypes.find((item) => item.value === formData.type)?.label ?? '这一餐',
 );
+const latestMeal = computed(() => recentMeals.value[0] ?? null);
+const recentFoods = computed(() => {
+  const result: Array<{ name: string; amount: string; calories: number | null }> = [];
+  const names = new Set<string>();
+  for (const meal of recentMeals.value) {
+    for (const food of meal.foods) {
+      const key = food.name.trim().toLocaleLowerCase();
+      if (!key || names.has(key)) continue;
+      names.add(key);
+      result.push({ name: food.name, amount: food.amount ?? '', calories: food.calories });
+      if (result.length >= 8) return result;
+    }
+  }
+  return result;
+});
 
 function addFood(): void {
   foodKey += 1;
@@ -84,6 +104,35 @@ function removeFood(key: number): void {
     return;
   }
   formData.foods = formData.foods.filter((food) => food.key !== key);
+}
+
+function applyMealTemplate(meal: MealRecord, announce = true): void {
+  formData.type = meal.type;
+  formData.note = meal.note ?? '';
+  formData.foods = meal.foods.map((food) => ({
+    key: ++foodKey,
+    name: food.name,
+    amount: food.amount ?? '',
+    calories: food.calories ?? '',
+    aiGenerated: false,
+  }));
+  imageUrl.value = '';
+  suggestions.value = [];
+  templateSource.value = `${dayjs(meal.recordedAt).format('M月D日')}的${mealTypes.find((item) => item.value === meal.type)?.label ?? '记录'}`;
+  if (announce) ToastPlugin.success('已带入上一餐，可继续修改');
+}
+
+function addRecentFood(food: { name: string; amount: string; calories: number | null }): void {
+  const next = {
+    key: ++foodKey,
+    name: food.name,
+    amount: food.amount,
+    calories: food.calories ?? '',
+    aiGenerated: false,
+  };
+  const emptyIndex = formData.foods.findIndex((item) => !item.name.trim());
+  if (emptyIndex >= 0) formData.foods.splice(emptyIndex, 1, next);
+  else formData.foods.push(next);
 }
 
 function confirmRecordedAt(value: string | number): void {
@@ -244,22 +293,33 @@ async function submit(): Promise<void> {
 }
 
 onMounted(async () => {
-  if (!mealId.value) return;
   try {
-    const meal = await getMeal(mealId.value);
-    formData.type = meal.type;
-    formData.recordedAt = dayjs(meal.recordedAt).format('YYYY-MM-DD HH:mm:ss');
-    formData.note = meal.note ?? '';
-    imageUrl.value = meal.imageUrl ?? '';
-    formData.foods = meal.foods.map((food) => ({
-      key: ++foodKey,
-      name: food.name,
-      amount: food.amount ?? '',
-      calories: food.calories ?? '',
-      aiGenerated: food.aiGenerated,
-    }));
+    if (mealId.value) {
+      const meal = await getMeal(mealId.value);
+      formData.type = meal.type;
+      formData.recordedAt = dayjs(meal.recordedAt).format('YYYY-MM-DD HH:mm:ss');
+      formData.note = meal.note ?? '';
+      imageUrl.value = meal.imageUrl ?? '';
+      formData.foods = meal.foods.map((food) => ({
+        key: ++foodKey,
+        name: food.name,
+        amount: food.amount ?? '',
+        calories: food.calories ?? '',
+        aiGenerated: food.aiGenerated,
+      }));
+      return;
+    }
+
+    const result = await getMeals({ page: 1, pageSize: 12 });
+    recentMeals.value = result.data;
+    if (copyFromId.value) {
+      const source =
+        result.data.find((meal) => meal.id === copyFromId.value) ??
+        (await getMeal(copyFromId.value));
+      applyMealTemplate(source, false);
+    }
   } catch {
-    await router.replace('/meals');
+    if (mealId.value || copyFromId.value) await router.replace('/meals');
   } finally {
     loading.value = false;
   }
@@ -278,6 +338,44 @@ onMounted(async () => {
 
     <Loading class="page-loading" :loading="loading" text="正在读取饮食记录">
       <section class="surface-card meal-form-card">
+        <div v-if="!isEdit && (latestMeal || recentFoods.length)" class="quick-start field-block">
+          <div class="quick-start__heading">
+            <div>
+              <span class="field-label">快速开始</span>
+              <small>历史内容只会带入表单，确认保存后才新增记录</small>
+            </div>
+            <span v-if="templateSource">已带入：{{ templateSource }}</span>
+          </div>
+          <button
+            v-if="latestMeal"
+            type="button"
+            class="last-meal"
+            @click="applyMealTemplate(latestMeal)"
+          >
+            <span>
+              <strong>复用上一餐</strong>
+              <small>
+                {{ mealTypes.find((item) => item.value === latestMeal?.type)?.label }} ·
+                {{ latestMeal.foods.map((food) => food.name).join('、') }}
+              </small>
+            </span>
+            <span>带入</span>
+          </button>
+          <div v-if="recentFoods.length" class="recent-foods">
+            <span>最近食物</span>
+            <div>
+              <button
+                v-for="food in recentFoods"
+                :key="food.name"
+                type="button"
+                @click="addRecentFood(food)"
+              >
+                + {{ food.name }}
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="field-block">
           <span class="field-label">餐食照片（可选）</span>
 
@@ -497,6 +595,105 @@ onMounted(async () => {
   color: var(--color-text-secondary);
   font-size: 0.875rem;
   font-weight: 750;
+}
+
+.quick-start {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+
+  &__heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+
+    > div {
+      display: grid;
+      gap: 3px;
+    }
+
+    small,
+    > span {
+      color: var(--color-text-tertiary);
+      font-size: 0.7rem;
+      line-height: 1.45;
+    }
+
+    > span {
+      flex: none;
+      color: var(--color-accent-text);
+    }
+  }
+}
+
+.last-meal {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  color: var(--color-text-primary);
+  text-align: left;
+  background: var(--color-surface-muted);
+  border: 0;
+  border-radius: 10px;
+
+  > span:first-child {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  strong {
+    font-size: 0.85rem;
+  }
+
+  small {
+    overflow: hidden;
+    color: var(--color-text-secondary);
+    font-size: 0.72rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  > span:last-child {
+    flex: none;
+    color: var(--color-accent-text);
+    font-size: 0.75rem;
+    font-weight: 750;
+  }
+}
+
+.recent-foods {
+  display: grid;
+  gap: 7px;
+
+  > span {
+    color: var(--color-text-tertiary);
+    font-size: 0.72rem;
+  }
+
+  > div {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  button {
+    flex: none;
+    padding: 7px 10px;
+    color: var(--color-text-secondary);
+    font-size: 0.72rem;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+  }
 }
 
 .file-input {

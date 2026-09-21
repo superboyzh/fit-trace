@@ -218,7 +218,11 @@ onActivated(() => {
             >
             <span v-else class="overview-row__meta">记录今天的体重</span><ChevronRightIcon />
           </button>
-          <button type="button" class="overview-row" @click="router.push('/meals')">
+          <button
+            type="button"
+            class="overview-row"
+            @click="router.push(todayMeals.length ? '/meals' : '/meals/create')"
+          >
             <span class="overview-row__icon"><ForkIcon /></span>
             <span class="overview-row__main"
               ><span>饮食</span><strong>{{ todayMeals.length }} <small>餐</small></strong></span
@@ -228,7 +232,11 @@ onActivated(() => {
             }}</span
             ><ChevronRightIcon />
           </button>
-          <button type="button" class="overview-row" @click="router.push('/workouts')">
+          <button
+            type="button"
+            class="overview-row"
+            @click="router.push(todayWorkouts.length ? '/workouts' : '/workouts/create')"
+          >
             <span class="overview-row__icon"><ActivityIcon /></span>
             <span class="overview-row__main">
               <span>训练</span>

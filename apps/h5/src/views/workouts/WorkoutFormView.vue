@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ApiErrorResponse, WorkoutType } from '@fit-trace/shared';
+import type { ApiErrorResponse, WorkoutRecord, WorkoutType } from '@fit-trace/shared';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import {
@@ -14,7 +14,13 @@ import {
 import { CalendarIcon, ChevronLeftIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { createWorkout, getWorkout, updateWorkout, type WorkoutInput } from '@/api/workouts';
+import {
+  createWorkout,
+  getWorkout,
+  getWorkouts,
+  updateWorkout,
+  type WorkoutInput,
+} from '@/api/workouts';
 import SportIcon from '@/components/SportIcon.vue';
 
 const workoutTypes: Array<{ value: WorkoutType; label: string }> = [
@@ -30,10 +36,15 @@ const durationPresets = [20, 30, 45, 60, 90];
 const route = useRoute();
 const router = useRouter();
 const workoutId = computed(() => (typeof route.params.id === 'string' ? route.params.id : null));
+const copyFromId = computed(() =>
+  typeof route.query.copyFrom === 'string' ? route.query.copyFrom : null,
+);
 const isEdit = computed(() => Boolean(workoutId.value));
-const loading = ref(Boolean(workoutId.value));
+const loading = ref(Boolean(workoutId.value || copyFromId.value));
 const submitting = ref(false);
 const datePickerVisible = ref(false);
+const recentWorkouts = ref<WorkoutRecord[]>([]);
+const templateSource = ref('');
 const formData = reactive({
   type: 'STRENGTH' as WorkoutType,
   name: '',
@@ -46,6 +57,7 @@ const startedAtDisplay = computed(() => dayjs(formData.startedAt).format('YYYY-M
 const selectedType = computed(
   () => workoutTypes.find((item) => item.value === formData.type) ?? workoutTypes[0],
 );
+const latestWorkout = computed(() => recentWorkouts.value[0] ?? null);
 
 function confirmStartedAt(value: string | number): void {
   formData.startedAt = dayjs(value).format('YYYY-MM-DD HH:mm:ss');
@@ -56,6 +68,16 @@ function optionalNumber(value: number | string): number | undefined {
   if (value === '') return undefined;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function applyWorkoutTemplate(workout: WorkoutRecord, announce = true): void {
+  formData.type = workout.type;
+  formData.name = workout.name;
+  formData.durationMinutes = workout.durationMinutes;
+  formData.calories = workout.calories ?? '';
+  formData.note = workout.note ?? '';
+  templateSource.value = `${dayjs(workout.startedAt).format('M月D日')} · ${workout.name}`;
+  if (announce) ToastPlugin.success('已带入上次训练，可继续修改');
 }
 
 async function submit(): Promise<void> {
@@ -101,17 +123,28 @@ async function submit(): Promise<void> {
 }
 
 onMounted(async () => {
-  if (!workoutId.value) return;
   try {
-    const workout = await getWorkout(workoutId.value);
-    formData.type = workout.type;
-    formData.name = workout.name;
-    formData.startedAt = dayjs(workout.startedAt).format('YYYY-MM-DD HH:mm:ss');
-    formData.durationMinutes = workout.durationMinutes;
-    formData.calories = workout.calories ?? '';
-    formData.note = workout.note ?? '';
+    if (workoutId.value) {
+      const workout = await getWorkout(workoutId.value);
+      formData.type = workout.type;
+      formData.name = workout.name;
+      formData.startedAt = dayjs(workout.startedAt).format('YYYY-MM-DD HH:mm:ss');
+      formData.durationMinutes = workout.durationMinutes;
+      formData.calories = workout.calories ?? '';
+      formData.note = workout.note ?? '';
+      return;
+    }
+
+    const result = await getWorkouts({ page: 1, pageSize: 8 });
+    recentWorkouts.value = result.data;
+    if (copyFromId.value) {
+      const source =
+        result.data.find((workout) => workout.id === copyFromId.value) ??
+        (await getWorkout(copyFromId.value));
+      applyWorkoutTemplate(source, false);
+    }
   } catch {
-    await router.replace('/workouts');
+    if (workoutId.value || copyFromId.value) await router.replace('/workouts');
   } finally {
     loading.value = false;
   }
@@ -130,6 +163,20 @@ onMounted(async () => {
 
     <Loading class="page-loading" :loading="loading" text="正在读取训练记录">
       <section class="surface-card workout-form-card">
+        <div v-if="!isEdit && latestWorkout" class="quick-start field-block">
+          <div>
+            <span class="field-label">快速开始</span>
+            <small>带入训练内容，开始时间仍使用现在</small>
+          </div>
+          <button type="button" @click="applyWorkoutTemplate(latestWorkout)">
+            <span>
+              <strong>复用上次训练</strong>
+              <small> {{ latestWorkout.name }} · {{ latestWorkout.durationMinutes }} 分钟 </small>
+            </span>
+            <span>{{ templateSource || '带入' }}</span>
+          </button>
+        </div>
+
         <div class="field-block">
           <span class="field-label">训练类型</span>
           <div class="workout-type-grid">
@@ -254,6 +301,57 @@ onMounted(async () => {
   color: var(--color-text-secondary);
   font-size: 0.875rem;
   font-weight: 750;
+}
+
+.quick-start {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+
+  > div {
+    display: grid;
+    gap: 3px;
+
+    small {
+      color: var(--color-text-tertiary);
+      font-size: 0.7rem;
+    }
+  }
+
+  > button {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    color: var(--color-text-primary);
+    text-align: left;
+    background: var(--color-surface-muted);
+    border: 0;
+    border-radius: 10px;
+
+    > span:first-child {
+      display: grid;
+      min-width: 0;
+      gap: 3px;
+    }
+
+    strong {
+      font-size: 0.85rem;
+    }
+
+    small {
+      color: var(--color-text-secondary);
+      font-size: 0.72rem;
+    }
+
+    > span:last-child {
+      flex: none;
+      color: var(--color-accent-text);
+      font-size: 0.7rem;
+      font-weight: 750;
+    }
+  }
 }
 
 .workout-type-grid {

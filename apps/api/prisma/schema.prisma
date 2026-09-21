@@ -13,6 +13,11 @@ model User {
   passwordHash   String
   nickname       String?
   avatarUrl      String?
+  goalType       FitnessGoalType?
+  goalStartWeight Decimal?        @db.Decimal(6, 2)
+  targetWeight   Decimal?         @db.Decimal(6, 2)
+  targetDate     DateTime?
+  goalStartedAt  DateTime?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   bodyRecords    BodyRecord[]
@@ -21,6 +26,12 @@ model User {
   progressPhotos ProgressPhoto[]
 
   @@map("users")
+}
+
+enum FitnessGoalType {
+  LOSE_FAT
+  GAIN_MUSCLE
+  MAINTAIN
 }
 
 enum MealType {

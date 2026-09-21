@@ -2,7 +2,7 @@
 import type { BodyRecord } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import { Button, Skeleton, ToastPlugin } from 'tdesign-mobile-vue';
-import { LogoutIcon } from 'tdesign-icons-vue-next';
+import { ChevronRightIcon, LogoutIcon } from 'tdesign-icons-vue-next';
 import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getBodyRecords } from '@/api/body-records';
@@ -65,6 +65,11 @@ function selectTheme(mode: ThemeMode): void {
 const totalRecords = computed(
   () => counts.value.body + counts.value.meal + counts.value.workout + counts.value.photo,
 );
+const goalLabels = {
+  LOSE_FAT: '减脂',
+  GAIN_MUSCLE: '增肌',
+  MAINTAIN: '保持',
+} as const;
 
 async function logout(): Promise<void> {
   auth.logout();
@@ -121,6 +126,23 @@ onActivated(() => {
         <span>{{ auth.user?.email }}</span>
       </div>
       <span class="version-tag">V0.1</span>
+    </section>
+
+    <section class="content-section">
+      <div class="section-heading">
+        <h2>目标</h2>
+        <span>决定首页如何解释进度</span>
+      </div>
+      <button class="surface-card goal-entry" type="button" @click="router.push('/goal')">
+        <span>
+          <strong>{{ auth.user?.goal ? goalLabels[auth.user.goal.type] : '设置我的目标' }}</strong>
+          <small v-if="auth.user?.goal">
+            {{ auth.user.goal.startWeight }} → {{ auth.user.goal.targetWeight }} kg
+          </small>
+          <small v-else>减脂、增肌或保持当前状态</small>
+        </span>
+        <ChevronRightIcon />
+      </button>
     </section>
 
     <section class="content-section">
@@ -277,6 +299,30 @@ onActivated(() => {
 
 .content-section {
   margin-top: 24px;
+}
+
+.goal-entry {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  color: var(--color-text-primary);
+  text-align: left;
+
+  > span {
+    display: grid;
+    gap: 4px;
+  }
+
+  strong {
+    font-size: 0.9375rem;
+  }
+
+  small,
+  > svg {
+    color: var(--color-text-tertiary);
+  }
 }
 
 .section-heading {

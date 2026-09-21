@@ -26,8 +26,19 @@ export interface PublicUser {
   email: string;
   nickname: string | null;
   avatarUrl: string | null;
+  goal: FitnessGoal | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export type FitnessGoalType = 'LOSE_FAT' | 'GAIN_MUSCLE' | 'MAINTAIN';
+
+export interface FitnessGoal {
+  type: FitnessGoalType;
+  startWeight: number;
+  targetWeight: number;
+  targetDate: string | null;
+  startedAt: string;
 }
 
 export interface AuthResult {

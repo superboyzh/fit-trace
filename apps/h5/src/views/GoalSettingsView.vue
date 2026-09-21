@@ -1,0 +1,269 @@
+<script setup lang="ts">
+import type { ApiErrorResponse, FitnessGoalType } from '@fit-trace/shared';
+import axios from 'axios';
+import dayjs from 'dayjs';
+import { Button, Input, Loading, ToastPlugin } from 'tdesign-mobile-vue';
+import { ChevronLeftIcon } from 'tdesign-icons-vue-next';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { getLatestBodyRecord } from '@/api/body-records';
+import { updateFitnessGoal } from '@/api/users';
+import { useAuthStore } from '@/stores/auth';
+
+const goalOptions: Array<{
+  value: FitnessGoalType;
+  title: string;
+  description: string;
+}> = [
+  { value: 'LOSE_FAT', title: '减脂', description: '让体重和围度稳步下降' },
+  { value: 'GAIN_MUSCLE', title: '增肌', description: '关注体重、训练与身体变化' },
+  { value: 'MAINTAIN', title: '保持', description: '维持当前状态和记录习惯' },
+];
+
+const router = useRouter();
+const auth = useAuthStore();
+const loading = ref(true);
+const submitting = ref(false);
+const currentWeight = ref<number | string>('');
+const goalType = ref<FitnessGoalType>(auth.user?.goal?.type ?? 'LOSE_FAT');
+const targetWeight = ref<number | string>(auth.user?.goal?.targetWeight ?? '');
+const targetDate = ref(
+  auth.user?.goal?.targetDate
+    ? dayjs(auth.user.goal.targetDate).format('YYYY-MM-DD')
+    : dayjs().add(90, 'day').format('YYYY-MM-DD'),
+);
+const selectedGoal = computed(() => goalOptions.find((item) => item.value === goalType.value));
+
+watch(goalType, (value) => {
+  if (value === 'MAINTAIN' && currentWeight.value !== '') {
+    targetWeight.value = currentWeight.value;
+  }
+});
+
+async function submit(): Promise<void> {
+  if (submitting.value) return;
+  const current = Number(currentWeight.value);
+  const target = Number(targetWeight.value);
+  if (!Number.isFinite(current) || current <= 0) {
+    ToastPlugin.warning('请输入正确的当前体重');
+    return;
+  }
+  if (!Number.isFinite(target) || target <= 0) {
+    ToastPlugin.warning('请输入正确的目标体重');
+    return;
+  }
+  if (goalType.value === 'LOSE_FAT' && target >= current) {
+    ToastPlugin.warning('减脂目标应低于当前体重');
+    return;
+  }
+  if (goalType.value === 'GAIN_MUSCLE' && target <= current) {
+    ToastPlugin.warning('增肌目标应高于当前体重');
+    return;
+  }
+  if (targetDate.value && dayjs(targetDate.value).isBefore(dayjs(), 'day')) {
+    ToastPlugin.warning('目标日期不能早于今天');
+    return;
+  }
+
+  submitting.value = true;
+  try {
+    auth.user = await updateFitnessGoal({
+      type: goalType.value,
+      currentWeight: current,
+      targetWeight: target,
+      ...(targetDate.value
+        ? { targetDate: dayjs(targetDate.value).endOf('day').toISOString() }
+        : {}),
+    });
+    ToastPlugin.success('目标已保存');
+    await router.replace('/dashboard');
+  } catch (error) {
+    const message = axios.isAxiosError<ApiErrorResponse>(error)
+      ? error.response?.data.message
+      : undefined;
+    ToastPlugin.error(message ?? '保存失败，请稍后重试');
+  } finally {
+    submitting.value = false;
+  }
+}
+
+onMounted(async () => {
+  try {
+    const latest = await getLatestBodyRecord();
+    if (latest) currentWeight.value = latest.weight;
+    if (targetWeight.value === '' && latest) {
+      targetWeight.value = Number((latest.weight - 3).toFixed(1));
+    }
+  } finally {
+    loading.value = false;
+  }
+});
+</script>
+
+<template>
+  <main class="view-page goal-page">
+    <header class="goal-header">
+      <Button variant="text" shape="round" @click="router.back()">
+        <ChevronLeftIcon /> 返回
+      </Button>
+      <h1>我的目标</h1>
+      <p>目标用来解释趋势，不会给你的每一天打分。</p>
+    </header>
+
+    <Loading class="page-loading" :loading="loading" text="正在读取身体数据">
+      <section class="goal-section">
+        <div class="section-heading">
+          <h2>你现在更关注什么？</h2>
+          <span>之后可以随时调整</span>
+        </div>
+        <div class="goal-options">
+          <button
+            v-for="item in goalOptions"
+            :key="item.value"
+            type="button"
+            :class="{ active: goalType === item.value }"
+            @click="goalType = item.value"
+          >
+            <strong>{{ item.title }}</strong>
+            <span>{{ item.description }}</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="goal-section">
+        <div class="section-heading">
+          <h2>体重目标</h2>
+          <span>{{ selectedGoal?.title }}</span>
+        </div>
+        <div class="surface-card weight-settings">
+          <label>
+            <span>当前体重</span>
+            <Input v-model="currentWeight" type="number" inputmode="decimal" suffix="kg" />
+            <small>修改后会同时新增一条今天的身体记录</small>
+          </label>
+          <label>
+            <span>目标体重</span>
+            <Input v-model="targetWeight" type="number" inputmode="decimal" suffix="kg" />
+          </label>
+          <label>
+            <span>希望在这一天前达到</span>
+            <input v-model="targetDate" class="date-input" type="date" />
+            <small>日期只是节奏参考，不会影响记录功能</small>
+          </label>
+        </div>
+      </section>
+
+      <Button theme="primary" size="large" block :loading="submitting" @click="submit">
+        保存目标
+      </Button>
+    </Loading>
+  </main>
+</template>
+
+<style scoped lang="scss">
+.goal-header {
+  padding: 18px 0 22px;
+
+  > .t-button {
+    margin: 0 0 13px -10px;
+  }
+
+  h1 {
+    margin: 0 0 6px;
+    font-size: 1.55rem;
+    letter-spacing: -0.04em;
+  }
+
+  p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+  }
+}
+
+.goal-section {
+  margin-bottom: 26px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  span {
+    color: var(--color-text-tertiary);
+    font-size: 0.75rem;
+  }
+}
+
+.goal-options {
+  display: grid;
+  gap: 8px;
+
+  button {
+    display: grid;
+    gap: 4px;
+    padding: 14px 15px;
+    color: var(--color-text-primary);
+    text-align: left;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+
+    &.active {
+      background: var(--color-primary-light);
+      border-color: var(--color-primary-border);
+      box-shadow: inset 3px 0 0 var(--color-primary);
+    }
+
+    strong {
+      font-size: 0.9375rem;
+    }
+
+    span {
+      color: var(--color-text-secondary);
+      font-size: 0.8rem;
+    }
+  }
+}
+
+.weight-settings {
+  label {
+    display: grid;
+    gap: 8px;
+    padding: 15px;
+
+    + label {
+      border-top: 1px solid var(--color-border);
+    }
+
+    > span {
+      font-size: 0.82rem;
+      font-weight: 750;
+    }
+
+    small {
+      color: var(--color-text-tertiary);
+      font-size: 0.72rem;
+      line-height: 1.5;
+    }
+  }
+}
+
+.date-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--color-text-primary);
+  background: var(--color-surface-muted);
+  border: 0;
+  border-radius: var(--border-radius-sm);
+}
+</style>

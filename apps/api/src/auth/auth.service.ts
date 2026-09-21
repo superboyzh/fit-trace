@@ -38,14 +38,14 @@ export class AuthService {
     }
 
     this.logger.log(`登录成功 email=${user.email} user=${user.id.slice(0, 8)}`);
-    return this.buildAuthResult({
-      id: user.id,
-      email: user.email,
-      nickname: user.nickname,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    });
+    const publicUser = await this.users.findPublicById(user.id);
+    if (!publicUser) {
+      throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
+        message: '邮箱或密码错误',
+      });
+    }
+    return this.buildAuthResult(publicUser);
   }
 
   private async buildAuthResult(user: PublicUser): Promise<AuthResult> {

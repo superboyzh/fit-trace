@@ -9,13 +9,7 @@ import type {
 } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import { Button, Skeleton } from 'tdesign-mobile-vue';
-import {
-  ActivityIcon,
-  CameraIcon,
-  ChevronRightIcon,
-  ForkIcon,
-  MeasurementIcon,
-} from 'tdesign-icons-vue-next';
+import { ActivityIcon, ChevronRightIcon, ForkIcon, MeasurementIcon } from 'tdesign-icons-vue-next';
 import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getBodyRecords } from '@/api/body-records';
@@ -61,6 +55,9 @@ const greeting = computed(() => {
 });
 const latestBody = computed(() => bodyRecords.value[0] ?? null);
 const previousBody = computed(() => bodyRecords.value[1] ?? null);
+const todayBody = computed(() =>
+  bodyRecords.value.find((record) => dayjs(record.recordedAt).isSame(dayjs(), 'day')),
+);
 const weightChange = computed(() => {
   if (!latestBody.value || !previousBody.value) return null;
   return latestBody.value.weight - previousBody.value.weight;
@@ -83,6 +80,47 @@ const todayWorkoutMinutes = computed(() =>
 );
 const latestWorkout = computed(() => workouts.value[0] ?? null);
 const latestPhoto = computed(() => photos.value[0] ?? null);
+const goalLabels = {
+  LOSE_FAT: '减脂',
+  GAIN_MUSCLE: '增肌',
+  MAINTAIN: '保持',
+} as const;
+const goalProgress = computed(() => {
+  const goal = auth.user?.goal;
+  const current = latestBody.value?.weight;
+  if (!goal || current === undefined) return null;
+  if (goal.type === 'MAINTAIN') {
+    const deviation = Math.abs(current - goal.targetWeight);
+    return { percent: Math.max(0, Math.round(100 - deviation * 20)), current };
+  }
+  const distance = Math.abs(goal.targetWeight - goal.startWeight);
+  if (distance === 0) return { percent: 100, current };
+  const moved = goal.type === 'LOSE_FAT' ? goal.startWeight - current : current - goal.startWeight;
+  return { percent: Math.max(0, Math.min(100, Math.round((moved / distance) * 100))), current };
+});
+const goalRemaining = computed(() => {
+  const goal = auth.user?.goal;
+  const current = latestBody.value?.weight;
+  if (!goal || current === undefined) return null;
+  const difference = Math.abs(current - goal.targetWeight);
+  if (difference < 0.05) return '已经达到目标体重';
+  if (goal.type === 'MAINTAIN') return `与目标相差 ${difference.toFixed(1)} kg`;
+  return `距离目标还差 ${difference.toFixed(1)} kg`;
+});
+const goalDateText = computed(() => {
+  const targetDate = auth.user?.goal?.targetDate;
+  if (!targetDate) return '按自己的节奏推进';
+  const days = dayjs(targetDate).startOf('day').diff(dayjs().startOf('day'), 'day');
+  if (days < 0) return '目标日期已到，可重新调整';
+  if (days === 0) return '目标日期是今天';
+  return `还有 ${days} 天`;
+});
+const todayCompleted = computed(
+  () =>
+    Number(Boolean(todayBody.value)) +
+    Number(todayMeals.value.length > 0) +
+    Number(todayWorkouts.value.length > 0),
+);
 
 defineOptions({ name: 'DashboardView' });
 
@@ -130,11 +168,38 @@ onActivated(() => {
 
     <Skeleton v-if="loading" :loading="true" animation="gradient" :row-col="[1, 1, 1]" />
     <template v-else>
+      <section class="goal-panel" :class="{ 'goal-panel--empty': !auth.user?.goal }">
+        <template v-if="auth.user?.goal && goalProgress">
+          <div class="goal-panel__topline">
+            <span>{{ goalLabels[auth.user.goal.type] }}目标</span>
+            <button type="button" @click="router.push('/goal')">调整</button>
+          </div>
+          <div class="goal-panel__metric">
+            <strong>{{ goalProgress.current }}<small>kg</small></strong>
+            <span>目标 {{ auth.user.goal.targetWeight }} kg</span>
+          </div>
+          <div class="goal-panel__track" aria-hidden="true">
+            <i :style="{ width: `${goalProgress.percent}%` }" />
+          </div>
+          <div class="goal-panel__footer">
+            <span>{{ goalRemaining }}</span>
+            <span>{{ goalDateText }}</span>
+          </div>
+        </template>
+        <template v-else>
+          <div>
+            <strong>给记录一个方向</strong>
+            <span>设置目标后，首页会解释你的真实进度。</span>
+          </div>
+          <Button theme="primary" size="small" @click="router.push('/goal')">设置目标</Button>
+        </template>
+      </section>
+
       <section class="content-section">
         <div class="section-heading">
           <div>
-            <h2>今日概览</h2>
-            <span>把重要的变化留在今天</span>
+            <h2>今天</h2>
+            <span>核心记录已完成 {{ todayCompleted }} / 3</span>
           </div>
           <Button variant="text" size="small" @click="router.push('/record')"
             >记录 <ChevronRightIcon
@@ -145,13 +210,13 @@ onActivated(() => {
             <span class="overview-row__icon"><MeasurementIcon /></span>
             <span class="overview-row__main"
               ><span>身体</span
-              ><strong v-if="latestBody">{{ latestBody.weight }} <small>kg</small></strong
+              ><strong v-if="todayBody">{{ todayBody.weight }} <small>kg</small></strong
               ><strong v-else>尚未记录</strong></span
             >
-            <span v-if="weightChange !== null" class="overview-row__meta"
+            <span v-if="todayBody && weightChange !== null" class="overview-row__meta"
               >较上次 {{ weightChange > 0 ? '+' : '' }}{{ weightChange.toFixed(1) }} kg</span
             >
-            <span v-else class="overview-row__meta">记录体重</span><ChevronRightIcon />
+            <span v-else class="overview-row__meta">记录今天的体重</span><ChevronRightIcon />
           </button>
           <button type="button" class="overview-row" @click="router.push('/meals')">
             <span class="overview-row__icon"><ForkIcon /></span>
@@ -171,21 +236,6 @@ onActivated(() => {
             </span>
             <span class="overview-row__meta">
               {{ todayWorkoutMinutes > 0 ? `${todayWorkoutMinutes} 分钟` : '今天还没有训练记录' }}
-            </span>
-            <ChevronRightIcon />
-          </button>
-          <button type="button" class="overview-row" @click="router.push('/photos')">
-            <span class="overview-row__icon"><CameraIcon /></span>
-            <span class="overview-row__main">
-              <span>照片</span>
-              <strong>{{ photos.length }} <small>张</small></strong>
-            </span>
-            <span class="overview-row__meta">
-              {{
-                latestPhoto
-                  ? `最近 ${dayjs(latestPhoto.recordedAt).format('M月D日')}`
-                  : '上传第一张照片'
-              }}
             </span>
             <ChevronRightIcon />
           </button>
@@ -296,6 +346,101 @@ onActivated(() => {
 }
 .content-section {
   margin-bottom: 26px;
+}
+.goal-panel {
+  padding: 17px;
+  margin-bottom: 26px;
+  color: var(--color-on-ink);
+  background: var(--color-ink);
+  border-radius: var(--border-radius-lg);
+
+  &__topline,
+  &__metric,
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  &__topline {
+    color: color-mix(in srgb, var(--color-on-ink) 66%, transparent);
+    font-size: 0.75rem;
+
+    button {
+      padding: 3px 0;
+      color: inherit;
+      background: transparent;
+      border: 0;
+    }
+  }
+
+  &__metric {
+    align-items: flex-end;
+    margin-top: 15px;
+
+    strong {
+      font-size: 2.15rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.06em;
+
+      small {
+        margin-left: 4px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0;
+      }
+    }
+
+    span {
+      padding-bottom: 5px;
+      color: color-mix(in srgb, var(--color-on-ink) 68%, transparent);
+      font-size: 0.8rem;
+    }
+  }
+
+  &__track {
+    height: 5px;
+    margin: 16px 0 10px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--color-on-ink) 16%, transparent);
+    border-radius: 999px;
+
+    i {
+      display: block;
+      height: 100%;
+      background: var(--color-primary);
+      border-radius: inherit;
+      transition: width 400ms var(--ease-standard);
+    }
+  }
+
+  &__footer {
+    color: color-mix(in srgb, var(--color-on-ink) 64%, transparent);
+    font-size: 0.72rem;
+  }
+
+  &--empty {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+
+    > div {
+      display: grid;
+      gap: 5px;
+    }
+
+    strong {
+      font-size: 0.95rem;
+    }
+
+    span {
+      color: color-mix(in srgb, var(--color-on-ink) 68%, transparent);
+      font-size: 0.75rem;
+      line-height: 1.5;
+    }
+  }
 }
 .section-heading {
   display: flex;

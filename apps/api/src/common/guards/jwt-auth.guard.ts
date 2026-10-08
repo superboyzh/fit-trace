@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import type { JwtPayload } from '../../auth/auth.types';
+import { PrismaService } from '../../prisma/prisma.service';
 
 interface AuthenticatedRequest extends Request {
   user?: JwtPayload;
@@ -9,7 +10,10 @@ interface AuthenticatedRequest extends Request {
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwt: JwtService) {}
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -18,12 +22,20 @@ export class JwtAuthGuard implements CanActivate {
       throw this.unauthorized();
     }
 
+    let payload: JwtPayload;
     try {
-      request.user = await this.jwt.verifyAsync<JwtPayload>(token);
-      return true;
+      payload = await this.jwt.verifyAsync<JwtPayload>(token);
     } catch {
       throw this.unauthorized();
     }
+    if (typeof payload.sub !== 'string') throw this.unauthorized();
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { tokenVersion: true },
+    });
+    if (!user || (payload.ver ?? 0) !== user.tokenVersion) throw this.unauthorized();
+    request.user = payload;
+    return true;
   }
 
   private extractBearerToken(request: Request): string | undefined {

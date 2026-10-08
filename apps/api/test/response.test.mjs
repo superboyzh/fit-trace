@@ -10,6 +10,7 @@ const require = createRequire(import.meta.url);
 const { ResponseInterceptor } = require('../dist/common/interceptors/response.interceptor.js');
 const { HttpExceptionFilter } = require('../dist/common/filters/http-exception.filter.js');
 const { JwtService } = require('@nestjs/jwt');
+const { PrismaService } = require('../dist/prisma/prisma.service.js');
 const modules = [
   ['auth', 'AuthController'],
   ['users', 'UsersController'],
@@ -81,6 +82,10 @@ class TestModule {}
 Module({
   controllers: [...controllers, ErrorController],
   providers: [
+    {
+      provide: PrismaService,
+      useValue: { user: { findUnique: async () => ({ tokenVersion: 0 }) } },
+    },
     ...Array.from(serviceTokens, (provide) => ({ provide, useValue: service })),
     {
       provide: JwtService,
@@ -130,7 +135,7 @@ for (const controller of controllers) {
         body.data,
         name === 'list'
           ? [record]
-          : name === 'remove' || name === 'latest'
+          : name === 'remove' || name === 'latest' || name === 'resetPassword'
             ? null
             : prefix === 'health'
               ? { status: 'ok' }

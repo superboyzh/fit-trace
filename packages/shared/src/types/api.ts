@@ -59,6 +59,19 @@ export interface AuthResult {
   user: PublicUser;
 }
 
+export type EmailCodePurpose = 'REGISTER' | 'RESET_PASSWORD';
+
+export interface EmailCodeResult {
+  retryAfterSeconds: number;
+  expiresInSeconds: number;
+}
+
+export interface LoginCaptcha {
+  id: string;
+  image: string;
+  expiresInSeconds: number;
+}
+
 export interface BodyRecord {
   id: string;
   weight: number;

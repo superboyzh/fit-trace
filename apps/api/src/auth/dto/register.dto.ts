@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsOptional, IsString, Length, MaxLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, Length, Matches, MaxLength } from 'class-validator';
 
 export class RegisterDto {
   @Transform(({ value }: { value: unknown }) =>
@@ -11,6 +11,10 @@ export class RegisterDto {
   @IsString({ message: '密码格式不正确' })
   @Length(8, 72, { message: '密码长度必须为 8 到 72 位' })
   password!: string;
+
+  @IsString({ message: '请输入邮箱验证码' })
+  @Matches(/^\d{6}$/, { message: '请输入 6 位邮箱验证码' })
+  emailCode!: string;
 
   @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
   @IsOptional()

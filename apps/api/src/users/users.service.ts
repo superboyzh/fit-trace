@@ -39,13 +39,16 @@ export class UsersService {
     return user ? this.toPublicUser(user) : null;
   }
 
-  async create(input: {
-    email: string;
-    passwordHash: string;
-    nickname?: string;
-  }): Promise<PublicUser> {
+  async create(
+    input: {
+      email: string;
+      passwordHash: string;
+      nickname?: string;
+    },
+    transaction: Prisma.TransactionClient = this.prisma,
+  ): Promise<PublicUser> {
     try {
-      const user = await this.prisma.user.create({ data: input, select: publicUserSelect });
+      const user = await transaction.user.create({ data: input, select: publicUserSelect });
       return this.toPublicUser(user);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {

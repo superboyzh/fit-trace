@@ -1,59 +1,176 @@
 <script setup lang="ts">
-import type { ApiErrorResponse } from '@fit-trace/shared';
+import type { ApiErrorResponse, LoginCaptcha } from '@fit-trace/shared';
 import axios from 'axios';
-import { Button, Input, NoticeBar } from 'tdesign-mobile-vue';
-import { computed, ref } from 'vue';
+import { Button, ToastPlugin } from 'tdesign-mobile-vue';
+import { ChevronLeftIcon, BrowseIcon, BrowseOffIcon } from 'tdesign-icons-vue-next';
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { getLoginCaptcha, resetPassword, sendEmailCode } from '@/api/auth';
 import { useAuthStore } from '@/stores/auth';
 
+type Mode = 'login' | 'register' | 'reset';
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
-const mode = ref<'login' | 'register'>('login');
-const email = ref('1431814914@qq.com');
+const mode = ref<Mode>('login');
+const email = ref('');
 const password = ref('');
-const nickname = ref('');
+const emailCode = ref('');
+const showPassword = ref(false);
 const submitting = ref(false);
-const errorMessage = ref('');
-const title = computed(() => (mode.value === 'login' ? '欢迎回来' : '开始记录改变'));
-const subtitle = computed(() =>
-  mode.value === 'login' ? '登录后继续你的记录。' : '创建账户，从今天的第一条记录开始。',
-);
-
-function switchMode(nextMode: 'login' | 'register'): void {
-  mode.value = nextMode;
-  errorMessage.value = '';
+const sendingCode = ref(false);
+const captchaLoading = ref(false);
+const captchaRequired = ref(false);
+const captcha = ref<LoginCaptcha | null>(null);
+const captchaCode = ref('');
+const sentTo = ref('');
+const resendAt = ref(0);
+const codeCooldowns = new Map<string, number>();
+function cooldownKey(): string {
+  return `${mode.value}:${email.value.trim().toLowerCase()}`;
 }
+const now = ref(Date.now());
+const errors = reactive({ email: '', password: '', emailCode: '', captchaCode: '' });
+const busy = computed(() => submitting.value || sendingCode.value);
+const countdown = computed(() => Math.max(0, Math.ceil((resendAt.value - now.value) / 1000)));
+const title = computed(
+  () => ({ login: '登录 FitTrace', register: '创建账户', reset: '找回密码' })[mode.value],
+);
+const subtitle = computed(
+  () =>
+    ({
+      login: '继续记录你的身体、饮食与训练。',
+      register: '验证邮箱，开始记录你的变化。',
+      reset: '通过邮箱验证码设置新密码。',
+    })[mode.value],
+);
+const submitLabel = computed(
+  () => ({ login: '登录', register: '创建账户', reset: '更新密码' })[mode.value],
+);
+const timer = setInterval(() => {
+  now.value = Date.now();
+}, 1000);
+onBeforeUnmount(() => clearInterval(timer));
 
-async function submit(): Promise<void> {
-  if (submitting.value) return;
-  errorMessage.value = '';
-  if (!email.value.trim()) {
-    errorMessage.value = '请输入邮箱地址';
-    return;
-  }
-  if (password.value.length < 8) {
-    errorMessage.value = '密码至少需要 8 位';
-    return;
-  }
-  submitting.value = true;
+function clearErrors(): void {
+  Object.assign(errors, { email: '', password: '', emailCode: '', captchaCode: '' });
+}
+function switchMode(next: Mode): void {
+  if (busy.value) return;
+  mode.value = next;
+  password.value = '';
+  emailCode.value = '';
+  showPassword.value = false;
+  sentTo.value = '';
+  resendAt.value = codeCooldowns.get(cooldownKey()) ?? 0;
+  clearErrors();
+}
+watch(email, () => {
+  errors.email = '';
+  errors.emailCode = '';
+  emailCode.value = '';
+  sentTo.value = '';
+  resendAt.value = codeCooldowns.get(cooldownKey()) ?? 0;
+});
 
+function validateEmail(): boolean {
+  const value = email.value.trim();
+  errors.email = !value
+    ? '请输入邮箱地址'
+    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+      ? '请输入正确的邮箱地址'
+      : '';
+  return !errors.email;
+}
+async function refreshCaptcha(): Promise<void> {
+  if (captchaLoading.value) return;
+  captchaLoading.value = true;
+  captchaCode.value = '';
+  captcha.value = null;
   try {
-    if (mode.value === 'login') {
-      await auth.login({ email: email.value, password: password.value });
-    } else {
-      await auth.register({
-        email: email.value,
-        password: password.value,
-        ...(nickname.value.trim() ? { nickname: nickname.value.trim() } : {}),
-      });
+    captcha.value = await getLoginCaptcha();
+  } finally {
+    captchaLoading.value = false;
+  }
+}
+function handleError(error: unknown): void {
+  if (!axios.isAxiosError<ApiErrorResponse>(error)) return;
+  const code = error.response?.data?.code;
+  const message = error.response?.data?.message ?? '';
+  if (code === 'EMAIL_CODE_INVALID' || code === 'EMAIL_CODE_EXPIRED') errors.emailCode = message;
+  if (code === 'EMAIL_ALREADY_REGISTERED') errors.email = message;
+  if (code === 'INVALID_CREDENTIALS') errors.password = message;
+  if (code === 'LOGIN_CAPTCHA_REQUIRED' || code === 'CAPTCHA_INVALID') {
+    captchaRequired.value = true;
+    errors.captchaCode = message;
+    void refreshCaptcha().catch(() => undefined);
+  } else if (mode.value === 'login' && captchaRequired.value) {
+    void refreshCaptcha().catch(() => undefined);
+  }
+}
+async function requestEmailCode(): Promise<void> {
+  if (busy.value || countdown.value || !validateEmail()) return;
+  sendingCode.value = true;
+  try {
+    const result = await sendEmailCode(
+      email.value.trim(),
+      mode.value === 'register' ? 'REGISTER' : 'RESET_PASSWORD',
+    );
+    sentTo.value = email.value.trim();
+    now.value = Date.now();
+    resendAt.value = now.value + result.retryAfterSeconds * 1000;
+    codeCooldowns.set(cooldownKey(), resendAt.value);
+    ToastPlugin.success('若邮箱可用，验证码将发送至你的邮箱');
+  } catch (error) {
+    handleError(error);
+  } finally {
+    sendingCode.value = false;
+  }
+}
+async function submit(): Promise<void> {
+  if (busy.value) return;
+  clearErrors();
+  const validEmail = validateEmail();
+  if (password.value.length < 8 || password.value.length > 72) errors.password = '密码需要 8–72 位';
+  if (mode.value !== 'login' && !/^\d{6}$/.test(emailCode.value))
+    errors.emailCode = '请输入 6 位邮箱验证码';
+  if (
+    mode.value === 'login' &&
+    captchaRequired.value &&
+    (!captcha.value || !/^[a-z\d]{4}$/i.test(captchaCode.value))
+  )
+    errors.captchaCode = '请输入图片中的 4 位字符';
+  if (!validEmail || Object.values(errors).some(Boolean)) return;
+  submitting.value = true;
+  try {
+    const input = { email: email.value.trim(), password: password.value };
+    if (mode.value === 'reset') {
+      await resetPassword({ ...input, emailCode: emailCode.value });
+      submitting.value = false;
+      switchMode('login');
+      ToastPlugin.success('密码已更新，请使用新密码登录');
+      return;
     }
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard';
+    if (mode.value === 'login') {
+      await auth.login({
+        ...input,
+        ...(captchaRequired.value && captcha.value
+          ? { captchaId: captcha.value.id, captchaCode: captchaCode.value }
+          : {}),
+      });
+    } else {
+      await auth.register({ ...input, emailCode: emailCode.value });
+    }
+    const redirect =
+      typeof route.query.redirect === 'string' &&
+      route.query.redirect.startsWith('/') &&
+      !route.query.redirect.startsWith('//') &&
+      !route.query.redirect.startsWith('/login')
+        ? route.query.redirect
+        : '/dashboard';
     await router.replace(redirect);
   } catch (error) {
-    errorMessage.value = axios.isAxiosError<ApiErrorResponse>(error)
-      ? (error.response?.data.message ?? '请求失败，请稍后重试')
-      : '请求失败，请稍后重试';
+    handleError(error);
   } finally {
     submitting.value = false;
   }
@@ -62,244 +179,401 @@ async function submit(): Promise<void> {
 
 <template>
   <main class="auth-page">
-    <section class="auth-hero">
-      <div class="brand-lockup">
-        <span class="brand-mark"><i></i><i></i><i></i></span>
-        <span>FITTRACE</span>
-      </div>
-      <h1>记录行动，<br />看见改变。</h1>
-      <p>身体、饮食与训练，汇成属于你的长期轨迹。</p>
-    </section>
-
-    <section class="auth-card">
-      <h2>{{ title }}</h2>
-      <p>{{ subtitle }}</p>
-
-      <div class="mode-switch" aria-label="账户操作">
-        <button type="button" :class="{ active: mode === 'login' }" @click="switchMode('login')">
-          登录
-        </button>
+    <div class="auth-shell">
+      <header class="auth-header">
         <button
+          v-if="mode !== 'login'"
+          class="back-button"
           type="button"
-          :class="{ active: mode === 'register' }"
-          @click="switchMode('register')"
+          :disabled="busy"
+          @click="switchMode('login')"
         >
-          注册
+          <ChevronLeftIcon /> 返回登录
         </button>
-      </div>
-
-      <form @submit.prevent="submit">
-        <label v-if="mode === 'register'">
-          <span>昵称（可选）</span>
-          <Input
-            v-model="nickname"
-            autocomplete="nickname"
-            :maxlength="40"
-            clearable
-            placeholder="怎么称呼你"
-          />
-        </label>
-        <label>
-          <span>邮箱</span>
-          <Input v-model="email" autocomplete="email" clearable placeholder="name@example.com" />
-        </label>
-        <label>
-          <span>密码</span>
-          <Input
-            v-model="password"
-            type="password"
-            :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
-            :maxlength="72"
-            clearable
-            placeholder="至少 8 位"
-          />
-        </label>
-
-        <NoticeBar v-if="errorMessage" theme="error" :content="errorMessage" />
-        <Button
-          class="submit-button"
-          type="submit"
-          theme="primary"
-          size="large"
-          block
-          :loading="submitting"
-        >
-          {{ submitting ? '请稍候…' : mode === 'login' ? '登录' : '创建账户' }}
-        </Button>
-      </form>
-    </section>
+        <div v-else class="auth-brand">
+          <span class="brand-mark" aria-hidden="true"><i /><i /><i /></span>FitTrace
+        </div>
+      </header>
+      <section class="auth-content">
+        <h1>{{ title }}</h1>
+        <p class="auth-subtitle">{{ subtitle }}</p>
+        <form novalidate @submit.prevent="submit">
+          <div class="form-field">
+            <label for="auth-email">邮箱</label>
+            <input
+              id="auth-email"
+              v-model="email"
+              type="email"
+              inputmode="email"
+              autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
+              placeholder="输入你的邮箱"
+              :readonly="busy"
+              :aria-invalid="Boolean(errors.email)"
+              aria-describedby="email-error"
+            />
+            <small v-if="errors.email" id="email-error" class="field-error" role="alert">{{
+              errors.email
+            }}</small>
+          </div>
+          <div v-if="mode !== 'login'" class="form-field">
+            <label for="auth-email-code">邮箱验证码</label>
+            <div class="code-field" :class="{ invalid: errors.emailCode }">
+              <input
+                id="auth-email-code"
+                v-model="emailCode"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                placeholder="6 位验证码"
+                :readonly="busy"
+                :aria-invalid="Boolean(errors.emailCode)"
+                aria-describedby="email-code-hint"
+              />
+              <Button
+                variant="text"
+                size="small"
+                :loading="sendingCode"
+                :disabled="busy || countdown > 0"
+                @click="requestEmailCode"
+                >{{ countdown ? `${countdown}s 后重发` : '获取验证码' }}</Button
+              >
+            </div>
+            <small
+              id="email-code-hint"
+              :class="errors.emailCode ? 'field-error' : 'field-hint'"
+              :role="errors.emailCode ? 'alert' : undefined"
+              >{{
+                errors.emailCode ||
+                (sentTo ? `已请求发送至 ${sentTo}，10 分钟内有效` : '验证码用于确认邮箱归属')
+              }}</small
+            >
+          </div>
+          <div class="form-field">
+            <label for="auth-password">{{
+              mode === 'reset' ? '新密码' : mode === 'register' ? '设置密码' : '密码'
+            }}</label>
+            <div class="password-field" :class="{ invalid: errors.password }">
+              <input
+                id="auth-password"
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
+                maxlength="72"
+                :placeholder="mode === 'login' ? '输入密码' : '设置 8–72 位密码'"
+                :readonly="busy"
+                :aria-invalid="Boolean(errors.password)"
+                aria-describedby="password-hint"
+              />
+              <button
+                type="button"
+                class="visibility-button"
+                :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+                :aria-pressed="showPassword"
+                @click="showPassword = !showPassword"
+              >
+                <BrowseOffIcon v-if="showPassword" /><BrowseIcon v-else />
+              </button>
+            </div>
+            <small
+              v-if="errors.password || mode !== 'login'"
+              id="password-hint"
+              :class="errors.password ? 'field-error' : 'field-hint'"
+              :role="errors.password ? 'alert' : undefined"
+              >{{ errors.password || '8–72 位，建议组合字母、数字与符号' }}</small
+            >
+          </div>
+          <div v-if="mode === 'login' && captchaRequired" class="form-field">
+            <label for="auth-captcha">安全验证</label>
+            <div class="captcha-field">
+              <input
+                id="auth-captcha"
+                v-model="captchaCode"
+                maxlength="4"
+                autocomplete="off"
+                autocapitalize="characters"
+                placeholder="图片中的 4 位字符"
+                :readonly="busy"
+                :aria-invalid="Boolean(errors.captchaCode)"
+                aria-describedby="captcha-hint"
+              /><button
+                type="button"
+                class="captcha-image"
+                :disabled="captchaLoading || busy"
+                aria-label="刷新图形验证码"
+                @click="refreshCaptcha().catch(() => undefined)"
+              >
+                <img v-if="captcha" :src="captcha.image" alt="图形验证码" /><span v-else>{{
+                  captchaLoading ? '加载中…' : '点击获取'
+                }}</span>
+              </button>
+            </div>
+            <small id="captcha-hint" :class="errors.captchaCode ? 'field-error' : 'field-hint'">{{
+              errors.captchaCode || '点击图片可换一张，验证码 2 分钟内有效'
+            }}</small>
+          </div>
+          <div v-if="mode === 'login'" class="form-actions">
+            <button type="button" :disabled="busy" @click="switchMode('reset')">忘记密码？</button>
+          </div>
+          <Button
+            class="submit-button"
+            type="submit"
+            theme="primary"
+            size="large"
+            block
+            :loading="submitting"
+            :disabled="sendingCode || (mode === 'login' && captchaRequired && !captcha)"
+            >{{ submitting ? '请稍候…' : submitLabel }}</Button
+          >
+        </form>
+        <p class="mode-link">
+          <template v-if="mode === 'login'"
+            >没有账户？<button type="button" :disabled="busy" @click="switchMode('register')">
+              注册
+            </button></template
+          ><template v-else
+            >已有账户？<button type="button" :disabled="busy" @click="switchMode('login')">
+              登录
+            </button></template
+          >
+        </p>
+      </section>
+      <footer class="auth-footer">记录行动，看见改变。</footer>
+    </div>
   </main>
 </template>
 
 <style scoped lang="scss">
 .auth-page {
   min-height: 100vh;
+  min-height: 100dvh;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
   background: var(--color-background);
 }
-
-.auth-hero {
-  position: relative;
-  overflow: hidden;
-  padding: 26px 22px 64px;
-  color: #fff;
-  background:
-    radial-gradient(circle at 88% 12%, rgb(168 221 53 / 13%), transparent 34%), var(--color-ink);
-
-  h1 {
-    margin: 44px 0 10px;
-    font-size: 2rem;
-    font-weight: 850;
-    line-height: 1.14;
-    letter-spacing: -0.05em;
-  }
-
-  p {
-    max-width: 280px;
-    margin: 0;
-    color: rgb(255 255 255 / 52%);
-    font-size: 0.875rem;
-    line-height: 1.7;
-  }
+.auth-shell {
+  width: min(100%, 440px);
+  margin: 0 auto;
+  padding: 0 24px;
 }
-
-.brand-lockup {
+.auth-header {
+  display: flex;
+  min-height: 88px;
+  align-items: center;
+}
+.auth-brand {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 0.875rem;
-  font-weight: 850;
-  letter-spacing: 0.18em;
+  font-size: 1.1rem;
+  font-weight: 750;
+  color: var(--color-text-primary);
 }
-
 .brand-mark {
   display: flex;
-  height: 16px;
   align-items: flex-end;
-  gap: 2px;
-
+  gap: 3px;
+  height: 20px;
   i {
-    display: block;
     width: 4px;
+    border-radius: 2px;
     background: var(--color-primary);
-    transform: skewX(-12deg);
-
     &:nth-child(1) {
-      height: 8px;
+      height: 9px;
     }
-
     &:nth-child(2) {
-      height: 12px;
+      height: 15px;
     }
-
     &:nth-child(3) {
-      height: 16px;
+      height: 20px;
     }
   }
 }
-
-.auth-card {
-  position: relative;
-  z-index: 2;
-  width: calc(100% - 32px);
-  margin: -38px auto 24px;
-  padding: 22px 20px 24px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-card);
-
-  h2 {
-    margin: 0 0 4px;
-    font-size: 1.35rem;
-    font-weight: 850;
-    letter-spacing: -0.04em;
-  }
-
-  > p {
-    margin: 0 0 18px;
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-  }
-}
-
-.mode-switch {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  margin-bottom: var(--spacing-lg);
-
-  button {
-    padding: 9px 4px;
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
+.auth-content {
+  padding-top: 22px;
+  h1 {
+    margin: 0;
+    font-size: 1.65rem;
     font-weight: 750;
-    background: transparent;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-
-    &.active {
-      color: var(--color-text-primary);
-      background: var(--color-primary-light);
-      border-color: var(--color-primary-border);
-    }
+    letter-spacing: -0.03em;
   }
 }
-
-form,
-label {
-  display: grid;
+.auth-subtitle {
+  margin: 9px 0 32px;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
 }
-
 form {
-  gap: var(--spacing-md);
+  display: grid;
+  gap: 20px;
 }
-
-label {
-  gap: 7px;
-
-  span {
-    color: var(--color-text-secondary);
+.form-field {
+  display: grid;
+  gap: 8px;
+  label {
     font-size: 0.875rem;
-    font-weight: 750;
+    font-weight: 650;
   }
 }
-
-:deep(.t-input) {
+input {
   width: 100%;
-}
-
-.submit-button {
-  margin-top: 2px;
-}
-
-@media (min-width: 560px) {
-  .auth-page {
-    display: grid;
-    width: min(100%, 880px);
-    min-height: 620px;
-    grid-template-columns: 1.05fr 0.95fr;
-    align-items: center;
-    margin: 5vh auto;
-    overflow: hidden;
-    background: var(--color-surface);
-    border-radius: 20px;
-    box-shadow: 0 28px 64px rgb(17 23 21 / 14%);
+  min-width: 0;
+  height: 48px;
+  padding: 0 13px;
+  outline: none;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  font-size: 16px;
+  &::placeholder {
+    color: var(--color-text-tertiary);
   }
-
-  .auth-hero {
-    min-height: 100%;
-    padding: 34px;
-
-    h1 {
-      margin-top: 110px;
-    }
+  &:focus {
+    border-color: var(--color-primary);
   }
-
-  .auth-card {
-    width: auto;
-    margin: 0 34px;
+  &[aria-invalid='true'] {
+    border-color: var(--color-danger-text);
+  }
+}
+.password-field,
+.code-field {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  &:focus-within {
+    border-color: var(--color-primary);
+  }
+  &.invalid {
+    border-color: var(--color-danger-text);
+  }
+  input {
     border: 0;
-    box-shadow: none;
+    background: transparent;
+  }
+}
+.code-field {
+  > .t-button {
+    flex-shrink: 0;
+    margin-right: 5px;
+    font-size: 0.8125rem;
+  }
+}
+.visibility-button {
+  display: grid;
+  flex: 0 0 44px;
+  height: 44px;
+  place-items: center;
+  color: var(--color-text-secondary);
+  svg {
+    font-size: 21px;
+  }
+}
+button:not(.t-button) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+}
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-secondary) !important;
+  font-size: 0.875rem;
+  svg {
+    font-size: 20px;
+  }
+}
+.field-error,
+.field-hint {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.field-error {
+  color: var(--color-danger-text);
+}
+.field-hint {
+  color: var(--color-text-tertiary);
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+  font-size: 0.8125rem;
+}
+.submit-button {
+  margin-top: 4px;
+}
+.mode-link {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 26px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  button {
+    font-weight: 650;
+  }
+}
+.captcha-field {
+  display: flex;
+  gap: 8px;
+  input {
+    flex: 1;
+  }
+}
+.captcha-image {
+  display: grid;
+  flex: 0 0 116px;
+  height: 48px;
+  overflow: hidden;
+  place-items: center;
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 8px;
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  span {
+    font-size: 0.75rem;
+  }
+}
+.auth-footer {
+  padding: 44px 0 24px;
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: 0.75rem;
+}
+@media (min-width: 600px) {
+  .auth-shell {
+    padding-top: 6vh;
+  }
+}
+@media (max-height: 650px) {
+  .auth-header {
+    min-height: 64px;
+  }
+  .auth-content {
+    padding-top: 8px;
+  }
+  .auth-subtitle {
+    margin-bottom: 24px;
+  }
+  .auth-footer {
+    padding-top: 28px;
   }
 }
 </style>

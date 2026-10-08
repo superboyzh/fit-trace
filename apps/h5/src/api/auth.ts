@@ -1,13 +1,48 @@
-import type { ApiResponse, AuthResult, PublicUser } from '@fit-trace/shared';
+import type {
+  ApiResponse,
+  AuthResult,
+  EmailCodePurpose,
+  EmailCodeResult,
+  LoginCaptcha,
+  PublicUser,
+} from '@fit-trace/shared';
 import { http } from './http';
 
 export interface LoginInput {
   email: string;
   password: string;
+  captchaId?: string;
+  captchaCode?: string;
 }
 
 export interface RegisterInput extends LoginInput {
+  emailCode: string;
   nickname?: string;
+}
+
+export async function sendEmailCode(
+  email: string,
+  purpose: EmailCodePurpose,
+): Promise<EmailCodeResult> {
+  const response = await http.post<ApiResponse<EmailCodeResult>>(
+    '/auth/email-code',
+    { email, purpose },
+    { timeout: 45_000 },
+  );
+  return response.data.data;
+}
+
+export async function getLoginCaptcha(): Promise<LoginCaptcha> {
+  const response = await http.get<ApiResponse<LoginCaptcha>>('/auth/captcha');
+  return response.data.data;
+}
+
+export async function resetPassword(input: {
+  email: string;
+  emailCode: string;
+  password: string;
+}): Promise<void> {
+  await http.post<ApiResponse<null>>('/auth/reset-password', input);
 }
 
 export async function login(input: LoginInput): Promise<AuthResult> {

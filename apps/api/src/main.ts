@@ -30,6 +30,12 @@ async function bootstrap(): Promise<void> {
     logger: new AppLogger(),
   });
   const config = app.get(ConfigService);
+  const trustedProxy = config.get<string>('TRUST_PROXY');
+  if (trustedProxy?.trim())
+    app.set(
+      'trust proxy',
+      trustedProxy.split(',').map((item) => item.trim()),
+    );
 
   app.setGlobalPrefix('api/v1');
   app.enableCors();

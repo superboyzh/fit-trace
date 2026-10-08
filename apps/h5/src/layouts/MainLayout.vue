@@ -102,12 +102,13 @@ async function navigate(path: string): Promise<void> {
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
+  padding: var(--app-safe-area-top) var(--app-safe-area-right) 0 var(--app-safe-area-left);
   background: var(--color-background);
   box-shadow: 0 0 0 1px var(--color-border);
 
   &__content {
-    min-height: 100vh;
-    min-height: 100dvh;
+    min-height: calc(100vh - var(--app-safe-area-top));
+    min-height: calc(100dvh - var(--app-safe-area-top));
     /* 留出悬浮按钮的高度，避免盖住卡片右下角的操作 */
     padding-bottom: var(--bottom-nav-space);
   }
@@ -118,7 +119,7 @@ async function navigate(path: string): Promise<void> {
 
   /* 二级页面没有标签栏与悬浮按钮，收回预留空间 */
   &:not(.app-shell--with-nav) .app-shell__content {
-    padding-bottom: var(--spacing-lg);
+    padding-bottom: calc(var(--spacing-lg) + var(--app-safe-area-bottom));
   }
 }
 
@@ -127,7 +128,7 @@ async function navigate(path: string): Promise<void> {
   z-index: 20;
   left: 50%;
   /* 悬浮胶囊：离底边留白，比贴边通栏更接近 iOS 26 的观感 */
-  bottom: max(10px, env(safe-area-inset-bottom));
+  bottom: max(10px, var(--app-safe-area-bottom));
   display: grid;
   width: min(calc(100% - 24px), 520px);
   grid-template-columns: repeat(4, 1fr);

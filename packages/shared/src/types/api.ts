@@ -272,3 +272,8 @@ export interface DashboardOverview {
     workoutMinutes: number;
   };
 }
+
+export interface ResetPasswordVerification {
+  resetToken: string;
+  expiresInSeconds: number;
+}

@@ -30,8 +30,9 @@ function fixture() {
             row?.email === email && row?.purpose === purpose ? [{ ...row }] : [],
           emailVerification: {
             update: async ({ data }) => {
-              if (data.attempts) row.attempts += data.attempts.increment;
-              if (data.consumedAt) row.consumedAt = data.consumedAt;
+              if (typeof data.attempts === 'object') row.attempts += data.attempts.increment;
+              for (const [key, value] of Object.entries(data))
+                if (key !== 'attempts' || typeof value !== 'object') row[key] = value;
             },
           },
         });
@@ -197,8 +198,8 @@ test('login third failure requires captcha and reset increments session version'
   };
   const user = { passwordHash: await hash('correct-password', 4), id: 'owner', tokenVersion: 0 };
   const auth = new AuthService({ findByEmail: async () => user }, {}, security, {
-    withCode: async (_, purpose, __, action) => {
-      assert.equal(purpose, 'RESET_PASSWORD');
+    withResetToken: async (_, token, action) => {
+      assert.equal(token, 'test-reset-token');
       return action({
         user: {
           update: async (value) => {
@@ -222,9 +223,80 @@ test('login third failure requires captcha and reset increments session version'
     (e) => e.gated,
   );
   await auth.resetPassword(
-    { email: 'a@example.com', emailCode: '123456', password: 'new-password' },
+    { email: 'a@example.com', resetToken: 'test-reset-token', password: 'new-password' },
     'ip',
   );
   assert.deepEqual(update.data.tokenVersion, { increment: 1 });
   assert.equal(await compare('new-password', update.data.passwordHash), true);
+});
+
+test('password reset requires email verification, binds grant to email and consumes it once', async () => {
+  const f = fixture();
+  f.prisma.user.findUnique = async () => ({ id: 'existing' });
+  await f.service.send('a@example.com', 'RESET_PASSWORD', 'ip');
+  const emailCode = f.code();
+  await assert.rejects(
+    f.service.withResetToken('a@example.com', emailCode, async () => 1),
+    codeError('RESET_VERIFICATION_INVALID'),
+  );
+  const grant = await f.service.verifyResetCode('a@example.com', emailCode);
+  assert.equal(grant.expiresInSeconds, 300);
+  assert.match(grant.resetToken, /^[a-f0-9-]{36}$/);
+  assert.notEqual(f.row().codeHash, grant.resetToken);
+  await assert.rejects(
+    f.service.verifyResetCode('a@example.com', emailCode),
+    codeError('EMAIL_CODE_INVALID'),
+  );
+  await assert.rejects(
+    f.service.withResetToken('other@example.com', grant.resetToken, async () => 1),
+    codeError('RESET_VERIFICATION_INVALID'),
+  );
+  await assert.rejects(
+    f.service.withResetToken('a@example.com', grant.resetToken, async () => {
+      throw new Error('write failed');
+    }),
+    /write failed/,
+  );
+  assert.equal(
+    await f.service.withResetToken('a@example.com', grant.resetToken, async () => 42),
+    42,
+  );
+  await assert.rejects(
+    f.service.withResetToken('a@example.com', grant.resetToken, async () => 1),
+    codeError('RESET_VERIFICATION_INVALID'),
+  );
+});
+
+test('reset grant expires and resending the email invalidates an earlier grant', async () => {
+  const f = fixture();
+  f.prisma.user.findUnique = async () => ({ id: 'existing' });
+  await f.service.send('a@example.com', 'RESET_PASSWORD', 'ip');
+  const grant = await f.service.verifyResetCode('a@example.com', f.code());
+  f.row().expiresAt = new Date(0);
+  await assert.rejects(
+    f.service.withResetToken('a@example.com', grant.resetToken, async () => 1),
+    codeError('RESET_VERIFICATION_INVALID'),
+  );
+  await f.service.send('a@example.com', 'RESET_PASSWORD', 'ip');
+  const next = await f.service.verifyResetCode('a@example.com', f.code());
+  await f.service.send('a@example.com', 'RESET_PASSWORD', 'ip');
+  await assert.rejects(
+    f.service.withResetToken('a@example.com', next.resetToken, async () => 1),
+    codeError('RESET_VERIFICATION_INVALID'),
+  );
+});
+
+test('reset DTO requires the server grant; email code alone cannot reset password', () => {
+  const { plainToInstance } = require('class-transformer');
+  const { validateSync } = require('class-validator');
+  const { ResetPasswordDto } = require('../dist/auth/dto/reset-password.dto.js');
+  const input = plainToInstance(ResetPasswordDto, {
+    email: ' A@EXAMPLE.COM ',
+    emailCode: '123456',
+    password: 'new-password',
+  });
+  assert.equal(input.email, 'a@example.com');
+  const errors = validateSync(input, { whitelist: true, forbidNonWhitelisted: true });
+  assert.ok(errors.some((error) => error.property === 'resetToken'));
+  assert.ok(errors.some((error) => error.property === 'emailCode'));
 });

@@ -76,12 +76,12 @@ button {
   width: min(100%, $page-max-width);
   min-height: 100vh;
   margin: 0 auto;
-  padding: 0 var(--spacing-md) calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+  padding: 0 var(--spacing-md) calc(var(--spacing-xl) + var(--app-safe-area-bottom));
 }
 
 .view-page {
-  min-height: calc(100vh - var(--bottom-nav-space));
-  min-height: calc(100dvh - var(--bottom-nav-space));
+  min-height: calc(100vh - var(--app-safe-area-top) - var(--bottom-nav-space));
+  min-height: calc(100dvh - var(--app-safe-area-top) - var(--bottom-nav-space));
   padding: 0 var(--spacing-md) var(--spacing-xl);
 }
 

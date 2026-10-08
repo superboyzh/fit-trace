@@ -4,6 +4,7 @@ import { compare, hash } from 'bcryptjs';
 import { UsersService, type PublicUser } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { VerifyResetCodeDto } from './dto/verify-reset-code.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthSecurityService } from './auth-security.service';
 import { EmailVerificationService } from './email-verification.service';
@@ -74,11 +75,17 @@ export class AuthService {
     return this.buildAuthResult(publicUser, user.tokenVersion);
   }
 
+  async verifyResetCode(dto: VerifyResetCodeDto, ip: string) {
+    await this.security.limit('reset-verify-ip', ip, 30, 900);
+    await this.security.limit('reset-verify-email', dto.email, 10, 900);
+    return this.verification.verifyResetCode(dto.email, dto.emailCode);
+  }
+
   async resetPassword(dto: ResetPasswordDto, ip: string): Promise<void> {
     await this.security.limit('reset-ip', ip, 20, 3600);
     await this.security.limit('reset-email', dto.email, 10, 900);
     const passwordHash = await hash(dto.password, 12);
-    await this.verification.withCode(dto.email, 'RESET_PASSWORD', dto.emailCode, async (tx) => {
+    await this.verification.withResetToken(dto.email, dto.resetToken, async (tx) => {
       await tx.user.update({
         where: { email: dto.email },
         data: { passwordHash, tokenVersion: { increment: 1 } },

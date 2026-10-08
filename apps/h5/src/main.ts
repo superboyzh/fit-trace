@@ -5,11 +5,13 @@ import router from './router';
 import { pinia } from './stores';
 import './styles/global.scss';
 import { applyAccent, applyTheme, watchSystemTheme } from './utils/theme';
+import { setupNativeShell } from './utils/native';
 
 // 主题要在挂载前定好，避免首屏闪一下浅色
 applyTheme();
 applyAccent();
 watchSystemTheme();
+setupNativeShell();
 
 createApp(App).use(pinia).use(router).mount('#app');
 

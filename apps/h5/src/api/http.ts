@@ -7,7 +7,7 @@ import { getAccessToken } from '@/utils/auth-token';
 import { showRequestError } from '@/utils/request-error';
 
 export const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://10.0.3.54:3000/api/v1',
   timeout: 10_000,
 });
 

@@ -3,6 +3,11 @@
  * 由 utils/theme.ts 依据系统偏好或用户选择写入。
  */
 :root {
+  /* Capacitor 8 为旧版 Android WebView 注入安全区变量，浏览器使用 env 回退。 */
+  --app-safe-area-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --app-safe-area-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --app-safe-area-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+  --app-safe-area-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
   /* 品牌色：酸绿只做强调，不承担大面积底色 */
   --color-primary: #a8dd35;
   /* 酸绿填充底上的前景色：两种主题下都是墨色 */
@@ -53,7 +58,7 @@
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 40px;
-  --bottom-nav-space: calc(78px + env(safe-area-inset-bottom));
+  --bottom-nav-space: calc(78px + var(--app-safe-area-bottom));
   --shadow-card: 0 2px 10px rgb(20 28 25 / 4%);
 
   /* 动效 */

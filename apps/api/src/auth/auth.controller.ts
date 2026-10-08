@@ -1,4 +1,9 @@
-import type { ApiPayload, EmailCodeResult, LoginCaptcha } from '@fit-trace/shared';
+import type {
+  ApiPayload,
+  EmailCodeResult,
+  LoginCaptcha,
+  ResetPasswordVerification,
+} from '@fit-trace/shared';
 import { Body, Controller, Get, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -9,6 +14,7 @@ import type { AuthResult } from './auth.types';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { EmailCodeDto } from './dto/email-code.dto';
+import { VerifyResetCodeDto } from './dto/verify-reset-code.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthSecurityService } from './auth-security.service';
 import { EmailVerificationService } from './email-verification.service';
@@ -46,6 +52,14 @@ export class AuthController {
   @Get('captcha')
   async captcha(@Req() request: Request): Promise<ApiPayload<LoginCaptcha>> {
     return { data: await this.security.createCaptcha(this.clientIp(request)) };
+  }
+
+  @Post('reset-password/verify-code')
+  async verifyResetCode(
+    @Body() dto: VerifyResetCodeDto,
+    @Req() request: Request,
+  ): Promise<ApiPayload<ResetPasswordVerification>> {
+    return { data: await this.auth.verifyResetCode(dto, this.clientIp(request)) };
   }
 
   @Post('reset-password')

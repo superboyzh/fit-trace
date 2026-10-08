@@ -672,7 +672,7 @@ onDeactivated(closeSetting);
     background: rgb(0 0 0 / 36%);
   }
   &__content {
-    padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+    padding: 24px 20px calc(24px + var(--app-safe-area-bottom));
   }
   &__header {
     display: flex;

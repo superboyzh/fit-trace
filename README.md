@@ -31,6 +31,17 @@ pnpm typecheck
 pnpm build
 ```
 
+## Android APK
+
+H5 已接入 Capacitor。配置 Android SDK 与 JDK 21 后，在仓库根目录执行：
+
+```bash
+pnpm android:apk   # 构建 H5、同步资源并生成测试 APK
+pnpm android:open  # 在 Android Studio 打开工程
+```
+
+安装包位于 `apps/h5/android/app/build/outputs/apk/debug/app-debug.apk`。局域网接口、环境配置和正式签名步骤见 [Android 打包说明](docs/ANDROID.md)。
+
 ## 代码规范与编辑器
 
 提交前跑一次：

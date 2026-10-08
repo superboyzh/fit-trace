@@ -5,6 +5,7 @@ import type {
   EmailCodeResult,
   LoginCaptcha,
   PublicUser,
+  ResetPasswordVerification,
 } from '@fit-trace/shared';
 import { http } from './http';
 
@@ -37,9 +38,20 @@ export async function getLoginCaptcha(): Promise<LoginCaptcha> {
   return response.data.data;
 }
 
+export async function verifyResetCode(
+  email: string,
+  emailCode: string,
+): Promise<ResetPasswordVerification> {
+  const response = await http.post<ApiResponse<ResetPasswordVerification>>(
+    '/auth/reset-password/verify-code',
+    { email, emailCode },
+  );
+  return response.data.data;
+}
+
 export async function resetPassword(input: {
   email: string;
-  emailCode: string;
+  resetToken: string;
   password: string;
 }): Promise<void> {
   await http.post<ApiResponse<null>>('/auth/reset-password', input);

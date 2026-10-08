@@ -1,6 +1,10 @@
-import { randomInt } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { BadRequestException, Injectable } from '@nestjs/common';
-import type { EmailCodePurpose, EmailCodeResult } from '@fit-trace/shared';
+import type {
+  EmailCodePurpose,
+  EmailCodeResult,
+  ResetPasswordVerification,
+} from '@fit-trace/shared';
 import type { EmailVerification, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthSecurityService } from './auth-security.service';
@@ -48,11 +52,46 @@ export class EmailVerificationService {
     return { retryAfterSeconds: 60, expiresInSeconds: 600 };
   }
 
+  async verifyResetCode(email: string, code: string): Promise<ResetPasswordVerification> {
+    const resetToken = randomUUID();
+    return this.withCode(email, 'RESET_PASSWORD', code, async (tx) => {
+      // 消费邮箱验证码后，将该记录转为短期重置凭证；摘要使用独立用途前缀。
+      await tx.emailVerification.update({
+        where: { email_purpose: { email, purpose: 'RESET_PASSWORD' } },
+        data: {
+          codeHash: this.security.digest(`reset-token:${email}:${resetToken}`),
+          expiresAt: new Date(Date.now() + 300000),
+          consumedAt: null,
+          attempts: 0,
+        },
+      });
+      return { resetToken, expiresInSeconds: 300 };
+    });
+  }
+
+  async withResetToken<T>(
+    email: string,
+    token: string,
+    action: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.withSecret(email, 'RESET_PASSWORD', token, action, false);
+  }
+
   async withCode<T>(
     email: string,
     purpose: EmailCodePurpose,
     code: string,
     action: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.withSecret(email, purpose, code, action, true);
+  }
+
+  private async withSecret<T>(
+    email: string,
+    purpose: EmailCodePurpose,
+    code: string,
+    action: (tx: Prisma.TransactionClient) => Promise<T>,
+    isEmailCode: boolean,
   ): Promise<T> {
     const result = await this.prisma.$transaction(
       async (tx) => {
@@ -63,12 +102,16 @@ export class EmailVerificationService {
         const row = rows[0];
         if (!row || row.consumedAt || row.expiresAt <= new Date())
           return { ok: false as const, expired: true };
-        if (row.attempts >= 5) return { ok: false as const, expired: false };
-        if (!this.security.matches(`email:${email}:${purpose}:${code}`, row.codeHash)) {
-          await tx.emailVerification.update({
-            where: { id: row.id },
-            data: { attempts: { increment: 1 } },
-          });
+        if (isEmailCode && row.attempts >= 5) return { ok: false as const, expired: false };
+        const secret = isEmailCode
+          ? `email:${email}:${purpose}:${code}`
+          : `reset-token:${email}:${code}`;
+        if (!this.security.matches(secret, row.codeHash)) {
+          if (isEmailCode)
+            await tx.emailVerification.update({
+              where: { id: row.id },
+              data: { attempts: { increment: 1 } },
+            });
           return { ok: false as const, expired: false };
         }
         await tx.emailVerification.update({
@@ -81,10 +124,16 @@ export class EmailVerificationService {
     );
     if (!result.ok)
       throw new BadRequestException({
-        code: result.expired ? 'EMAIL_CODE_EXPIRED' : 'EMAIL_CODE_INVALID',
-        message: result.expired
-          ? '邮箱验证码已过期或未发送，请重新获取'
-          : '邮箱验证码错误或尝试次数过多，请重新获取',
+        code: !isEmailCode
+          ? 'RESET_VERIFICATION_INVALID'
+          : result.expired
+            ? 'EMAIL_CODE_EXPIRED'
+            : 'EMAIL_CODE_INVALID',
+        message: !isEmailCode
+          ? '邮箱验证已失效，请重新验证邮箱'
+          : result.expired
+            ? '邮箱验证码已过期或未发送，请重新获取'
+            : '邮箱验证码错误或尝试次数过多，请重新获取',
       });
     return result.value;
   }

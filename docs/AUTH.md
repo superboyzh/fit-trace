@@ -33,13 +33,14 @@ pnpm dev
 
 所有路径以 `/api/v1` 开头，继续返回统一 `{code,message,data,meta}`。
 
-| 方法与路径                  | 请求与行为                                                                                                       |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| POST `/auth/email-code`     | `{email,purpose}`，purpose 为 `REGISTER` 或 `RESET_PASSWORD`；返回 `{retryAfterSeconds:60,expiresInSeconds:600}` |
-| POST `/auth/register`       | `{email,password,emailCode}`；验证邮箱后创建账号并登录；兼容可选 nickname                                        |
-| POST `/auth/login`          | `{email,password}`；需要图形验证时追加 `{captchaId,captchaCode}`                                                 |
-| GET `/auth/captcha`         | 返回 `{id,image,expiresInSeconds:120}`；image 是 SVG data URL                                                    |
-| POST `/auth/reset-password` | `{email,password,emailCode}`；成功 data 为 null，回登录页重新登录                                                |
+| 方法与路径                              | 请求与行为                                                                                                       |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| POST `/auth/email-code`                 | `{email,purpose}`，purpose 为 `REGISTER` 或 `RESET_PASSWORD`；返回 `{retryAfterSeconds:60,expiresInSeconds:600}` |
+| POST `/auth/register`                   | `{email,password,emailCode}`；验证邮箱后创建账号并登录；兼容可选 nickname                                        |
+| POST `/auth/login`                      | `{email,password}`；需要图形验证时追加 `{captchaId,captchaCode}`                                                 |
+| GET `/auth/captcha`                     | 返回 `{id,image,expiresInSeconds:120}`；image 是 SVG data URL                                                    |
+| POST `/auth/reset-password/verify-code` | `{email,emailCode}`；返回 `{resetToken,expiresInSeconds:300}`，随后进入设置密码                                  |
+| POST `/auth/reset-password`             | `{email,password,resetToken}`；成功 data 为 null，回登录页重新登录                                               |
 
 密码 8–72 个字符。邮箱由后端去除首尾空格并转小写。验证码只保存 HMAC 摘要，按邮箱和用途隔离，6 位、10 分钟有效、一次使用，错误 5 次锁定。验证码消费和账号写入共用数据库事务，业务失败会回滚消费。重新发送会使上一验证码失效。
 
@@ -65,3 +66,11 @@ node --test apps/api/test/auth.test.mjs apps/api/test/dashboard.test.mjs apps/ap
 认证服务测试使用数据库和邮件替身，覆盖验证码用途隔离、到期、重复使用、错误次数、事务回滚、发信失败清理、图形验证码 IP 绑定、JWT 版本、登录失败阈值和密码重置。接口测试挂载真实控制器并替换服务，验证统一返回格式。替身测试不能证明 PostgreSQL 的实际并发锁、SMTP 投递或真机体验。
 
 上线前用已配置的 QQ 邮箱和迁移后的开发库完成真实收信、注册、重置、旧会话失效、重复验证码以及并发提交验证。手机系统键盘、密码管理器与实际收信仍需真机验收。
+
+## 找回密码分步流程（2026-10-08）
+
+第一步只填写邮箱和 6 位邮件验证码。后端验证成功后，将已消费验证码的记录转为 5 分钟有效的重置凭证，前端进入第二步，显示已验证邮箱、新密码和确认密码。重置凭证只保存在页面内存，刷新、返回验证或更换邮箱后重新验证。
+
+凭证使用 UUID 随机值，数据库仅存 HMAC 摘要；其摘要前缀与邮件验证码隔离，绑定邮箱，只能成功使用一次。消费凭证和更新密码共用加行锁的数据库事务；写入失败回滚，重新发送邮件会使先前凭证失效。重置接口不接受旧的 `emailCode` 参数，未验证不能直接提交新密码；失效返回 `RESET_VERIFICATION_INVALID`，前端退回邮箱验证步骤。
+
+邮箱验证接口额外限制同 IP 30 次/15 分钟、同邮箱 10 次/15 分钟。本次复用现有认证表，不需要新增迁移。页面的确认密码用于一致性校验，后端仍独立校验密码格式和重置凭证。

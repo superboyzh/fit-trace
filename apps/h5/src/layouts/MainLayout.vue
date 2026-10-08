@@ -98,6 +98,8 @@ async function navigate(path: string): Promise<void> {
 
 <style scoped lang="scss">
 .app-shell {
+  --app-content-bottom-space: calc(var(--spacing-lg) + var(--app-safe-area-bottom));
+
   width: min(100%, 560px);
   min-height: 100vh;
   min-height: 100dvh;
@@ -106,20 +108,19 @@ async function navigate(path: string): Promise<void> {
   background: var(--color-background);
   box-shadow: 0 0 0 1px var(--color-border);
 
+  &--with-nav {
+    --app-content-bottom-space: var(--bottom-nav-space);
+  }
+
+  &--with-fab {
+    --app-content-bottom-space: calc(var(--bottom-nav-space) + 52px);
+  }
+
   &__content {
     min-height: calc(100vh - var(--app-safe-area-top));
     min-height: calc(100dvh - var(--app-safe-area-top));
-    /* 留出悬浮按钮的高度，避免盖住卡片右下角的操作 */
-    padding-bottom: var(--bottom-nav-space);
-  }
-
-  &--with-fab .app-shell__content {
-    padding-bottom: calc(var(--bottom-nav-space) + 52px);
-  }
-
-  /* 二级页面没有标签栏与悬浮按钮，收回预留空间 */
-  &:not(.app-shell--with-nav) .app-shell__content {
-    padding-bottom: calc(var(--spacing-lg) + var(--app-safe-area-bottom));
+    /* 与页面最小高度共用预留空间，避免空页面被底部控件撑出滚动。 */
+    padding-bottom: var(--app-content-bottom-space);
   }
 }
 

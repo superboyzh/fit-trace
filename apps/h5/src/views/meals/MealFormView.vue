@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ApiErrorResponse, MealRecord, MealType } from '@fit-trace/shared';
-import axios from 'axios';
+import { showRequestError } from '@/utils/request-error';
+import type { MealRecord, MealType } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import {
   Button,
@@ -64,9 +64,22 @@ const appliedHint = ref('');
 const fileInput = ref<HTMLInputElement | null>(null);
 const recentMeals = ref<MealRecord[]>([]);
 const templateSource = ref('');
+const entryMode = ref<'manual' | 'photo' | 'recent'>('manual');
+const entryModes = [
+  { value: 'manual', label: '手动填写' },
+  { value: 'photo', label: '拍照识别' },
+  { value: 'recent', label: '最近吃过' },
+] as const;
+const hour = dayjs().hour();
 let foodKey = 1;
 const formData = reactive({
-  type: 'BREAKFAST' as MealType,
+  type: (hour < 10
+    ? 'BREAKFAST'
+    : hour < 15
+      ? 'LUNCH'
+      : hour < 21
+        ? 'DINNER'
+        : 'SNACK') as MealType,
   recordedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
   note: '',
   foods: [
@@ -74,10 +87,6 @@ const formData = reactive({
   ] as EditableFood[],
 });
 const recordedAtDisplay = computed(() => dayjs(formData.recordedAt).format('YYYY-MM-DD HH:mm'));
-const selectedMealLabel = computed(
-  () => mealTypes.find((item) => item.value === formData.type)?.label ?? '这一餐',
-);
-const latestMeal = computed(() => recentMeals.value[0] ?? null);
 const recentFoods = computed(() => {
   const result: Array<{ name: string; amount: string; calories: number | null }> = [];
   const names = new Set<string>();
@@ -107,7 +116,6 @@ function removeFood(key: number): void {
 }
 
 function applyMealTemplate(meal: MealRecord, announce = true): void {
-  formData.type = meal.type;
   formData.note = meal.note ?? '';
   formData.foods = meal.foods.map((food) => ({
     key: ++foodKey,
@@ -119,10 +127,12 @@ function applyMealTemplate(meal: MealRecord, announce = true): void {
   imageUrl.value = '';
   suggestions.value = [];
   templateSource.value = `${dayjs(meal.recordedAt).format('M月D日')}的${mealTypes.find((item) => item.value === meal.type)?.label ?? '记录'}`;
-  if (announce) ToastPlugin.success('已带入上一餐，可继续修改');
+  entryMode.value = 'manual';
+  if (announce) ToastPlugin.success('已带入食物，请确认后保存');
 }
 
 function addRecentFood(food: { name: string; amount: string; calories: number | null }): void {
+  entryMode.value = 'manual';
   const next = {
     key: ++foodKey,
     name: food.name,
@@ -157,7 +167,7 @@ async function onPhotoChange(event: Event): Promise<void> {
     imageUrl.value = uploaded.url;
     await recognizePhoto();
   } catch (error) {
-    ToastPlugin.error(resolveErrorMessage(error, '照片上传失败，请稍后重试'));
+    showRequestError(error, '照片上传失败，请稍后重试');
   } finally {
     uploadingPhoto.value = false;
   }
@@ -183,7 +193,7 @@ async function recognizePhoto(hint?: string): Promise<void> {
       ToastPlugin.warning('没有识别到食物，请手动添加');
     }
   } catch (error) {
-    ToastPlugin.error(resolveErrorMessage(error, '识别失败，请手动填写'));
+    showRequestError(error, '识别失败，请手动填写');
   } finally {
     recognizing.value = false;
   }
@@ -232,13 +242,8 @@ function applySuggestions(): void {
   }
   formData.foods = nextFoods;
   suggestions.value = [];
+  entryMode.value = 'manual';
   ToastPlugin.success(`已添加 ${picked.length} 种食物，可继续修改`);
-}
-
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (axios.isAxiosError<ApiErrorResponse>(error)) return error.response?.data.message ?? fallback;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
 }
 
 function buildInput(): MealInput | null {
@@ -283,16 +288,25 @@ async function submit(): Promise<void> {
     } else {
       const created = await createMeal(input);
       ToastPlugin.success('饮食记录已保存');
-      await router.replace(`/meals/${created.id}`);
+      await router.replace(
+        route.query.returnTo === '/dashboard' ? '/dashboard' : `/meals/${created.id}`,
+      );
     }
   } catch (error) {
-    ToastPlugin.error(resolveErrorMessage(error, '保存失败，请稍后重试'));
+    showRequestError(error, '保存失败，请稍后重试');
   } finally {
     submitting.value = false;
   }
 }
 
 onMounted(async () => {
+  if (isEdit.value) {
+    void getMeals({ page: 1, pageSize: 12 })
+      .then((result) => {
+        recentMeals.value = result.data;
+      })
+      .catch(() => undefined);
+  }
   try {
     if (mealId.value) {
       const meal = await getMeal(mealId.value);
@@ -300,6 +314,7 @@ onMounted(async () => {
       formData.recordedAt = dayjs(meal.recordedAt).format('YYYY-MM-DD HH:mm:ss');
       formData.note = meal.note ?? '';
       imageUrl.value = meal.imageUrl ?? '';
+      if (imageUrl.value) entryMode.value = 'photo';
       formData.foods = meal.foods.map((food) => ({
         key: ++foodKey,
         name: food.name,
@@ -333,36 +348,70 @@ onMounted(async () => {
         <ChevronLeftIcon /> 返回
       </Button>
       <h1>{{ isEdit ? '编辑饮食记录' : '记录这一餐' }}</h1>
-      <p>先如实记录，不必追求每一项都绝对精确。</p>
+      <p>记下吃了什么，份量和热量可以选填。</p>
     </header>
 
     <Loading class="page-loading" :loading="loading" text="正在读取饮食记录">
       <section class="surface-card meal-form-card">
-        <div v-if="!isEdit && (latestMeal || recentFoods.length)" class="quick-start field-block">
-          <div class="quick-start__heading">
-            <div>
-              <span class="field-label">快速开始</span>
-              <small>历史内容只会带入表单，确认保存后才新增记录</small>
-            </div>
-            <span v-if="templateSource">已带入：{{ templateSource }}</span>
+        <div class="field-block">
+          <span class="field-label">餐次</span>
+          <div class="meal-type-grid">
+            <button
+              v-for="item in mealTypes"
+              :key="item.value"
+              type="button"
+              :class="{ active: formData.type === item.value }"
+              @click="formData.type = item.value"
+            >
+              <strong>{{ item.label }}</strong>
+            </button>
           </div>
+        </div>
+
+        <div class="field-block">
+          <span class="field-label">记录时间</span>
+          <Input :model-value="recordedAtDisplay" readonly @click="datePickerVisible = true">
+            <template #suffix-icon><CalendarIcon /></template>
+          </Input>
+        </div>
+
+        <div class="entry-modes" role="group" aria-label="添加食物方式">
           <button
-            v-if="latestMeal"
+            v-for="mode in entryModes"
+            :key="mode.value"
+            type="button"
+            :aria-pressed="entryMode === mode.value"
+            :disabled="uploadingPhoto || recognizing"
+            :class="{ active: entryMode === mode.value }"
+            @click="entryMode = mode.value"
+          >
+            {{ mode.label }}
+          </button>
+        </div>
+        <p v-if="templateSource" class="template-hint">
+          已带入 {{ templateSource }}，确认下方内容后保存。
+        </p>
+        <div v-if="entryMode === 'recent'" class="quick-start field-block">
+          <span class="field-label">选择一餐，带入食物</span>
+          <p v-if="!recentMeals.length" class="template-hint">
+            还没有可复用的饮食记录，先手动记下第一餐。
+          </p>
+          <button
+            v-for="meal in recentMeals.slice(0, 5)"
+            :key="meal.id"
             type="button"
             class="last-meal"
-            @click="applyMealTemplate(latestMeal)"
+            @click="applyMealTemplate(meal)"
           >
-            <span>
-              <strong>复用上一餐</strong>
-              <small>
-                {{ mealTypes.find((item) => item.value === latestMeal?.type)?.label }} ·
-                {{ latestMeal.foods.map((food) => food.name).join('、') }}
-              </small>
-            </span>
-            <span>带入</span>
+            <span
+              ><strong
+                >{{ dayjs(meal.recordedAt).format('M月D日') }} ·
+                {{ mealTypes.find((item) => item.value === meal.type)?.label }}</strong
+              ><small>{{ meal.foods.map((food) => food.name).join('、') }}</small></span
+            ><span>带入</span>
           </button>
           <div v-if="recentFoods.length" class="recent-foods">
-            <span>最近食物</span>
+            <span>也可以只加一种食物</span>
             <div>
               <button
                 v-for="food in recentFoods"
@@ -376,7 +425,7 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="field-block">
+        <div v-show="entryMode === 'photo'" class="field-block">
           <span class="field-label">餐食照片（可选）</span>
 
           <div v-if="imageUrl" class="photo-preview">
@@ -413,7 +462,7 @@ onMounted(async () => {
                 <span>{{
                   recognitionProvider === 'mock'
                     ? '当前为模拟识别，不会分析照片，请手动调整'
-                    : `${recognitionProvider} 识别，点名称可直接修改`
+                    : '请核对食物与份量，点名称可修改'
                 }}</span>
               </div>
               <Button size="small" variant="outline" @click="applySuggestions">添加所选</Button>
@@ -479,68 +528,81 @@ onMounted(async () => {
           @change="onPhotoChange"
         />
 
-        <div class="field-block">
-          <span class="field-label">餐次</span>
-          <div class="meal-type-grid">
-            <button
-              v-for="item in mealTypes"
-              :key="item.value"
-              type="button"
-              :class="{ active: formData.type === item.value }"
-              @click="formData.type = item.value"
-            >
-              <strong>{{ item.label }}</strong>
-              <span>{{ item.time }}</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="field-block">
-          <span class="field-label">记录时间</span>
-          <Input :model-value="recordedAtDisplay" readonly @click="datePickerVisible = true">
-            <template #suffix-icon><CalendarIcon /></template>
-          </Input>
-        </div>
-
         <div class="foods-heading">
-          <div>
-            <span class="field-label">食物明细</span>
-            <small>以下食物均属于：{{ selectedMealLabel }}</small>
-          </div>
-          <Button size="small" variant="outline" @click="addFood"><AddIcon /> 添加</Button>
+          <span class="field-label"
+            >食物明细 <small>{{ formData.foods.length }} 项</small></span
+          >
+          <span class="foods-heading__hint">份量、热量选填</span>
         </div>
 
         <div class="food-list">
           <section v-for="(food, index) in formData.foods" :key="food.key" class="food-item">
-            <div class="food-item__header">
-              <div>
-                <strong>食物 {{ index + 1 }}</strong>
-                <span>{{ selectedMealLabel }}</span>
-                <span v-if="food.aiGenerated" class="food-item__ai">AI 识别</span>
-              </div>
-              <Button size="small" variant="text" theme="danger" @click="removeFood(food.key)">
-                <DeleteIcon /> 删除
-              </Button>
+            <div class="food-item__main">
+              <span class="food-item__index" aria-hidden="true">{{ index + 1 }}</span>
+              <input
+                v-model="food.name"
+                class="food-item__name"
+                :aria-label="`食物 ${index + 1} 名称`"
+                maxlength="100"
+                placeholder="食物名称，如鸡胸肉"
+              />
+              <span v-if="food.aiGenerated" class="food-item__ai">AI</span>
+              <button
+                type="button"
+                class="food-item__remove"
+                :aria-label="`删除食物 ${index + 1}`"
+                :disabled="formData.foods.length === 1"
+                @click="removeFood(food.key)"
+              >
+                <DeleteIcon />
+              </button>
             </div>
-            <Input v-model="food.name" :maxlength="100" placeholder="名称，如鸡胸肉" />
             <div class="food-item__details">
-              <Input v-model="food.amount" :maxlength="50" placeholder="份量，如 150g" />
-              <Input v-model="food.calories" type="number" suffix="kcal" placeholder="热量" />
+              <label>
+                <span>份量</span>
+                <input
+                  v-model="food.amount"
+                  :aria-label="`食物 ${index + 1} 份量`"
+                  maxlength="50"
+                  placeholder="如 150g"
+                />
+              </label>
+              <label>
+                <span>热量</span>
+                <input
+                  v-model="food.calories"
+                  :aria-label="`食物 ${index + 1} 热量`"
+                  type="number"
+                  inputmode="decimal"
+                  placeholder="选填"
+                />
+                <small>kcal</small>
+              </label>
             </div>
           </section>
+          <button type="button" class="add-food" @click="addFood"><AddIcon /> 添加食物</button>
         </div>
 
-        <div class="field-block note-field">
-          <span class="field-label">备注</span>
-          <Textarea
-            v-model="formData.note"
-            :maxlength="500"
-            :autosize="{ minRows: 3, maxRows: 6 }"
-            placeholder="例如：自制、少油、外食等"
-          />
-        </div>
-
-        <Button theme="primary" size="large" block :loading="submitting" @click="submit">
+        <details class="note-details" :open="isEdit && !!formData.note">
+          <summary>添加备注（选填）</summary>
+          <div class="field-block note-field">
+            <span class="field-label">备注</span>
+            <Textarea
+              v-model="formData.note"
+              :maxlength="500"
+              :autosize="{ minRows: 3, maxRows: 6 }"
+              placeholder="例如：自制、少油、外食等"
+            />
+          </div>
+        </details>
+        <Button
+          theme="primary"
+          size="large"
+          block
+          :loading="submitting"
+          :disabled="uploadingPhoto || recognizing"
+          @click="submit"
+        >
           {{ isEdit ? '保存修改' : '保存饮食记录' }}
         </Button>
       </section>
@@ -560,6 +622,44 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss">
+.entry-modes {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  background: var(--color-surface-muted);
+  button {
+    flex: 1;
+    min-height: 40px;
+    padding: 8px 4px;
+    border: 0;
+    border-radius: 7px;
+    color: var(--color-text-secondary);
+    background: transparent;
+    font-size: 0.8125rem;
+  }
+  button.active {
+    color: var(--color-text-primary);
+    background: var(--color-surface);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 6%);
+  }
+}
+.template-hint {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+.note-details {
+  margin: 18px 0;
+  summary {
+    cursor: pointer;
+    padding: 8px 0;
+    color: var(--color-text-secondary);
+    font-size: 0.8125rem;
+  }
+}
+
 .meal-form-header {
   padding: 18px 0 20px;
 
@@ -569,7 +669,7 @@ onMounted(async () => {
 
   h1 {
     margin: 6px 0 5px;
-    font-size: 1.7rem;
+    font-size: 1.4rem;
     letter-spacing: -0.04em;
   }
 
@@ -945,72 +1045,150 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 4px 0 10px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 4px 0 8px;
 
-  > div {
-    display: grid;
-    gap: 3px;
+  .field-label {
+    color: var(--color-text-primary);
+    font-weight: 550;
   }
-
-  small {
+  small,
+  &__hint {
     color: var(--color-text-tertiary);
     font-size: 0.75rem;
+    font-weight: 400;
+  }
+  small {
+    margin-left: 4px;
   }
 }
 
 .food-list {
-  display: grid;
-  gap: 10px;
+  border-top: 1px solid var(--color-border);
 }
 
 .food-item {
-  display: grid;
-  gap: 2px;
-  padding: 12px;
-  background: var(--color-surface-muted);
-  border: 1px solid var(--color-border);
-  border-radius: 13px;
+  min-width: 0;
+  padding: 8px 0 12px;
+  border-bottom: 1px solid var(--color-border);
 
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 2px;
-
-    > div {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-
-      strong {
-        font-size: 0.75rem;
-      }
-
-      span {
-        padding: 2px 6px;
-        color: var(--color-text-primary);
-        font-size: 0.75rem;
-        font-weight: 750;
-        background: var(--color-primary-light);
-        border-radius: 5px;
-      }
-
-      .food-item__ai {
-        color: var(--color-text-secondary);
-        background: var(--color-surface-muted);
-      }
+  input {
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-text-primary);
+    font: inherit;
+    outline: none;
+    &::placeholder {
+      color: var(--color-text-tertiary);
     }
   }
 
+  &__main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    border-radius: 6px;
+    &:focus-within {
+      box-shadow: 0 0 0 1px var(--color-primary-border);
+    }
+  }
+  &__index {
+    flex: none;
+    width: 14px;
+    color: var(--color-text-tertiary);
+    font-size: 0.75rem;
+    text-align: center;
+  }
+  input.food-item__name {
+    flex: 1;
+    height: 40px;
+    font-size: 0.875rem;
+  }
+  &__ai {
+    color: var(--color-text-tertiary);
+    font-size: 0.6875rem;
+  }
+  &__remove {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text-tertiary);
+    font-size: 1rem;
+    &:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+    &:not(:disabled):hover {
+      color: var(--color-danger);
+      background: var(--color-surface-muted);
+    }
+  }
   &__details {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
+    margin-top: 4px;
+    label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      min-height: 36px;
+      padding: 0 8px;
+      border-radius: 6px;
+      background: var(--color-surface-muted);
+      font-size: 0.75rem;
+      &:focus-within {
+        box-shadow: 0 0 0 1px var(--color-primary-border);
+      }
+    }
+    span,
+    small {
+      flex: none;
+      color: var(--color-text-secondary);
+      font-size: 0.6875rem;
+    }
+    input {
+      height: 36px;
+    }
+    input[type='number'] {
+      appearance: textfield;
+    }
+    input::-webkit-inner-spin-button,
+    input::-webkit-outer-spin-button {
+      appearance: none;
+      margin: 0;
+    }
   }
-
-  :deep(.t-input) {
-    background: var(--color-surface);
-    border-radius: 9px;
+}
+.add-food {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-accent-text);
+  font-size: 0.8125rem;
+  &:hover {
+    background: var(--color-surface-muted);
   }
 }
 

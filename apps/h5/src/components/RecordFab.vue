@@ -168,15 +168,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 
   &__trigger {
     display: grid;
-    width: 56px;
-    height: 56px;
+    width: 46px;
+    height: 46px;
     place-items: center;
     color: var(--color-on-brand);
     font-size: 1.5rem;
     background: var(--color-brand);
     border: 0;
     border-radius: 50%;
-    box-shadow: 0 8px 22px rgb(20 28 25 / 24%);
+    box-shadow: 0 4px 12px rgb(20 28 25 / 14%);
     transition:
       transform var(--duration-base) var(--ease-standard),
       background-color var(--duration-fast) var(--ease-standard);

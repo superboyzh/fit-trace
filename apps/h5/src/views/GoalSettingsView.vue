@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ApiErrorResponse, FitnessGoalType } from '@fit-trace/shared';
-import axios from 'axios';
+import { showRequestError } from '@/utils/request-error';
+import type { FitnessGoalType } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import { Button, Input, Loading, ToastPlugin } from 'tdesign-mobile-vue';
 import { ChevronLeftIcon } from 'tdesign-icons-vue-next';
@@ -78,10 +78,7 @@ async function submit(): Promise<void> {
     ToastPlugin.success('目标已保存');
     await router.replace('/dashboard');
   } catch (error) {
-    const message = axios.isAxiosError<ApiErrorResponse>(error)
-      ? error.response?.data.message
-      : undefined;
-    ToastPlugin.error(message ?? '保存失败，请稍后重试');
+    showRequestError(error, '保存失败，请稍后重试');
   } finally {
     submitting.value = false;
   }

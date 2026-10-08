@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ApiErrorResponse, WorkoutRecord, WorkoutType } from '@fit-trace/shared';
-import axios from 'axios';
+import { showRequestError } from '@/utils/request-error';
+import type { WorkoutRecord, WorkoutType } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import {
   Button,
@@ -110,13 +110,12 @@ async function submit(): Promise<void> {
     } else {
       const created = await createWorkout(input);
       ToastPlugin.success('训练记录已保存');
-      await router.replace(`/workouts/${created.id}`);
+      await router.replace(
+        route.query.returnTo === '/dashboard' ? '/dashboard' : `/workouts/${created.id}`,
+      );
     }
   } catch (error) {
-    const message = axios.isAxiosError<ApiErrorResponse>(error)
-      ? error.response?.data.message
-      : undefined;
-    ToastPlugin.error(message ?? '保存失败，请稍后重试');
+    showRequestError(error, '保存失败，请稍后重试');
   } finally {
     submitting.value = false;
   }

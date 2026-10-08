@@ -1,6 +1,6 @@
 import { Controller, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import type { UploadResult } from '@fit-trace/shared';
+import type { ApiPayload, UploadResult } from '@fit-trace/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { MAX_IMAGE_SIZE, UploadsService } from './uploads.service';
@@ -16,7 +16,7 @@ export class UploadsController {
   async upload(
     @CurrentUser('sub') userId: string,
     @UploadedFile() file?: UploadedImageFile,
-  ): Promise<{ data: UploadResult }> {
+  ): Promise<ApiPayload<UploadResult>> {
     return { data: await this.uploads.saveImage(userId, file) };
   }
 }

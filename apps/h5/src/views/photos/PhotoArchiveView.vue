@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ApiErrorResponse, PhotoType, ProgressPhoto } from '@fit-trace/shared';
-import axios from 'axios';
+import { showRequestError } from '@/utils/request-error';
+import type { PhotoType, ProgressPhoto } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import { Button, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
 import { ImageIcon, UploadIcon } from 'tdesign-icons-vue-next';
@@ -71,23 +71,17 @@ async function onFileChange(event: Event): Promise<void> {
     activeType.value = 'ALL';
     ToastPlugin.success('照片已保存');
   } catch (error) {
-    ToastPlugin.error(resolveErrorMessage(error, '照片上传失败，请稍后重试'));
+    showRequestError(error, '照片上传失败，请稍后重试');
   } finally {
     uploading.value = false;
   }
 }
 
-function resolveErrorMessage(error: unknown, fallback: string): string {
-  if (axios.isAxiosError<ApiErrorResponse>(error)) return error.response?.data.message ?? fallback;
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
-
 onMounted(async () => {
   try {
     await load();
-  } catch {
-    ToastPlugin.error('照片加载失败');
+  } catch (error) {
+    showRequestError(error, '照片加载失败');
   } finally {
     loading.value = false;
   }

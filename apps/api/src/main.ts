@@ -6,6 +6,7 @@ import type { ValidationError } from 'class-validator';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { AppLogger } from './common/logger/app-logger';
 import { LocalStorageProvider } from './providers/storage/local-storage.provider';
 
@@ -42,7 +43,7 @@ async function bootstrap(): Promise<void> {
   }
 
   app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalInterceptors(new LoggingInterceptor(), new ResponseInterceptor());
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

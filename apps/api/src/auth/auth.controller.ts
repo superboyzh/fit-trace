@@ -1,3 +1,4 @@
+import type { ApiPayload } from '@fit-trace/shared';
 import { Body, Controller, Get, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -15,18 +16,18 @@ export class AuthController {
   ) {}
 
   @Post('register')
-  async register(@Body() dto: RegisterDto): Promise<{ data: AuthResult }> {
+  async register(@Body() dto: RegisterDto): Promise<ApiPayload<AuthResult>> {
     return { data: await this.auth.register(dto) };
   }
 
   @Post('login')
-  async login(@Body() dto: LoginDto): Promise<{ data: AuthResult }> {
+  async login(@Body() dto: LoginDto): Promise<ApiPayload<AuthResult>> {
     return { data: await this.auth.login(dto) };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async me(@CurrentUser('sub') userId: string): Promise<{ data: PublicUser }> {
+  async me(@CurrentUser('sub') userId: string): Promise<ApiPayload<PublicUser>> {
     const user = await this.users.findPublicById(userId);
     if (!user) {
       throw new UnauthorizedException({

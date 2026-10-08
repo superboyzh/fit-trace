@@ -1,12 +1,11 @@
 <script setup lang="ts">
+import { showRequestError } from '@/utils/request-error';
 import type { BodyRecord } from '@fit-trace/shared';
-import axios from 'axios';
 import dayjs from 'dayjs';
 import { Button, DialogPlugin, Empty, Loading, Tag, ToastPlugin } from 'tdesign-mobile-vue';
 import { DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import type { ApiErrorResponse } from '@fit-trace/shared';
 import { deleteBodyRecord, getBodyRecords } from '@/api/body-records';
 import RecordDetailHeader from '@/components/RecordDetailHeader.vue';
 
@@ -37,9 +36,9 @@ async function loadMore(): Promise<void> {
   page.value += 1;
   try {
     await load();
-  } catch {
+  } catch (error) {
     page.value -= 1;
-    ToastPlugin.error('加载更多记录失败');
+    showRequestError(error, '加载更多记录失败');
   } finally {
     loadingMore.value = false;
   }
@@ -63,10 +62,7 @@ function confirmDelete(record: BodyRecord): void {
         ToastPlugin.success('记录已删除');
         dialog.destroy();
       } catch (error) {
-        const message = axios.isAxiosError<ApiErrorResponse>(error)
-          ? error.response?.data.message
-          : undefined;
-        ToastPlugin.error(message ?? '删除失败，请稍后重试');
+        showRequestError(error, '删除失败，请稍后重试');
         deleting = false;
         dialog.update({ confirmBtn: { content: '删除', theme: 'danger' } });
       }

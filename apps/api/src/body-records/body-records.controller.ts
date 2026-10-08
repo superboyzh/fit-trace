@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import type { ApiListMeta, BodyRecord, BodyTrendData } from '@fit-trace/shared';
+import type { ApiListPayload, ApiPayload, BodyRecord, BodyTrendData } from '@fit-trace/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { BodyRecordsService } from './body-records.service';
@@ -27,7 +27,7 @@ export class BodyRecordsController {
   async create(
     @CurrentUser('sub') userId: string,
     @Body() dto: CreateBodyRecordDto,
-  ): Promise<{ data: BodyRecord }> {
+  ): Promise<ApiPayload<BodyRecord>> {
     return { data: await this.bodyRecords.create(userId, dto) };
   }
 
@@ -35,12 +35,12 @@ export class BodyRecordsController {
   list(
     @CurrentUser('sub') userId: string,
     @Query() query: ListBodyRecordsDto,
-  ): Promise<{ data: BodyRecord[]; meta: ApiListMeta }> {
+  ): Promise<ApiListPayload<BodyRecord>> {
     return this.bodyRecords.list(userId, query);
   }
 
   @Get('latest')
-  async latest(@CurrentUser('sub') userId: string): Promise<{ data: BodyRecord | null }> {
+  async latest(@CurrentUser('sub') userId: string): Promise<ApiPayload<BodyRecord | null>> {
     return { data: await this.bodyRecords.latest(userId) };
   }
 
@@ -48,7 +48,7 @@ export class BodyRecordsController {
   async trends(
     @CurrentUser('sub') userId: string,
     @Query() query: BodyTrendsQueryDto,
-  ): Promise<{ data: BodyTrendData }> {
+  ): Promise<ApiPayload<BodyTrendData>> {
     return { data: await this.bodyRecords.trends(userId, query.days) };
   }
 
@@ -56,7 +56,7 @@ export class BodyRecordsController {
   async findOne(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
-  ): Promise<{ data: BodyRecord }> {
+  ): Promise<ApiPayload<BodyRecord>> {
     return { data: await this.bodyRecords.findOne(userId, id) };
   }
 
@@ -65,7 +65,7 @@ export class BodyRecordsController {
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
     @Body() dto: UpdateBodyRecordDto,
-  ): Promise<{ data: BodyRecord }> {
+  ): Promise<ApiPayload<BodyRecord>> {
     return { data: await this.bodyRecords.update(userId, id, dto) };
   }
 
@@ -73,7 +73,7 @@ export class BodyRecordsController {
   async remove(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
-  ): Promise<{ data: null }> {
+  ): Promise<ApiPayload<null>> {
     await this.bodyRecords.remove(userId, id);
     return { data: null };
   }

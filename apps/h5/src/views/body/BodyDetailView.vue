@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ApiErrorResponse, BodyRecord } from '@fit-trace/shared';
-import axios from 'axios';
+import { showRequestError } from '@/utils/request-error';
+import type { BodyRecord } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import { Button, DialogPlugin, Loading, ToastPlugin } from 'tdesign-mobile-vue';
 import { DeleteIcon } from 'tdesign-icons-vue-next';
@@ -43,10 +43,7 @@ function confirmDelete(): void {
         dialog.destroy();
         await router.replace('/body/history');
       } catch (error) {
-        const message = axios.isAxiosError<ApiErrorResponse>(error)
-          ? error.response?.data.message
-          : undefined;
-        ToastPlugin.error(message ?? '删除失败，请稍后重试');
+        showRequestError(error, '删除失败，请稍后重试');
         deleting = false;
         dialog.update({ confirmBtn: { content: '删除', theme: 'danger' } });
       }
@@ -57,8 +54,8 @@ function confirmDelete(): void {
 onMounted(async () => {
   try {
     record.value = await getBodyRecord(recordId.value);
-  } catch {
-    ToastPlugin.error('记录不存在或已被删除');
+  } catch (error) {
+    showRequestError(error, '记录不存在或已被删除');
     await router.replace('/body/history');
   } finally {
     loading.value = false;

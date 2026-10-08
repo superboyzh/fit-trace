@@ -1,13 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
-
-interface HealthStatus {
-  status: 'ok';
-}
+import type { ApiPayload, HealthStatus } from '@fit-trace/shared';
 
 @Controller('health')
 export class HealthController {
   @Get()
-  check(): HealthStatus {
-    return { status: 'ok' };
+  check(): ApiPayload<HealthStatus> {
+    return { data: { status: 'ok' } };
   }
 }

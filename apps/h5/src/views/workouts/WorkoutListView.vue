@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ApiErrorResponse, WorkoutRecord, WorkoutType } from '@fit-trace/shared';
-import axios from 'axios';
+import { showRequestError } from '@/utils/request-error';
+import type { WorkoutRecord, WorkoutType } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import { Button, DialogPlugin, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
 import { AddIcon, DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
@@ -56,8 +56,8 @@ async function selectType(type: WorkoutType | 'ALL'): Promise<void> {
   loading.value = true;
   try {
     await load(true);
-  } catch {
-    ToastPlugin.error('训练记录加载失败');
+  } catch (error) {
+    showRequestError(error, '训练记录加载失败');
   } finally {
     loading.value = false;
   }
@@ -68,9 +68,9 @@ async function loadMore(): Promise<void> {
   page.value += 1;
   try {
     await load();
-  } catch {
+  } catch (error) {
     page.value -= 1;
-    ToastPlugin.error('加载更多记录失败');
+    showRequestError(error, '加载更多记录失败');
   } finally {
     loadingMore.value = false;
   }
@@ -101,10 +101,7 @@ function confirmDelete(workout: WorkoutRecord): void {
         ToastPlugin.success('训练记录已删除');
         dialog.destroy();
       } catch (error) {
-        const message = axios.isAxiosError<ApiErrorResponse>(error)
-          ? error.response?.data.message
-          : undefined;
-        ToastPlugin.error(message ?? '删除失败，请稍后重试');
+        showRequestError(error, '删除失败，请稍后重试');
         deleting = false;
         dialog.update({ confirmBtn: { content: '删除', theme: 'danger' } });
       }

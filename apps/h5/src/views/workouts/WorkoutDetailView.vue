@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ApiErrorResponse, WorkoutRecord, WorkoutType } from '@fit-trace/shared';
-import axios from 'axios';
+import { showRequestError } from '@/utils/request-error';
+import type { WorkoutRecord, WorkoutType } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import { Button, DialogPlugin, Loading, ToastPlugin } from 'tdesign-mobile-vue';
 import { DeleteIcon } from 'tdesign-icons-vue-next';
@@ -46,10 +46,7 @@ function confirmDelete(): void {
         dialog.destroy();
         await router.replace('/workouts');
       } catch (error) {
-        const message = axios.isAxiosError<ApiErrorResponse>(error)
-          ? error.response?.data.message
-          : undefined;
-        ToastPlugin.error(message ?? '删除失败，请稍后重试');
+        showRequestError(error, '删除失败，请稍后重试');
         deleting = false;
         dialog.update({ confirmBtn: { content: '删除', theme: 'danger' } });
       }
@@ -60,8 +57,8 @@ function confirmDelete(): void {
 onMounted(async () => {
   try {
     workout.value = await getWorkout(workoutId.value);
-  } catch {
-    ToastPlugin.error('记录不存在或已被删除');
+  } catch (error) {
+    showRequestError(error, '记录不存在或已被删除');
     await router.replace('/workouts');
   } finally {
     loading.value = false;

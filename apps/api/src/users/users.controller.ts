@@ -1,5 +1,5 @@
 import { Body, Controller, Patch, UseGuards } from '@nestjs/common';
-import type { PublicUser } from '@fit-trace/shared';
+import type { ApiPayload, PublicUser } from '@fit-trace/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { UpdateFitnessGoalDto } from './dto/update-fitness-goal.dto';
@@ -14,7 +14,7 @@ export class UsersController {
   async updateGoal(
     @CurrentUser('sub') userId: string,
     @Body() dto: UpdateFitnessGoalDto,
-  ): Promise<{ data: PublicUser }> {
+  ): Promise<ApiPayload<PublicUser>> {
     return { data: await this.users.updateGoal(userId, dto) };
   }
 }

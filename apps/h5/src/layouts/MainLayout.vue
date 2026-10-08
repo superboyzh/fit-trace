@@ -35,6 +35,7 @@ const activeIndex = computed(() =>
 );
 /** 只有四个主 tab 展示底部标签栏与悬浮按钮，二级页面隐藏（同 iOS hidesBottomBarWhenPushed） */
 const showChrome = computed(() => route.meta.tabBar === true);
+const showRecordFab = computed(() => showChrome.value && route.path !== '/dashboard');
 
 /**
  * 同级 tab 之间瞬切（苹果的标签栏就是瞬切，只有高亮在动）；
@@ -58,7 +59,10 @@ async function navigate(path: string): Promise<void> {
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'app-shell--with-nav': showChrome }">
+  <div
+    class="app-shell"
+    :class="{ 'app-shell--with-nav': showChrome, 'app-shell--with-fab': showRecordFab }"
+  >
     <div class="app-shell__content">
       <RouterView v-slot="{ Component }">
         <Transition :name="transitionName" mode="out-in">
@@ -68,7 +72,7 @@ async function navigate(path: string): Promise<void> {
         </Transition>
       </RouterView>
     </div>
-    <RecordFab v-if="showChrome" />
+    <RecordFab v-if="showRecordFab" />
     <nav
       v-if="showChrome"
       class="bottom-nav"
@@ -105,7 +109,11 @@ async function navigate(path: string): Promise<void> {
     min-height: 100vh;
     min-height: 100dvh;
     /* 留出悬浮按钮的高度，避免盖住卡片右下角的操作 */
-    padding-bottom: calc(var(--bottom-nav-space) + 64px);
+    padding-bottom: var(--bottom-nav-space);
+  }
+
+  &--with-fab .app-shell__content {
+    padding-bottom: calc(var(--bottom-nav-space) + 52px);
   }
 
   /* 二级页面没有标签栏与悬浮按钮，收回预留空间 */
@@ -128,7 +136,7 @@ async function navigate(path: string): Promise<void> {
   background: var(--color-surface-translucent);
   border: 1px solid var(--color-border);
   border-radius: 26px;
-  box-shadow: 0 12px 32px rgb(20 28 25 / 14%);
+  box-shadow: 0 4px 16px rgb(20 28 25 / 7%);
   transform: translateX(-50%);
   backdrop-filter: saturate(180%) blur(24px);
 

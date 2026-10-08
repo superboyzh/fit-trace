@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ApiErrorResponse, MealRecord, MealType } from '@fit-trace/shared';
-import axios from 'axios';
+import { showRequestError } from '@/utils/request-error';
+import type { MealRecord, MealType } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import { Button, DialogPlugin, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
 import { AddIcon, DeleteIcon, EditIcon, ForkIcon } from 'tdesign-icons-vue-next';
@@ -62,9 +62,9 @@ async function loadMore(): Promise<void> {
   page.value += 1;
   try {
     await load();
-  } catch {
+  } catch (error) {
     page.value -= 1;
-    ToastPlugin.error('加载更多饮食记录失败');
+    showRequestError(error, '加载更多饮食记录失败');
   } finally {
     loadingMore.value = false;
   }
@@ -75,8 +75,8 @@ async function selectType(type: MealType | 'ALL'): Promise<void> {
   loading.value = true;
   try {
     await load(true);
-  } catch {
-    ToastPlugin.error('饮食记录加载失败');
+  } catch (error) {
+    showRequestError(error, '饮食记录加载失败');
   } finally {
     loading.value = false;
   }
@@ -99,10 +99,7 @@ function confirmDelete(meal: MealRecord): void {
         ToastPlugin.success('饮食记录已删除');
         dialog.destroy();
       } catch (error) {
-        const message = axios.isAxiosError<ApiErrorResponse>(error)
-          ? error.response?.data.message
-          : undefined;
-        ToastPlugin.error(message ?? '删除失败，请稍后重试');
+        showRequestError(error, '删除失败，请稍后重试');
         deleting = false;
         dialog.update({ confirmBtn: { content: '删除', theme: 'danger' } });
       }

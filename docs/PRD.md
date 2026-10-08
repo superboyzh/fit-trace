@@ -1364,11 +1364,25 @@ Dashboard 不应该由 H5 请求大量 API 后自行拼装。
 
 # 35. API 返回格式
 
+所有 `/api/v1` JSON 接口统一包含 `code`、`message`、`data`、`meta` 四个字段。
+
+- 成功：`code` 固定为 `OK`，`message` 为 `请求成功`。
+- 数据在 `data` 内，删除成功、没有最新记录等无数据情况为 `null`。
+- 分页列表的 `data` 是数组，`meta` 包含 `page`、`pageSize`、`total`；其他返回的 `meta` 为 `null`。
+- 错误保留业务错误码和中文提示，`data`、`meta` 都为 `null`。
+- HTTP 状态码保留其语义：查询/更新/删除成功为 200，创建及现有 POST 成功为 201；失败使用 400、401、404、409、413、500、502、503 等对应状态码。
+- 参数校验返回 `VALIDATION_ERROR`，`message` 为第一条校验提示；未捕获异常返回 `INTERNAL_ERROR`，不向客户端暴露堆栈和内部异常详情。
+- 健康检查同样使用统一格式，状态位于 `data.status`。
+- 上传返回的是图片地址和 key，使用统一 JSON 格式；`/uploads/...` 图片静态资源保留原始文件响应。
+
 成功：
 
 ```json
 {
-  "data": {}
+  "code": "OK",
+  "message": "请求成功",
+  "data": {},
+  "meta": null
 }
 ```
 
@@ -1376,11 +1390,13 @@ Dashboard 不应该由 H5 请求大量 API 后自行拼装。
 
 ```json
 {
+  "code": "OK",
+  "message": "请求成功",
   "data": [],
   "meta": {
     "page": 1,
     "pageSize": 20,
-    "total": 100
+    "total": 0
   }
 }
 ```
@@ -1390,9 +1406,13 @@ Dashboard 不应该由 H5 请求大量 API 后自行拼装。
 ```json
 {
   "code": "BODY_RECORD_NOT_FOUND",
-  "message": "Body record not found"
+  "message": "身体记录不存在",
+  "data": null,
+  "meta": null
 }
 ```
+
+控制器内部使用共享的 `ApiPayload` / `ApiListPayload` 返回数据，全局响应拦截器补齐成功字段，异常过滤器负责错误格式。客户端使用 `ApiResponse` / `ApiListResponse` / `ApiErrorResponse` 类型，保持 `response.data.data` 和 `response.data.meta` 的取值路径。
 
 ---
 

@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AiModule } from './ai/ai.module';
 import { AuthModule } from './auth/auth.module';
 import { BodyRecordsModule } from './body-records/body-records.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 import { InsightsModule } from './insights/insights.module';
 import { MealsModule } from './meals/meals.module';
@@ -31,6 +32,7 @@ import { WorkoutsModule } from './workouts/workouts.module';
     UploadsModule,
     ProgressPhotosModule,
     InsightsModule,
+    DashboardModule,
     AiModule,
     HealthModule,
   ],

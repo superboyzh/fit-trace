@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import type { ApiListMeta, ProgressPhoto } from '@fit-trace/shared';
+import type { ApiListPayload, ApiPayload, ProgressPhoto } from '@fit-trace/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CreateProgressPhotoDto } from './dto/create-progress-photo.dto';
@@ -15,7 +15,7 @@ export class ProgressPhotosController {
   async create(
     @CurrentUser('sub') userId: string,
     @Body() dto: CreateProgressPhotoDto,
-  ): Promise<{ data: ProgressPhoto }> {
+  ): Promise<ApiPayload<ProgressPhoto>> {
     return { data: await this.photos.create(userId, dto) };
   }
 
@@ -23,7 +23,7 @@ export class ProgressPhotosController {
   list(
     @CurrentUser('sub') userId: string,
     @Query() query: ListProgressPhotosDto,
-  ): Promise<{ data: ProgressPhoto[]; meta: ApiListMeta }> {
+  ): Promise<ApiListPayload<ProgressPhoto>> {
     return this.photos.list(userId, query);
   }
 
@@ -31,7 +31,7 @@ export class ProgressPhotosController {
   async findOne(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
-  ): Promise<{ data: ProgressPhoto }> {
+  ): Promise<ApiPayload<ProgressPhoto>> {
     return { data: await this.photos.findOne(userId, id) };
   }
 
@@ -39,7 +39,7 @@ export class ProgressPhotosController {
   async remove(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
-  ): Promise<{ data: null }> {
+  ): Promise<ApiPayload<null>> {
     await this.photos.remove(userId, id);
     return { data: null };
   }

@@ -1,11 +1,22 @@
-export interface ApiResponse<T> {
+/** 控制器内部返回值，由全局拦截器补齐响应字段。 */
+export interface ApiPayload<T> {
   data: T;
+}
+
+export interface ApiResponse<T> extends ApiPayload<T> {
+  code: 'OK';
+  message: string;
+  meta: ApiListMeta | null;
 }
 
 export interface ApiListMeta {
   page: number;
   pageSize: number;
   total: number;
+}
+
+export interface ApiListPayload<T> extends ApiPayload<T[]> {
+  meta: ApiListMeta;
 }
 
 export interface ApiListResponse<T> extends ApiResponse<T[]> {
@@ -15,6 +26,8 @@ export interface ApiListResponse<T> extends ApiResponse<T[]> {
 export interface ApiErrorResponse {
   code: string;
   message: string;
+  data: null;
+  meta: null;
 }
 
 export interface HealthStatus {
@@ -211,4 +224,38 @@ export interface InsightOverview {
   workouts: InsightWorkoutSummary;
   meals: InsightMealSummary;
   photos: InsightPhotoSummary;
+}
+
+export interface DashboardOverview {
+  date: string;
+  latestBodyRecord: Pick<BodyRecord, 'id' | 'weight' | 'recordedAt'> | null;
+  latestMeal: Pick<MealRecord, 'id' | 'type' | 'recordedAt'> | null;
+  latestWorkout: Pick<WorkoutRecord, 'id' | 'type' | 'startedAt'> | null;
+  latestPhoto: Pick<ProgressPhoto, 'id' | 'recordedAt'> | null;
+  bodyChanges: { weight: number | null };
+  recentTrend: {
+    days: 7;
+    from: string;
+    to: string;
+    weightChange: number | null;
+    bodyRecordedDays: number;
+    mealRecordedDays: number;
+    workoutCount: number;
+    workoutMinutes: number;
+  };
+  today: {
+    bodyRecord: Pick<BodyRecord, 'id' | 'weight' | 'recordedAt'> | null;
+    mealCount: number;
+    calories: number | null;
+    meals: Record<MealType, boolean>;
+    mealPreview: Array<{
+      id: string;
+      type: MealType;
+      recordedAt: string;
+      foodNames: string[];
+      totalCalories: number | null;
+    }>;
+    workoutCount: number;
+    workoutMinutes: number;
+  };
 }

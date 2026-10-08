@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import type { ApiListMeta, WorkoutRecord } from '@fit-trace/shared';
+import type { ApiListPayload, ApiPayload, WorkoutRecord } from '@fit-trace/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
@@ -26,7 +26,7 @@ export class WorkoutsController {
   async create(
     @CurrentUser('sub') userId: string,
     @Body() dto: CreateWorkoutDto,
-  ): Promise<{ data: WorkoutRecord }> {
+  ): Promise<ApiPayload<WorkoutRecord>> {
     return { data: await this.workouts.create(userId, dto) };
   }
 
@@ -34,7 +34,7 @@ export class WorkoutsController {
   list(
     @CurrentUser('sub') userId: string,
     @Query() query: ListWorkoutsDto,
-  ): Promise<{ data: WorkoutRecord[]; meta: ApiListMeta }> {
+  ): Promise<ApiListPayload<WorkoutRecord>> {
     return this.workouts.list(userId, query);
   }
 
@@ -42,7 +42,7 @@ export class WorkoutsController {
   async findOne(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
-  ): Promise<{ data: WorkoutRecord }> {
+  ): Promise<ApiPayload<WorkoutRecord>> {
     return { data: await this.workouts.findOne(userId, id) };
   }
 
@@ -51,7 +51,7 @@ export class WorkoutsController {
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
     @Body() dto: UpdateWorkoutDto,
-  ): Promise<{ data: WorkoutRecord }> {
+  ): Promise<ApiPayload<WorkoutRecord>> {
     return { data: await this.workouts.update(userId, id, dto) };
   }
 
@@ -59,7 +59,7 @@ export class WorkoutsController {
   async remove(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
-  ): Promise<{ data: null }> {
+  ): Promise<ApiPayload<null>> {
     await this.workouts.remove(userId, id);
     return { data: null };
   }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ApiErrorResponse, BodyRecord } from '@fit-trace/shared';
-import axios from 'axios';
+import { showRequestError } from '@/utils/request-error';
+import type { BodyRecord } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import {
   Button,
@@ -29,6 +29,7 @@ const isEdit = computed(() => Boolean(recordId.value));
 const loading = ref(Boolean(recordId.value));
 const submitting = ref(false);
 const datePickerVisible = ref(false);
+const weightInput = ref<HTMLInputElement | null>(null);
 const previousRecord = ref<BodyRecord | null>(null);
 const formData = reactive({
   weight: '' as number | string,
@@ -95,13 +96,12 @@ async function submit(): Promise<void> {
     } else {
       const created = await createBodyRecord(input);
       ToastPlugin.success('身体数据已保存');
-      await router.replace(`/body/${created.id}`);
+      await router.replace(
+        route.query.returnTo === '/dashboard' ? '/dashboard' : `/body/${created.id}`,
+      );
     }
   } catch (error) {
-    const message = axios.isAxiosError<ApiErrorResponse>(error)
-      ? error.response?.data.message
-      : undefined;
-    ToastPlugin.error(message ?? '保存失败，请稍后重试');
+    showRequestError(error, '保存失败，请稍后重试');
   } finally {
     submitting.value = false;
   }
@@ -109,6 +109,7 @@ async function submit(): Promise<void> {
 
 onMounted(async () => {
   if (!recordId.value) {
+    weightInput.value?.focus();
     try {
       previousRecord.value = await getLatestBodyRecord();
     } catch {
@@ -142,35 +143,29 @@ onMounted(async () => {
       <Button variant="text" shape="round" @click="router.back()">
         <ChevronLeftIcon /> 返回
       </Button>
-      <h1>{{ isEdit ? '编辑身体数据' : '记录身体数据' }}</h1>
-      <p>体重是必填项，其他指标可以稍后补充。</p>
+      <h1>{{ isEdit ? '编辑身体数据' : '记体重' }}</h1>
+      <p>填一个数字，留下一次变化。</p>
     </header>
 
     <Loading class="page-loading" :loading="loading" text="正在读取记录">
       <section class="surface-card body-form-card">
         <div class="field-block">
-          <span class="field-label">今日体重</span>
+          <span class="field-label">体重</span>
           <div class="weight-field">
-            <Input
+            <input
+              ref="weightInput"
               v-model="formData.weight"
               class="weight-input"
               type="number"
               inputmode="decimal"
-              suffix="kg"
-              placeholder="70.5"
-            />
+              step="0.1"
+              min="0"
+              aria-label="体重（kg）"
+              placeholder="输入体重"
+              @keydown.enter.prevent="submit"
+            /><span>kg</span>
           </div>
           <small v-if="!isEdit" class="field-hint">{{ previousHint }}</small>
-        </div>
-
-        <div class="field-block">
-          <span class="field-label">身体围度（可选）</span>
-          <div class="metric-grid">
-            <Input v-model="formData.bodyFat" type="number" suffix="%" placeholder="体脂率" />
-            <Input v-model="formData.waist" type="number" suffix="cm" placeholder="腰围" />
-            <Input v-model="formData.chest" type="number" suffix="cm" placeholder="胸围" />
-            <Input v-model="formData.hip" type="number" suffix="cm" placeholder="臀围" />
-          </div>
         </div>
 
         <div class="field-block">
@@ -180,15 +175,28 @@ onMounted(async () => {
           </Input>
         </div>
 
-        <div class="field-block note-field">
-          <span class="field-label">备注</span>
-          <Textarea
-            v-model="formData.note"
-            :maxlength="500"
-            :autosize="{ minRows: 3, maxRows: 6 }"
-            placeholder="例如：晨起空腹、训练后等"
-          />
-        </div>
+        <details class="more-fields" :open="isEdit">
+          <summary>更多指标与备注 <span>选填</span></summary>
+          <div class="field-block">
+            <span class="field-label">身体围度（可选）</span>
+            <div class="metric-grid">
+              <Input v-model="formData.bodyFat" type="number" suffix="%" placeholder="体脂率" />
+              <Input v-model="formData.waist" type="number" suffix="cm" placeholder="腰围" />
+              <Input v-model="formData.chest" type="number" suffix="cm" placeholder="胸围" />
+              <Input v-model="formData.hip" type="number" suffix="cm" placeholder="臀围" />
+            </div>
+          </div>
+
+          <div class="field-block note-field">
+            <span class="field-label">备注</span>
+            <Textarea
+              v-model="formData.note"
+              :maxlength="500"
+              :autosize="{ minRows: 3, maxRows: 6 }"
+              placeholder="例如：晨起空腹、训练后等"
+            />
+          </div>
+        </details>
 
         <Button theme="primary" size="large" block :loading="submitting" @click="submit">
           {{ isEdit ? '保存修改' : '保存记录' }}
@@ -219,14 +227,14 @@ onMounted(async () => {
 
   h1 {
     margin: 6px 0 5px;
-    font-size: 1.7rem;
+    font-size: 1.4rem;
     letter-spacing: -0.04em;
   }
 
   p {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 0.9375rem;
+    font-size: 0.8125rem;
   }
 }
 
@@ -253,42 +261,57 @@ onMounted(async () => {
 }
 
 .weight-field {
-  padding: 14px 14px 10px;
-  background: var(--color-surface-muted);
-  border-radius: var(--border-radius-md);
-
-  :deep(.t-input) {
-    height: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+  input {
+    min-width: 0;
+    width: 100%;
     padding: 0;
-    background: transparent;
     border: 0;
-    box-shadow: none;
-
-    &:hover,
-    &:focus-within {
-      border: 0;
-      box-shadow: none;
-    }
-  }
-
-  :deep(input) {
+    outline: none;
     color: var(--color-text-primary);
-    font-size: 2.4rem;
-    font-weight: 850;
+    background: transparent;
+    font-size: 2.25rem;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.05em;
-
-    &::placeholder {
-      color: rgb(17 23 21 / 18%);
-    }
   }
-
-  :deep(.t-input__wrap--suffix) {
-    align-self: flex-end;
-    margin-bottom: 8px;
+  input::-webkit-inner-spin-button,
+  input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input {
+    appearance: textfield;
+  }
+  input::placeholder {
+    color: var(--color-text-tertiary);
+    font-size: 1.5rem;
+  }
+  &:focus-within {
+    border-color: var(--color-accent-text);
+  }
+  span {
+    color: var(--color-text-secondary);
+  }
+}
+.more-fields {
+  margin-bottom: 20px;
+  summary {
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: 14px 0;
     color: var(--color-text-secondary);
     font-size: 0.875rem;
-    font-weight: 750;
+  }
+  summary span {
+    font-size: 0.75rem;
+  }
+  &[open] summary {
+    margin-bottom: 10px;
   }
 }
 

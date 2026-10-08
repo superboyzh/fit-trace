@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import type { ApiListMeta, MealRecord } from '@fit-trace/shared';
+import type { ApiListPayload, ApiPayload, MealRecord } from '@fit-trace/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CreateMealDto } from './dto/create-meal.dto';
@@ -26,7 +26,7 @@ export class MealsController {
   async create(
     @CurrentUser('sub') userId: string,
     @Body() dto: CreateMealDto,
-  ): Promise<{ data: MealRecord }> {
+  ): Promise<ApiPayload<MealRecord>> {
     return { data: await this.meals.create(userId, dto) };
   }
 
@@ -34,7 +34,7 @@ export class MealsController {
   list(
     @CurrentUser('sub') userId: string,
     @Query() query: ListMealsDto,
-  ): Promise<{ data: MealRecord[]; meta: ApiListMeta }> {
+  ): Promise<ApiListPayload<MealRecord>> {
     return this.meals.list(userId, query);
   }
 
@@ -42,7 +42,7 @@ export class MealsController {
   async findOne(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
-  ): Promise<{ data: MealRecord }> {
+  ): Promise<ApiPayload<MealRecord>> {
     return { data: await this.meals.findOne(userId, id) };
   }
 
@@ -51,7 +51,7 @@ export class MealsController {
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
     @Body() dto: UpdateMealDto,
-  ): Promise<{ data: MealRecord }> {
+  ): Promise<ApiPayload<MealRecord>> {
     return { data: await this.meals.update(userId, id, dto) };
   }
 
@@ -59,7 +59,7 @@ export class MealsController {
   async remove(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
-  ): Promise<{ data: null }> {
+  ): Promise<ApiPayload<null>> {
     await this.meals.remove(userId, id);
     return { data: null };
   }

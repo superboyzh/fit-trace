@@ -7,6 +7,7 @@ import { AddIcon, DeleteIcon, EditIcon, ForkIcon } from 'tdesign-icons-vue-next'
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteMeal, getMeals } from '@/api/meals';
+import RecordDetailHeader from '@/components/RecordDetailHeader.vue';
 
 const mealLabels: Record<MealType, string> = {
   BREAKFAST: '早餐',

@@ -40,6 +40,11 @@ export const useAuthStore = defineStore('auth', {
       this.token = null;
       this.user = null;
     },
+    updateUser(user: PublicUser): void {
+      if (user.id !== this.user?.id) return;
+      authSession.updateUser(user);
+      this.user = user;
+    },
     setSession(result: AuthResult): void {
       authSession.save(result);
       this.token = result.accessToken;

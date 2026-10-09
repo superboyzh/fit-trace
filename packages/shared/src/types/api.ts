@@ -39,10 +39,13 @@ export interface PublicUser {
   email: string;
   nickname: string | null;
   avatarUrl: string | null;
+  gender: UserGender;
   goal: FitnessGoal | null;
   createdAt: string;
   updatedAt: string;
 }
+
+export type UserGender = 'UNSPECIFIED' | 'MALE' | 'FEMALE';
 
 export type FitnessGoalType = 'LOSE_FAT' | 'GAIN_MUSCLE' | 'MAINTAIN';
 

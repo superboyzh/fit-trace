@@ -1,29 +1,24 @@
 <script setup lang="ts">
 import type { BodyRecord } from '@fit-trace/shared';
 import dayjs from 'dayjs';
-import { Button, Skeleton } from 'tdesign-mobile-vue';
+import { Skeleton } from 'tdesign-mobile-vue';
 import {
   ActivityIcon,
   CameraIcon,
-  CheckIcon,
   ChevronRightIcon,
-  CloseIcon,
-  DesktopIcon,
   FlagIcon,
   ForkIcon,
-  LogoutIcon,
   MeasurementIcon,
-  ModeDarkIcon,
-  ModeLightIcon,
+  SettingIcon,
 } from 'tdesign-icons-vue-next';
-import { computed, onActivated, onDeactivated, onMounted, ref } from 'vue';
+import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getBodyRecords } from '@/api/body-records';
 import { getMeals } from '@/api/meals';
 import { getProgressPhotos } from '@/api/progress-photos';
 import { getWorkouts } from '@/api/workouts';
 import { useAuthStore } from '@/stores/auth';
-import { getThemeMode, setThemeMode, type ThemeMode } from '@/utils/theme';
+import UserAvatar from '@/components/UserAvatar.vue';
 
 defineOptions({ name: 'ProfileView' });
 
@@ -66,46 +61,6 @@ const goalProgress = computed(() => {
   );
 });
 const goalLabels = { LOSE_FAT: '减脂', GAIN_MUSCLE: '增肌', MAINTAIN: '保持' } as const;
-const themeMode = ref<ThemeMode>(getThemeMode());
-const themeOptions = [
-  { value: 'system' as const, label: '跟随系统', icon: DesktopIcon },
-  { value: 'light' as const, label: '浅色', icon: ModeLightIcon },
-  { value: 'dark' as const, label: '深色', icon: ModeDarkIcon },
-];
-const selectedTheme = computed(() => themeOptions.find((item) => item.value === themeMode.value)!);
-const settingsDialog = ref<HTMLDialogElement | null>(null);
-
-function openSetting(): void {
-  settingsDialog.value?.showModal();
-}
-
-function closeSetting(): void {
-  settingsDialog.value?.close();
-}
-
-function closeOnBackdrop(event: MouseEvent): void {
-  const dialog = settingsDialog.value;
-  if (!dialog || event.target !== dialog) return;
-  const rect = dialog.getBoundingClientRect();
-  if (
-    event.clientX < rect.left ||
-    event.clientX > rect.right ||
-    event.clientY < rect.top ||
-    event.clientY > rect.bottom
-  )
-    closeSetting();
-}
-
-function selectTheme(mode: ThemeMode): void {
-  themeMode.value = mode;
-  setThemeMode(mode);
-}
-
-async function logout(): Promise<void> {
-  auth.logout();
-  await router.replace('/login');
-}
-
 async function loadSummary(silent = false): Promise<void> {
   if (!silent) loading.value = true;
   try {
@@ -139,15 +94,24 @@ onActivated(() => {
   }
   void loadSummary(true);
 });
-onDeactivated(closeSetting);
 </script>
 
 <template>
   <main class="view-page profile-page">
-    <header class="primary-header profile-header"><h1>我的</h1></header>
+    <header class="primary-header profile-header">
+      <h1>我的</h1>
+      <button
+        class="profile-settings"
+        type="button"
+        aria-label="设置"
+        @click="router.push('/settings')"
+      >
+        <SettingIcon aria-hidden="true" />
+      </button>
+    </header>
 
-    <section class="account" aria-label="账户信息">
-      <div class="avatar" aria-hidden="true">{{ displayName.slice(0, 1).toUpperCase() }}</div>
+    <RouterLink class="account" to="/settings/account" aria-label="编辑个人资料">
+      <UserAvatar :url="auth.user?.avatarUrl" :name="displayName" />
       <div class="account__body">
         <h2>{{ displayName }}</h2>
         <p>{{ auth.user?.email }}</p>
@@ -155,7 +119,8 @@ onDeactivated(closeSetting);
           >{{ dayjs(auth.user.createdAt).format('YYYY年M月D日') }} 加入</span
         >
       </div>
-    </section>
+      <span class="account__edit">编辑<ChevronRightIcon aria-hidden="true" /></span>
+    </RouterLink>
 
     <section
       v-if="totalRecords !== 0 || summaryError"
@@ -259,79 +224,33 @@ onDeactivated(closeSetting);
         ><span class="setting-row__label">设置健身目标</span><ChevronRightIcon class="chevron" />
       </button>
     </section>
-
-    <section class="profile-section" aria-labelledby="appearance-title">
-      <div class="section-heading"><h2 id="appearance-title">外观设置</h2></div>
-      <div class="profile-card settings-list">
-        <button class="setting-row" type="button" aria-haspopup="dialog" @click="openSetting">
-          <span class="row-icon"><component :is="selectedTheme.icon" aria-hidden="true" /></span>
-          <span class="setting-row__label">显示模式</span>
-          <span class="setting-row__value">{{ selectedTheme.label }}</span>
-          <ChevronRightIcon class="chevron" aria-hidden="true" />
-        </button>
-      </div>
-    </section>
-
-    <button class="logout-button" type="button" @click="logout">
-      <LogoutIcon aria-hidden="true" />退出登录
-    </button>
-    <footer class="profile-footer">循形 · FitTrace <span>v0.1.0</span></footer>
-
-    <dialog
-      ref="settingsDialog"
-      class="settings-sheet"
-      aria-labelledby="settings-title"
-      aria-describedby="settings-description"
-      @click="closeOnBackdrop"
-      @cancel.prevent="closeSetting"
-    >
-      <div class="settings-sheet__content">
-        <header class="settings-sheet__header">
-          <div>
-            <h2 id="settings-title">显示模式</h2>
-            <p id="settings-description">选择后立即生效，自动保存</p>
-          </div>
-          <button
-            class="close-button"
-            type="button"
-            aria-label="关闭外观设置"
-            @click="closeSetting"
-          >
-            <CloseIcon aria-hidden="true" />
-          </button>
-        </header>
-        <div class="theme-options" role="group" aria-label="显示模式">
-          <button
-            v-for="item in themeOptions"
-            :key="item.value"
-            type="button"
-            :class="{ active: themeMode === item.value }"
-            :aria-pressed="themeMode === item.value"
-            @click="selectTheme(item.value)"
-          >
-            <span class="theme-preview" :class="`theme-preview--${item.value}`" aria-hidden="true"
-              ><i /><i /><i
-            /></span>
-            <span>{{ item.label }}</span>
-            <span class="selection-check" aria-hidden="true"
-              ><CheckIcon v-if="themeMode === item.value"
-            /></span>
-          </button>
-        </div>
-        <Button theme="primary" block size="large" @click="closeSetting">完成</Button>
-      </div>
-    </dialog>
   </main>
 </template>
 
 <style scoped lang="scss">
+.profile-settings {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  margin-right: -10px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  font-size: 24px;
+}
 .account {
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 8px 0 6px;
+  color: var(--color-text-primary);
+  text-decoration: none;
   &__body {
     min-width: 0;
+    flex: 1;
     h2,
     p {
       overflow: hidden;
@@ -350,25 +269,24 @@ onDeactivated(closeSetting);
       font-size: 0.8125rem;
     }
   }
+  &__edit {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex: none;
+    color: var(--color-text-tertiary);
+    font-size: 0.75rem;
+  }
+  &:focus-visible {
+    outline: 2px solid var(--color-accent-text);
+    outline-offset: 4px;
+  }
   &__joined {
     display: block;
     margin-top: 7px;
     color: var(--color-text-tertiary);
     font-size: 0.6875rem;
   }
-}
-.avatar {
-  display: grid;
-  width: 52px;
-  height: 52px;
-  flex: none;
-  place-items: center;
-  color: var(--color-accent-text);
-  font-size: 1.75rem;
-  font-weight: 650;
-  background: var(--color-primary-light);
-  border: 1px solid var(--color-primary-border);
-  border-radius: 50%;
 }
 .profile-section {
   margin-top: 24px;
@@ -589,153 +507,6 @@ onDeactivated(closeSetting);
   &:active {
     background: var(--color-surface-muted);
   }
-}
-.logout-button {
-  display: flex;
-  width: 100%;
-  min-height: 46px;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  margin-top: 22px;
-  font-size: 0.8125rem;
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  > svg {
-    color: var(--color-text-secondary);
-    font-size: 1rem;
-  }
-  &:active {
-    background: var(--color-surface-muted);
-  }
-}
-.profile-footer {
-  padding-top: 16px;
-  color: var(--color-text-tertiary);
-  font-size: 0.6875rem;
-  text-align: center;
-  > span {
-    margin-left: 5px;
-  }
-}
-.settings-sheet {
-  position: fixed;
-  inset: auto 0 0;
-  width: min(100%, 560px);
-  max-width: 100%;
-  max-height: 85dvh;
-  margin: 0 auto;
-  padding: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  color: var(--color-text-primary);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-bottom: 0;
-  border-radius: 22px 22px 0 0;
-  &::backdrop {
-    background: rgb(0 0 0 / 36%);
-  }
-  &__content {
-    padding: 24px 20px calc(24px + var(--app-safe-area-bottom));
-  }
-  &__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 24px;
-    h2 {
-      margin: 0;
-      font-size: 1.125rem;
-      font-weight: 650;
-    }
-    p {
-      margin: 6px 0 0;
-      color: var(--color-text-tertiary);
-      font-size: 0.75rem;
-    }
-  }
-  .close-button {
-    display: grid;
-    width: 32px;
-    height: 32px;
-    flex: none;
-    place-items: center;
-    font-size: 1.125rem;
-    background: var(--color-surface-muted);
-    border: 0;
-    border-radius: 50%;
-  }
-}
-.theme-options {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 24px;
-  > button {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 6px;
-    font-size: 0.75rem;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    &.active {
-      background: var(--color-primary-light);
-      border-color: var(--color-accent-text);
-    }
-  }
-}
-.theme-preview {
-  display: grid;
-  width: 52px;
-  height: 64px;
-  align-content: start;
-  gap: 5px;
-  padding: 10px 7px;
-  background: #f1f3f0;
-  border: 1px solid #d6dcd6;
-  border-radius: 7px;
-  > i {
-    height: 8px;
-    background: #d2d8d2;
-    border-radius: 2px;
-    &:first-child {
-      width: 55%;
-      height: 5px;
-      margin-bottom: 2px;
-      background: #626d65;
-    }
-  }
-  &--dark {
-    background: #222a27;
-    border-color: #414d46;
-    > i {
-      background: #45534a;
-      &:first-child {
-        background: #c2cec6;
-      }
-    }
-  }
-  &--system {
-    background: linear-gradient(90deg, #f1f3f0 50%, #222a27 50%);
-    > i {
-      background: linear-gradient(90deg, #d2d8d2 50%, #45534a 50%);
-    }
-  }
-}
-.selection-check {
-  display: grid;
-  width: 16px;
-  height: 16px;
-  place-items: center;
-  color: var(--color-accent-text);
-  font-size: 1rem;
 }
 .goal-progress {
   margin: 0 16px 14px;

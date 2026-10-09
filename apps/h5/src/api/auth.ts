@@ -71,3 +71,10 @@ export async function getCurrentUser(): Promise<PublicUser> {
   const response = await http.get<ApiResponse<PublicUser>>('/auth/me');
   return response.data.data;
 }
+
+export async function changePassword(input: {
+  currentPassword: string;
+  password: string;
+}): Promise<void> {
+  await http.patch<ApiResponse<null>>('/auth/password', input);
+}

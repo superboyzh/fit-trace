@@ -14,6 +14,7 @@ model User {
   tokenVersion   Int             @default(0)
   nickname       String?
   avatarUrl      String?
+  gender         UserGender      @default(UNSPECIFIED)
   goalType       FitnessGoalType?
   goalStartWeight Decimal?        @db.Decimal(6, 2)
   targetWeight   Decimal?         @db.Decimal(6, 2)
@@ -89,6 +90,12 @@ enum FitnessGoalType {
   LOSE_FAT
   GAIN_MUSCLE
   MAINTAIN
+}
+
+enum UserGender {
+  UNSPECIFIED
+  MALE
+  FEMALE
 }
 
 enum MealType {

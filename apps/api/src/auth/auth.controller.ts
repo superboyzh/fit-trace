@@ -4,7 +4,16 @@ import type {
   LoginCaptcha,
   ResetPasswordVerification,
 } from '@fit-trace/shared';
-import { Body, Controller, Get, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -18,6 +27,7 @@ import { RegisterDto } from './dto/register.dto';
 import { EmailCodeDto } from './dto/email-code.dto';
 import { VerifyResetCodeDto } from './dto/verify-reset-code.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthSecurityService } from './auth-security.service';
 import { EmailVerificationService } from './email-verification.service';
 
@@ -94,6 +104,16 @@ export class AuthController {
 
   private clientIp(request: Request): string {
     return request.ip ?? request.socket.remoteAddress ?? 'unknown';
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('password')
+  async changePassword(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<ApiPayload<null>> {
+    await this.auth.changePassword(userId, dto);
+    return { data: null };
   }
 
   @UseGuards(JwtAuthGuard)

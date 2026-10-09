@@ -7,7 +7,7 @@ interface SessionRequest extends InternalAxiosRequestConfig {
 }
 
 function publicAuthRequest(config: SessionRequest): boolean {
-  return /^\/auth\/(?!me(?:$|\?))/.test(config.url ?? '');
+  return /^\/auth\/(?!(?:me|password)(?:$|\?))/.test(config.url ?? '');
 }
 
 export function installSessionInterceptor(

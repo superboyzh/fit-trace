@@ -53,6 +53,36 @@ const router = createRouter({
           component: () => import('@/views/GoalSettingsView.vue'),
         },
         {
+          path: 'settings',
+          name: 'settings',
+          component: () => import('@/views/settings/SettingsView.vue'),
+        },
+        {
+          path: 'settings/account',
+          name: 'account-settings',
+          component: () => import('@/views/settings/AccountSettingsView.vue'),
+        },
+        {
+          path: 'settings/password',
+          name: 'change-password',
+          component: () => import('@/views/settings/ChangePasswordView.vue'),
+        },
+        {
+          path: 'settings/system',
+          name: 'system-settings',
+          component: () => import('@/views/settings/SystemSettingsView.vue'),
+        },
+        {
+          path: 'settings/agreement',
+          name: 'user-agreement',
+          component: () => import('@/views/settings/AgreementView.vue'),
+        },
+        {
+          path: 'settings/about',
+          name: 'about',
+          component: () => import('@/views/settings/AboutView.vue'),
+        },
+        {
           path: 'archive',
           name: 'archive',
           component: () => import('@/views/ArchiveView.vue'),

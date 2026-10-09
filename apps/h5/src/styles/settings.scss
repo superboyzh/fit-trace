@@ -1,0 +1,128 @@
+.settings-section {
+  margin-bottom: 24px;
+  > h2 {
+    margin: 0 0 10px;
+    color: var(--color-text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+}
+.settings-list {
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+}
+.settings-row {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  + .settings-row {
+    border-top: 1px solid var(--color-border);
+  }
+  > svg {
+    flex: none;
+    color: var(--color-text-secondary);
+    font-size: 20px;
+  }
+  &__body {
+    min-width: 0;
+    flex: 1;
+  }
+  &__value {
+    max-width: 65%;
+    margin-left: auto;
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+  &__description {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-text-tertiary);
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+  &__chevron {
+    margin-left: auto;
+    font-size: 16px !important;
+  }
+  &:is(a, button):active {
+    background: var(--color-surface-muted);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--color-accent-text);
+    outline-offset: -3px;
+  }
+}
+.settings-hint {
+  margin: 10px 2px 0;
+  color: var(--color-text-tertiary);
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+.settings-form {
+  display: grid;
+  gap: 24px;
+  .settings-section {
+    margin-bottom: 0;
+  }
+  .form-field {
+    padding: 16px;
+    + .form-field {
+      border-top: 1px solid var(--color-border);
+    }
+  }
+  .form-label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+  .field-input {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 0;
+    color: var(--color-text-primary);
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    font-size: 1rem;
+    &::placeholder {
+      color: var(--color-text-tertiary);
+      font-size: 0.875rem;
+    }
+    &:focus {
+      border-color: var(--color-accent-text);
+    }
+  }
+  .field-error {
+    display: block;
+    margin-top: 6px;
+    color: var(--color-danger-text);
+    font-size: 0.75rem;
+  }
+}
+.settings-document {
+  font-size: 0.875rem;
+  line-height: 1.85;
+  > section {
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 8px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+  p {
+    margin: 0 0 10px;
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+  }
+}

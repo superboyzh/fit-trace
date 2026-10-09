@@ -8,12 +8,14 @@ import type { PublicUser as PublicUserResponse } from '@fit-trace/shared';
 import { FitnessGoalType, Prisma, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateFitnessGoalDto } from './dto/update-fitness-goal.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const publicUserSelect = {
   id: true,
   email: true,
   nickname: true,
   avatarUrl: true,
+  gender: true,
   goalType: true,
   goalStartWeight: true,
   targetWeight: true,
@@ -32,6 +34,43 @@ export class UsersService {
 
   findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { email } });
+  }
+
+  findById(id: string): Promise<User | null> {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<PublicUser> {
+    try {
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...(dto.nickname !== undefined ? { nickname: dto.nickname } : {}),
+          ...(dto.gender !== undefined ? { gender: dto.gender } : {}),
+          ...(dto.avatarUrl !== undefined ? { avatarUrl: dto.avatarUrl } : {}),
+        },
+        select: publicUserSelect,
+      });
+      return this.toPublicUser(user);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException({ code: 'USER_NOT_FOUND', message: '用户不存在' });
+      }
+      throw error;
+    }
+  }
+
+  async updatePassword(userId: string, expectedHash: string, passwordHash: string): Promise<void> {
+    const updated = await this.prisma.user.updateMany({
+      where: { id: userId, passwordHash: expectedHash },
+      data: { passwordHash, tokenVersion: { increment: 1 } },
+    });
+    if (!updated.count) {
+      throw new ConflictException({
+        code: 'PASSWORD_CHANGED',
+        message: '账号密码已发生变化，请重新登录后再试',
+      });
+    }
   }
 
   async findPublicById(id: string): Promise<PublicUser | null> {
@@ -135,6 +174,7 @@ export class UsersService {
       email: user.email,
       nickname: user.nickname,
       avatarUrl: user.avatarUrl,
+      gender: user.gender,
       goal,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),

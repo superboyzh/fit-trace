@@ -1,4 +1,10 @@
-import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { compare, hash } from 'bcryptjs';
 import { UsersService, type PublicUser } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -9,6 +15,7 @@ import { AuthSecurityService } from './auth-security.service';
 import { EmailVerificationService } from './email-verification.service';
 import type { AuthResult } from './auth.types';
 import { AuthSessionService } from './auth-session.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -92,6 +99,24 @@ export class AuthService {
       });
     });
     await this.security.loginSucceeded(dto.email, ip);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    await this.security.limit('change-password-user', userId, 10, 900);
+    const user = await this.users.findById(userId);
+    if (!user || !(await compare(dto.currentPassword, user.passwordHash))) {
+      throw new BadRequestException({
+        code: 'CURRENT_PASSWORD_INCORRECT',
+        message: '当前密码不正确',
+      });
+    }
+    if (dto.currentPassword === dto.password) {
+      throw new BadRequestException({
+        code: 'PASSWORD_UNCHANGED',
+        message: '新密码不能与当前密码相同',
+      });
+    }
+    await this.users.updatePassword(userId, user.passwordHash, await hash(dto.password, 12));
   }
 
   private dummyHash?: Promise<string>;

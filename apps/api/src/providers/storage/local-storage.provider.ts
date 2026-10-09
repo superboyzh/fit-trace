@@ -12,6 +12,12 @@ import type { StorageProvider, StorageUploadOptions, StorageUploadResult } from 
 @Injectable()
 export class LocalStorageProvider implements StorageProvider {
   private readonly logger = new Logger(LocalStorageProvider.name);
+  private readonly uploadDateFormat = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
   private readonly rootDirectory: string;
   private readonly publicBaseUrl: string;
   private readonly publicPrefix: string;
@@ -38,7 +44,10 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
   async upload(file: Buffer, options: StorageUploadOptions = {}): Promise<StorageUploadResult> {
-    const directory = this.sanitizeSegment(options.directory ?? 'general');
+    const date = Object.fromEntries(
+      this.uploadDateFormat.formatToParts(new Date()).map(({ type, value }) => [type, value]),
+    );
+    const directory = `${date.year}/${date.month}/${date.day}/${this.sanitizeSegment(options.directory ?? 'general')}`;
     const extension = this.sanitizeExtension(options.extension);
     const key = `${directory}/${randomUUID()}${extension}`;
     const target = join(this.rootDirectory, key);

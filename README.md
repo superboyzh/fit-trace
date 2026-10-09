@@ -31,6 +31,16 @@ pnpm typecheck
 pnpm build
 ```
 
+## 图片存储
+
+本地存储根目录由 `STORAGE_LOCAL_DIR` 配置。新图片按上传时的中国时间（`Asia/Shanghai`）划分年/月/日，并保留用户子目录，例如：
+
+```text
+uploads/2026/10/09/<用户ID>/<文件UUID>.jpg
+```
+
+日期取上传时间，与记录中填写的日期无关。旧图片保留原路径和访问地址，仍可查看、识别和删除，无需迁移文件或修改数据库。验证存储流程可在 API 构建后执行 `node --test apps/api/test/storage.test.mjs`。
+
 ## Android APK
 
 H5 已接入 Capacitor。配置 Android SDK 与 JDK 21 后，在仓库根目录执行：

@@ -89,7 +89,12 @@ onMounted(async () => {
       @action="router.push('/body/create')"
     />
 
-    <Loading class="page-loading" :loading="loading" text="正在读取历史记录">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在读取历史记录"
+    >
       <EmptyState
         v-if="!loading && records.length === 0"
         class="empty-state"

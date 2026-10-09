@@ -74,7 +74,12 @@ onMounted(async () => {
       @action="router.push(`/meals/${mealId}/edit`)"
     />
 
-    <Loading class="page-loading" :loading="loading" text="正在读取记录">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在读取记录"
+    >
       <template v-if="meal">
         <section class="surface-card meal-hero">
           <div class="meal-hero__top">

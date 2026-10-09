@@ -75,7 +75,12 @@ onMounted(async () => {
       @action="router.push(`/workouts/${workoutId}/edit`)"
     />
 
-    <Loading class="page-loading" :loading="loading" text="正在读取记录">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在读取记录"
+    >
       <template v-if="workout">
         <section class="surface-card workout-hero">
           <div class="workout-hero__top">

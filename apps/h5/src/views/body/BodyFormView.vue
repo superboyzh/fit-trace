@@ -145,7 +145,12 @@ onMounted(async () => {
       subtitle="体重是必填项，其他数据可以稍后补充。"
     />
 
-    <Loading class="page-loading" :loading="loading" text="正在读取记录">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在读取记录"
+    >
       <section class="surface-card body-form-card">
         <div class="field-block">
           <span class="field-label">体重</span>

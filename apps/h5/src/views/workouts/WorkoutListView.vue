@@ -140,7 +140,12 @@ onMounted(async () => {
       </button>
     </div>
 
-    <Loading class="page-loading" :loading="loading" text="正在读取训练记录">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在读取训练记录"
+    >
       <EmptyState
         v-if="!loading && workouts.length === 0"
         title="还没有训练记录"

@@ -71,7 +71,12 @@ onMounted(async () => {
       :subtitle="photo ? `${recordedAtText} · ${photoLabels[photo.type]}` : ''"
     />
 
-    <Loading class="page-loading" :loading="loading" text="正在读取照片">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在读取照片"
+    >
       <template v-if="photo">
         <img class="photo-full" :src="photo.imageUrl" :alt="`${photoLabels[photo.type]}照片`" />
 

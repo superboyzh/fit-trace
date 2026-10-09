@@ -137,7 +137,12 @@ onMounted(async () => {
       @change="onFileChange"
     />
 
-    <Loading class="page-loading" :loading="loading" text="正在整理照片">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在整理照片"
+    >
       <EmptyState
         v-if="!loading && visiblePhotos.length === 0"
         title="还没有照片"

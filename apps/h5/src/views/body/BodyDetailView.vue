@@ -72,7 +72,12 @@ onMounted(async () => {
       @action="router.push(`/body/${recordId}/edit`)"
     />
 
-    <Loading class="page-loading" :loading="loading" text="正在读取记录">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在读取记录"
+    >
       <template v-if="record">
         <section class="surface-card weight-card">
           <span>体重</span>

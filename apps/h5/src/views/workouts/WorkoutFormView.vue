@@ -158,7 +158,12 @@ onMounted(async () => {
       subtitle="记录训练内容和时长。"
     />
 
-    <Loading class="page-loading" :loading="loading" text="正在读取训练记录">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在读取训练记录"
+    >
       <section class="surface-card workout-form-card">
         <div v-if="!isEdit && latestWorkout" class="quick-start field-block">
           <div>

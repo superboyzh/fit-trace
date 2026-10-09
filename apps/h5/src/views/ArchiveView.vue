@@ -169,7 +169,12 @@ onActivated(() => {
       </button>
     </div>
 
-    <Loading class="page-loading" :loading="loading" text="正在整理记录">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在整理记录"
+    >
       <div v-if="loadError" class="archive-error" role="alert">
         <span>{{ loadError }}</span
         ><Button variant="text" size="small" @click="loadRecords()">重新加载</Button>

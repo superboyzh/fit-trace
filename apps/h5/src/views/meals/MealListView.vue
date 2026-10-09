@@ -138,7 +138,12 @@ onMounted(async () => {
       </button>
     </div>
 
-    <Loading class="page-loading" :loading="loading" text="正在读取饮食记录">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在读取饮食记录"
+    >
       <EmptyState
         v-if="!loading && meals.length === 0"
         class="empty-state"

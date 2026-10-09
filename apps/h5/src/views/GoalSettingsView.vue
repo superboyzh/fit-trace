@@ -101,7 +101,12 @@ onMounted(async () => {
   <main class="view-page record-form goal-page">
     <RecordDetailHeader title="我的目标" subtitle="选择适合自己的目标和节奏。" />
 
-    <Loading class="page-loading" :loading="loading" text="正在读取身体数据">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在读取身体数据"
+    >
       <section class="goal-section">
         <div class="section-heading">
           <h2>你现在更关注什么？</h2>

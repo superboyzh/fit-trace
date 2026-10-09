@@ -396,7 +396,12 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <Loading class="page-loading" :loading="loading" text="正在计算趋势">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在计算趋势"
+    >
       <section class="surface-card trend-card">
         <div class="metric-tabs" aria-label="趋势指标">
           <button

@@ -349,7 +349,12 @@ onMounted(async () => {
       subtitle="记下吃了什么，份量和热量选填。"
     />
 
-    <Loading class="page-loading" :loading="loading" text="正在读取饮食记录">
+    <Loading
+      class="page-loading"
+      :class="{ 'page-loading--active': loading }"
+      :loading="loading"
+      text="正在读取饮食记录"
+    >
       <section class="surface-card meal-form-card">
         <div class="field-block">
           <span class="field-label">餐次</span>

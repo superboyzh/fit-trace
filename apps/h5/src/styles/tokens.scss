@@ -8,16 +8,15 @@
   --app-safe-area-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --app-safe-area-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
   --app-safe-area-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
-  /* 品牌色：低饱和绿色用于重要操作与数据强调 */
+  /* 固定品牌色：松针绿，与循形 App 图标保持一致。 */
   --color-primary: #2f7d5b;
-  /* 强调色填充底上的前景色 */
+  /* 品牌色填充底上的前景色 */
   --color-on-primary: #fff;
-  /* 强调色当文字/图标时的可读版本（浅色下压深，满足 4.5:1） */
+  /* 品牌色用于文字与图标。 */
   --color-accent-text: #2f7d5b;
   --color-primary-strong: #266a4c;
-  --color-primary-light: #eaf3ee;
-  --color-primary-border: #cbded3;
-  --color-accent: #ff7043;
+  --color-primary-light: #e4f1ea;
+  --color-primary-border: #c2ddd0;
   --color-success: #33c879;
   --color-success-text: #1f7a45;
   --color-warning: #ffad32;
@@ -39,7 +38,7 @@
   --color-surface-muted: #f1f3f0;
   --color-border: #e6eae5;
 
-  /* 主按钮跟随强调色，深色使用浅色填充。 */
+  /* 主按钮使用品牌色，深色模式使用同色系的浅色填充。 */
   --color-brand: var(--color-accent-text);
   --color-on-brand: #fff;
 
@@ -68,7 +67,9 @@
 }
 
 :root[data-theme='dark'] {
+  /* 品牌绿的深色适配版本，不提供用户配色切换。 */
   --color-primary: #67cda3;
+  --color-on-primary: #111715;
   --color-primary-light: rgb(103 205 163 / 12%);
   --color-primary-border: rgb(103 205 163 / 28%);
   --color-primary-strong: #4ecb94;
@@ -103,7 +104,7 @@
 
 /* TDesign 变量跟随主题 */
 :root {
-  /* 文字操作使用有足够对比度的强调色。 */
+  /* 文字操作使用有足够对比度的品牌色。 */
   --td-brand-color: var(--color-accent-text);
   --td-brand-color-hover: var(--color-primary-strong);
   --td-brand-color-focus: var(--color-surface-muted);
@@ -116,103 +117,4 @@
   --td-bg-color-container: var(--color-surface);
   --td-text-color-primary: var(--color-text-primary);
   --td-text-color-secondary: var(--color-text-secondary);
-}
-
-/*
- * 强调色方案：默认松针绿，保留其他强调色选择。
- * 每种都单独定义浅色与深色，且主按钮底色与前景色对比度均 ≥4.5:1。
- */
-:root[data-accent='pine'] {
-  --color-primary: #2f7d5b;
-  --color-primary-strong: #266a4c;
-  --color-primary-light: #e4f1ea;
-  --color-primary-border: #c2ddd0;
-  --color-chart-point: #2f7d5b;
-  --color-on-primary: #fff;
-  --color-accent-text: #2f7d5b;
-}
-
-:root[data-theme='dark'][data-accent='pine'] {
-  --color-primary: #4ecb94;
-  --color-primary-strong: #3cb583;
-  --color-primary-light: rgb(78 203 148 / 16%);
-  --color-primary-border: rgb(78 203 148 / 40%);
-  --color-chart-point: #4ecb94;
-  --color-on-primary: #0c1512;
-  --color-accent-text: #6fd7a6;
-}
-
-:root[data-accent='teal'] {
-  --color-primary: #0b7a73;
-  --color-primary-strong: #096660;
-  --color-primary-light: #e0efee;
-  --color-primary-border: #b7d9d6;
-  --color-chart-point: #0b7a73;
-  --color-on-primary: #fff;
-  --color-accent-text: #0b7a73;
-}
-
-:root[data-theme='dark'][data-accent='teal'] {
-  --color-primary: #3fd0c4;
-  --color-primary-strong: #2cb8ad;
-  --color-primary-light: rgb(63 208 196 / 16%);
-  --color-primary-border: rgb(63 208 196 / 40%);
-  --color-chart-point: #3fd0c4;
-  --color-on-primary: #06201e;
-  --color-accent-text: #5fd8ce;
-}
-
-:root[data-accent='indigo'] {
-  --color-primary: #2a5fe0;
-  --color-primary-strong: #2150c4;
-  --color-primary-light: #e7edfd;
-  --color-primary-border: #c2d1f8;
-  --color-chart-point: #2a5fe0;
-  --color-on-primary: #fff;
-  --color-accent-text: #2a5fe0;
-}
-
-:root[data-theme='dark'][data-accent='indigo'] {
-  --color-primary: #7aa2ff;
-  --color-primary-strong: #6190ff;
-  --color-primary-light: rgb(122 162 255 / 16%);
-  --color-primary-border: rgb(122 162 255 / 40%);
-  --color-chart-point: #7aa2ff;
-  --color-on-primary: #0a1020;
-  --color-accent-text: #9ab8ff;
-}
-
-:root[data-accent='amber'] {
-  --color-primary: #ff9f43;
-  --color-primary-strong: #ef8a24;
-  --color-primary-light: #fff2e2;
-  --color-primary-border: #ffd9b0;
-  --color-chart-point: #ff9f43;
-  --color-on-primary: #fff;
-  --color-accent-text: #a95c14;
-}
-
-:root[data-theme='dark'][data-accent='amber'] {
-  --color-primary: #ffb066;
-  --color-primary-strong: #ff9f43;
-  --color-primary-light: rgb(255 176 102 / 16%);
-  --color-primary-border: rgb(255 176 102 / 40%);
-  --color-chart-point: #ffb066;
-  --color-on-primary: #1a1206;
-  --color-accent-text: #ffc189;
-}
-
-:root[data-accent='lime'] {
-  --color-primary: #a8dd35;
-  --color-primary-strong: #7fb01c;
-  --color-primary-light: #f0f7df;
-  --color-primary-border: #d7e9ad;
-  --color-on-primary: #111715;
-  --color-accent-text: #557f0d;
-}
-:root[data-theme='dark'][data-accent='lime'] {
-  --color-primary-light: rgb(168 221 53 / 16%);
-  --color-primary-border: rgb(168 221 53 / 38%);
-  --color-primary-strong: #b8f23d;
-  --color-accent-text: #a8dd35;
 }

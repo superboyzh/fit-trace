@@ -15,23 +15,15 @@ import {
   MeasurementIcon,
   ModeDarkIcon,
   ModeLightIcon,
-  PaletteIcon,
 } from 'tdesign-icons-vue-next';
-import { computed, nextTick, onActivated, onDeactivated, onMounted, ref } from 'vue';
+import { computed, onActivated, onDeactivated, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getBodyRecords } from '@/api/body-records';
 import { getMeals } from '@/api/meals';
 import { getProgressPhotos } from '@/api/progress-photos';
 import { getWorkouts } from '@/api/workouts';
 import { useAuthStore } from '@/stores/auth';
-import {
-  getAccent,
-  getThemeMode,
-  setAccent,
-  setThemeMode,
-  type AccentId,
-  type ThemeMode,
-} from '@/utils/theme';
+import { getThemeMode, setThemeMode, type ThemeMode } from '@/utils/theme';
 
 defineOptions({ name: 'ProfileView' });
 
@@ -80,30 +72,15 @@ const themeOptions = [
   { value: 'light' as const, label: '浅色', icon: ModeLightIcon },
   { value: 'dark' as const, label: '深色', icon: ModeDarkIcon },
 ];
-const accentMode = ref<AccentId>(getAccent());
-const accentOptions: Array<{ value: AccentId; label: string; color: string }> = [
-  { value: 'lime', label: '酸绿', color: '#a8dd35' },
-  { value: 'pine', label: '松针绿', color: '#2f7d5b' },
-  { value: 'teal', label: '青绿', color: '#0b7a73' },
-  { value: 'indigo', label: '靛蓝', color: '#2a5fe0' },
-  { value: 'amber', label: '暖橙', color: '#ff9f43' },
-];
 const selectedTheme = computed(() => themeOptions.find((item) => item.value === themeMode.value)!);
-const selectedAccent = computed(() =>
-  accentOptions.find((item) => item.value === accentMode.value)!,
-);
 const settingsDialog = ref<HTMLDialogElement | null>(null);
-const activeSetting = ref<'theme' | 'accent' | null>(null);
 
-async function openSetting(setting: 'theme' | 'accent'): Promise<void> {
-  activeSetting.value = setting;
-  await nextTick();
+function openSetting(): void {
   settingsDialog.value?.showModal();
 }
 
 function closeSetting(): void {
   settingsDialog.value?.close();
-  activeSetting.value = null;
 }
 
 function closeOnBackdrop(event: MouseEvent): void {
@@ -122,11 +99,6 @@ function closeOnBackdrop(event: MouseEvent): void {
 function selectTheme(mode: ThemeMode): void {
   themeMode.value = mode;
   setThemeMode(mode);
-}
-
-function selectAccent(accent: AccentId): void {
-  accentMode.value = accent;
-  setAccent(accent);
 }
 
 async function logout(): Promise<void> {
@@ -291,32 +263,10 @@ onDeactivated(closeSetting);
     <section class="profile-section" aria-labelledby="appearance-title">
       <div class="section-heading"><h2 id="appearance-title">外观设置</h2></div>
       <div class="profile-card settings-list">
-        <button
-          class="setting-row"
-          type="button"
-          aria-haspopup="dialog"
-          @click="openSetting('theme')"
-        >
+        <button class="setting-row" type="button" aria-haspopup="dialog" @click="openSetting">
           <span class="row-icon"><component :is="selectedTheme.icon" aria-hidden="true" /></span>
           <span class="setting-row__label">显示模式</span>
           <span class="setting-row__value">{{ selectedTheme.label }}</span>
-          <ChevronRightIcon class="chevron" aria-hidden="true" />
-        </button>
-        <button
-          class="setting-row"
-          type="button"
-          aria-haspopup="dialog"
-          @click="openSetting('accent')"
-        >
-          <span class="row-icon"><PaletteIcon aria-hidden="true" /></span>
-          <span class="setting-row__label">强调色</span>
-          <span class="setting-row__value"
-            ><i
-              class="accent-dot"
-              :style="{ background: selectedAccent.color }"
-              aria-hidden="true"
-            />{{ selectedAccent.label }}</span
-          >
           <ChevronRightIcon class="chevron" aria-hidden="true" />
         </button>
       </div>
@@ -334,12 +284,11 @@ onDeactivated(closeSetting);
       aria-describedby="settings-description"
       @click="closeOnBackdrop"
       @cancel.prevent="closeSetting"
-      @close="activeSetting = null"
     >
       <div class="settings-sheet__content">
         <header class="settings-sheet__header">
           <div>
-            <h2 id="settings-title">{{ activeSetting === 'theme' ? '显示模式' : '强调色' }}</h2>
+            <h2 id="settings-title">显示模式</h2>
             <p id="settings-description">选择后立即生效，自动保存</p>
           </div>
           <button
@@ -351,12 +300,7 @@ onDeactivated(closeSetting);
             <CloseIcon aria-hidden="true" />
           </button>
         </header>
-        <div
-          v-if="activeSetting === 'theme'"
-          class="theme-options"
-          role="group"
-          aria-label="显示模式"
-        >
+        <div class="theme-options" role="group" aria-label="显示模式">
           <button
             v-for="item in themeOptions"
             :key="item.value"
@@ -371,22 +315,6 @@ onDeactivated(closeSetting);
             <span>{{ item.label }}</span>
             <span class="selection-check" aria-hidden="true"
               ><CheckIcon v-if="themeMode === item.value"
-            /></span>
-          </button>
-        </div>
-        <div v-else class="accent-options" role="group" aria-label="强调色">
-          <button
-            v-for="item in accentOptions"
-            :key="item.value"
-            type="button"
-            :class="{ active: accentMode === item.value }"
-            :aria-pressed="accentMode === item.value"
-            @click="selectAccent(item.value)"
-          >
-            <span class="accent-swatch" :style="{ background: item.color }" aria-hidden="true" />
-            <span>{{ item.label }}</span>
-            <span class="selection-check" aria-hidden="true"
-              ><CheckIcon v-if="accentMode === item.value"
             /></span>
           </button>
         </div>
@@ -662,13 +590,6 @@ onDeactivated(closeSetting);
     background: var(--color-surface-muted);
   }
 }
-.accent-dot {
-  width: 12px;
-  height: 12px;
-  flex: none;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
-}
 .logout-button {
   display: flex;
   width: 100%;
@@ -748,9 +669,9 @@ onDeactivated(closeSetting);
     border-radius: 50%;
   }
 }
-.theme-options,
-.accent-options {
+.theme-options {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 24px;
   > button {
@@ -769,9 +690,6 @@ onDeactivated(closeSetting);
       border-color: var(--color-accent-text);
     }
   }
-}
-.theme-options {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .theme-preview {
   display: grid;
@@ -810,21 +728,6 @@ onDeactivated(closeSetting);
       background: linear-gradient(90deg, #d2d8d2 50%, #45534a 50%);
     }
   }
-}
-.accent-options {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
-  > button {
-    gap: 10px;
-    padding: 12px 2px;
-    font-size: 0.6875rem;
-  }
-}
-.accent-swatch {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
 }
 .selection-check {
   display: grid;

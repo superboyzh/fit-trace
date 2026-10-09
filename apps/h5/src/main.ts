@@ -4,12 +4,13 @@ import App from './App.vue';
 import router from './router';
 import { pinia } from './stores';
 import './styles/global.scss';
-import { applyAccent, applyTheme, watchSystemTheme } from './utils/theme';
+import { applyTheme, watchSystemTheme } from './utils/theme';
 import { setupNativeShell } from './utils/native';
 
 // 主题要在挂载前定好，避免首屏闪一下浅色
+// 品牌统一使用松针绿，清理旧版强调色偏好。
+localStorage.removeItem('fittrace-accent');
 applyTheme();
-applyAccent();
 watchSystemTheme();
 setupNativeShell();
 

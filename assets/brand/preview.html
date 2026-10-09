@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>循形 · FitTrace 品牌素材</title>
+    <link rel="icon" href="favicon.ico" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #edf1ed;
+        color: #202923;
+        font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+      }
+      main {
+        max-width: 1024px;
+        margin: 0 auto;
+        padding: 42px;
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        gap: 18px;
+        margin-bottom: 12px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 42px;
+        letter-spacing: 2px;
+      }
+      header span {
+        font-size: 20px;
+        color: #637067;
+      }
+      .intro {
+        margin: 0 0 30px;
+        font-size: 15px;
+        color: #637067;
+        line-height: 1.7;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 18px;
+      }
+      section {
+        border: 1px solid #dce4dd;
+        border-radius: 18px;
+        overflow: hidden;
+        background: #fff;
+      }
+      h2 {
+        font-size: 13px;
+        font-weight: 600;
+        margin: 22px 24px;
+        color: #637067;
+      }
+      .app {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-bottom: 28px;
+      }
+      .app h2 {
+        align-self: flex-start;
+      }
+      .app-icon {
+        width: 144px;
+        height: 144px;
+        border-radius: 34px;
+        margin: 26px 0 16px;
+      }
+      .app strong {
+        font-size: 18px;
+      }
+      .app p {
+        font-size: 12px;
+        color: #637067;
+        margin: 8px 0 28px;
+      }
+      .small-app {
+        display: flex;
+        gap: 20px;
+        align-items: end;
+      }
+      .small-app img {
+        border-radius: 12px;
+      }
+      .logos {
+        display: grid;
+        grid-template-rows: 1fr 1fr;
+      }
+      .logo-light {
+        display: grid;
+        place-items: center;
+        padding: 8px 28px 30px;
+      }
+      .logo-light img {
+        width: 310px;
+        max-width: 100%;
+        height: auto;
+      }
+      .dark {
+        background: #161d19;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 172px;
+      }
+      .dark img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .favicon {
+        margin-top: 18px;
+        padding: 0 0 24px;
+      }
+      .tabs {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        margin: 0 24px;
+        flex-wrap: wrap;
+      }
+      .tab {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        padding: 12px 18px;
+        background: #f4f6f3;
+        border-radius: 10px;
+        font-size: 13px;
+      }
+      .pixels {
+        font-size: 12px;
+        color: #637067;
+        margin-left: 8px;
+      }
+      footer {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 24px;
+        color: #637067;
+        font-size: 12px;
+      }
+      .color {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        background: #2f7d5b;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+      @media (max-width: 680px) {
+        main {
+          padding: 24px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .app-icon {
+          margin-top: 8px;
+        }
+        .logos {
+          min-height: 360px;
+        }
+        footer {
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>循形</h1>
+        <span>FitTrace</span>
+      </header>
+      <p class="intro">循着每天的记录，看见身体的变化。</p>
+      <div class="grid">
+        <section class="app">
+          <h2>App 应用图标</h2>
+          <img class="app-icon" src="app-icon-1024.png" alt="循形 App 图标" />
+          <strong>循形</strong>
+          <p>圆角 F · 记录轨迹 · 每日节点</p>
+          <div class="small-app">
+            <img src="app-icon-1024.png" width="48" height="48" alt="48 像素图标" /><img
+              src="app-icon-1024.png"
+              width="64"
+              height="64"
+              alt="64 像素图标"
+            />
+          </div>
+        </section>
+        <section class="logos">
+          <div>
+            <h2>品牌 Logo · 透明 PNG</h2>
+            <div class="logo-light">
+              <img src="logo-transparent.png" alt="循形 FitTrace 品牌 Logo" />
+            </div>
+          </div>
+          <div class="dark">
+            <img src="logo-dark-presentation.png" alt="深色背景 Logo 展示版" />
+          </div>
+        </section>
+      </div>
+      <section class="favicon">
+        <h2>网页 favicon · 实际小尺寸</h2>
+        <div class="tabs">
+          <div class="tab">
+            <img src="favicon-16.png" width="16" height="16" alt="16 像素 favicon" />循形 ·
+            FitTrace<span class="pixels">16 px</span>
+          </div>
+          <div class="tab">
+            <img src="favicon-32.png" width="32" height="32" alt="32 像素 favicon" />循形 ·
+            FitTrace<span class="pixels">32 px</span>
+          </div>
+        </div>
+      </section>
+      <footer>
+        <span><i class="color"></i>松针绿 #2F7D5B</span><span>身体 · 饮食 · 训练 · 变化记录</span>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
 import { showRequestError } from '@/utils/request-error';
 import type { PhotoType, ProgressPhoto } from '@fit-trace/shared';
 import dayjs from 'dayjs';
-import { Button, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
+import { Button, Loading, ToastPlugin } from 'tdesign-mobile-vue';
 import { ImageIcon, UploadIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -113,7 +114,7 @@ onMounted(async () => {
       </div>
     </section>
 
-    <div class="photo-filter" aria-label="按照片类型筛选">
+    <div class="photo-filter filter-tabs" aria-label="按照片类型筛选">
       <button type="button" :class="{ active: activeType === 'ALL' }" @click="activeType = 'ALL'">
         全部
       </button>
@@ -137,7 +138,7 @@ onMounted(async () => {
     />
 
     <Loading class="page-loading" :loading="loading" text="正在整理照片">
-      <Empty
+      <EmptyState
         v-if="!loading && visiblePhotos.length === 0"
         title="还没有照片"
         description="拍下今天的样子，之后才能看到变化。"
@@ -146,7 +147,7 @@ onMounted(async () => {
         <template #action>
           <Button theme="primary" @click="pickFile"><UploadIcon /> 上传第一张</Button>
         </template>
-      </Empty>
+      </EmptyState>
 
       <div v-else class="photo-groups">
         <section v-for="group in groups" :key="group.month" class="photo-group">
@@ -187,7 +188,7 @@ onMounted(async () => {
   h1 {
     margin: 0 0 4px;
     font-size: 1.55rem;
-    font-weight: 800;
+    font-weight: 600;
     letter-spacing: -0.04em;
   }
 
@@ -212,7 +213,7 @@ onMounted(async () => {
     flex: none;
     color: var(--color-text-secondary);
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   &__types {
@@ -220,10 +221,11 @@ onMounted(async () => {
     gap: 5px;
 
     button {
-      padding: 6px 11px;
+      min-height: 36px;
+      padding: 6px 8px;
       color: var(--color-text-secondary);
       font-size: 0.75rem;
-      font-weight: 700;
+      font-weight: 500;
       background: transparent;
       border: 1px solid var(--color-border);
       border-radius: 7px;
@@ -233,36 +235,6 @@ onMounted(async () => {
         background: var(--color-primary-light);
         border-color: var(--color-primary-border);
       }
-    }
-  }
-}
-
-.photo-filter {
-  display: flex;
-  gap: 6px;
-  margin: 12px 0 16px;
-  overflow-x: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  button {
-    min-width: 54px;
-    flex: 1 0 auto;
-    padding: 8px 12px;
-    color: var(--color-text-secondary);
-    font-size: 0.75rem;
-    font-weight: 700;
-    background: transparent;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-
-    &.active {
-      color: var(--color-text-primary);
-      background: var(--color-primary-light);
-      border-color: var(--color-primary-border);
     }
   }
 }
@@ -294,7 +266,7 @@ onMounted(async () => {
 
 .photo-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -319,7 +291,7 @@ onMounted(async () => {
     align-items: baseline;
     justify-content: space-between;
     gap: 4px;
-    padding: 8px 8px 0;
+    padding: 10px;
 
     strong {
       font-size: 0.75rem;
@@ -334,7 +306,7 @@ onMounted(async () => {
   &__note {
     overflow: hidden;
     margin: 3px 0 0;
-    padding: 0 8px 9px;
+    padding: 0 10px 10px;
     color: var(--color-text-secondary);
     font-size: 0.75rem;
     text-overflow: ellipsis;
@@ -344,12 +316,25 @@ onMounted(async () => {
 
 .empty-icon {
   color: var(--color-text-tertiary);
-  font-size: 3.5rem;
+  font-size: 1.5rem;
 }
 
 @media (max-width: 360px) {
   .photo-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 360px) {
+  .upload-panel {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+    &__types {
+      width: 100%;
+      button {
+        flex: 1;
+      }
+    }
   }
 }
 </style>

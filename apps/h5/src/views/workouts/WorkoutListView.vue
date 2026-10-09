@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
 import { showRequestError } from '@/utils/request-error';
 import type { WorkoutRecord, WorkoutType } from '@fit-trace/shared';
 import dayjs from 'dayjs';
-import { Button, DialogPlugin, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
+import { Button, DialogPlugin, Loading, ToastPlugin } from 'tdesign-mobile-vue';
 import { AddIcon, DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -127,7 +128,7 @@ onMounted(async () => {
       @action="router.push('/workouts/create')"
     />
 
-    <div class="workout-filter" aria-label="按训练类型筛选">
+    <div class="workout-filter filter-tabs" aria-label="按训练类型筛选">
       <button
         v-for="filter in filters"
         :key="filter.value"
@@ -140,7 +141,7 @@ onMounted(async () => {
     </div>
 
     <Loading class="page-loading" :loading="loading" text="正在读取训练记录">
-      <Empty
+      <EmptyState
         v-if="!loading && workouts.length === 0"
         title="还没有训练记录"
         description="完成一次训练后，在这里留下第一条记录。"
@@ -148,7 +149,7 @@ onMounted(async () => {
         <template #action>
           <Button theme="primary" @click="router.push('/workouts/create')">记录第一次训练</Button>
         </template>
-      </Empty>
+      </EmptyState>
 
       <div v-else class="workout-list">
         <section
@@ -230,7 +231,7 @@ onMounted(async () => {
   h1 {
     margin: 0 0 4px;
     font-size: 1.55rem;
-    font-weight: 800;
+    font-weight: 600;
     letter-spacing: -0.04em;
   }
 
@@ -239,36 +240,6 @@ onMounted(async () => {
     color: var(--color-text-secondary);
     font-size: 0.875rem;
     line-height: 1.6;
-  }
-}
-
-.workout-filter {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 16px;
-  overflow-x: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  button {
-    min-width: 54px;
-    flex: 1 0 auto;
-    padding: 8px 12px;
-    color: var(--color-text-secondary);
-    font-size: 0.75rem;
-    font-weight: 700;
-    background: transparent;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-
-    &.active {
-      color: var(--color-text-primary);
-      background: var(--color-primary-light);
-      border-color: var(--color-primary-border);
-    }
   }
 }
 
@@ -329,7 +300,7 @@ onMounted(async () => {
   &__duration {
     flex: none;
     font-size: 1.05rem;
-    font-weight: 800;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
 
     small {
@@ -382,5 +353,9 @@ onMounted(async () => {
 
 .load-more {
   margin-top: var(--spacing-md);
+}
+.workout-filter {
+  grid-auto-flow: initial;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 </style>

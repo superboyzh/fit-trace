@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
 import { showRequestError } from '@/utils/request-error';
 import type { MealRecord, MealType } from '@fit-trace/shared';
 import dayjs from 'dayjs';
-import { Button, DialogPlugin, Empty, Loading, ToastPlugin } from 'tdesign-mobile-vue';
+import { Button, DialogPlugin, Loading, ToastPlugin } from 'tdesign-mobile-vue';
 import { AddIcon, DeleteIcon, EditIcon, ForkIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -125,7 +126,7 @@ onMounted(async () => {
       @action="router.push('/meals/create')"
     />
 
-    <div class="meal-filter" aria-label="按餐次筛选">
+    <div class="meal-filter filter-tabs" aria-label="按餐次筛选">
       <button
         v-for="filter in filters"
         :key="filter.value"
@@ -138,7 +139,7 @@ onMounted(async () => {
     </div>
 
     <Loading class="page-loading" :loading="loading" text="正在读取饮食记录">
-      <Empty
+      <EmptyState
         v-if="!loading && meals.length === 0"
         class="empty-state"
         title="还没有饮食记录"
@@ -150,7 +151,7 @@ onMounted(async () => {
             >记录第一餐</Button
           ></template
         >
-      </Empty>
+      </EmptyState>
 
       <div v-else class="diary-list">
         <section v-for="group in groupedMeals" :key="group.date" class="diary-day">
@@ -250,7 +251,7 @@ onMounted(async () => {
   h1 {
     margin: 0 0 4px;
     font-size: 1.55rem;
-    font-weight: 800;
+    font-weight: 600;
   }
   p {
     margin: 0;
@@ -258,41 +259,10 @@ onMounted(async () => {
     font-size: 0.875rem;
   }
 }
-.meal-filter {
-  display: flex;
-  gap: 7px;
-  margin-bottom: 20px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  button {
-    min-width: 54px;
-    flex: 0 0 auto;
-    padding: 8px 13px;
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-    font-weight: 700;
-    background: transparent;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    &.active {
-      color: var(--color-text-primary);
-      background: var(--color-primary-light);
-      border-color: var(--color-primary-border);
-    }
-  }
-}
-.empty-state {
-  padding: 48px 18px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-md);
-}
+
 .empty-icon {
   color: var(--color-text-tertiary);
-  font-size: 3rem;
+  font-size: 1.5rem;
 }
 .diary-list {
   display: grid;
@@ -414,7 +384,7 @@ onMounted(async () => {
     padding: 1px 4px;
     color: var(--color-text-secondary);
     font-size: 0.75rem;
-    font-weight: 750;
+    font-weight: 500;
     background: var(--color-surface-muted);
     border-radius: 4px;
   }

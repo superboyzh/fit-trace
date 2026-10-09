@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
 import { showRequestError } from '@/utils/request-error';
 import type { BodyRecord } from '@fit-trace/shared';
 import dayjs from 'dayjs';
-import { Button, DialogPlugin, Empty, Loading, Tag, ToastPlugin } from 'tdesign-mobile-vue';
+import { Button, DialogPlugin, Loading, Tag, ToastPlugin } from 'tdesign-mobile-vue';
 import { DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -89,7 +90,7 @@ onMounted(async () => {
     />
 
     <Loading class="page-loading" :loading="loading" text="正在读取历史记录">
-      <Empty
+      <EmptyState
         v-if="!loading && records.length === 0"
         class="empty-state"
         title="还没有身体数据"
@@ -98,7 +99,7 @@ onMounted(async () => {
         <template #action>
           <Button theme="primary" @click="router.push('/body/create')">记录第一条数据</Button>
         </template>
-      </Empty>
+      </EmptyState>
 
       <div v-else class="record-list">
         <section
@@ -174,12 +175,6 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss">
-.empty-state {
-  padding: 52px 18px;
-  background: var(--color-surface);
-  border-radius: var(--border-radius-md);
-}
-
 .record-list {
   position: relative;
   display: grid;

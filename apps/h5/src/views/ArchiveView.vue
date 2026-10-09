@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
 import type {
   BodyRecord,
   MealRecord,
@@ -9,7 +10,7 @@ import type {
   WorkoutType,
 } from '@fit-trace/shared';
 import dayjs from 'dayjs';
-import { Button, Empty, Loading } from 'tdesign-mobile-vue';
+import { Button, Loading } from 'tdesign-mobile-vue';
 import { ActivityIcon, AddIcon, ForkIcon, MeasurementIcon } from 'tdesign-icons-vue-next';
 import { computed, onActivated, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -47,6 +48,7 @@ const photoLabels: Record<PhotoType, string> = {
 };
 const router = useRouter();
 const loading = ref(true);
+const loadError = ref('');
 const activeFilter = ref<ArchiveFilter>('ALL');
 const bodyRecords = ref<BodyRecord[]>([]);
 const meals = ref<MealRecord[]>([]);
@@ -113,6 +115,7 @@ defineOptions({ name: 'ArchiveView' });
 
 async function loadRecords(silent = false): Promise<void> {
   if (!silent) loading.value = true;
+  loadError.value = '';
   try {
     const [bodyResult, mealResult, workoutResult, photoResult] = await Promise.all([
       getBodyRecords({ page: 1, pageSize: 100, recordedAtOrder: 'desc' }),
@@ -124,6 +127,8 @@ async function loadRecords(silent = false): Promise<void> {
     meals.value = mealResult.data;
     workouts.value = workoutResult.data;
     photos.value = photoResult.data;
+  } catch {
+    loadError.value = '档案暂时无法加载，请重试';
   } finally {
     if (!silent) loading.value = false;
   }
@@ -142,31 +147,39 @@ onActivated(() => {
 
 <template>
   <main class="view-page archive-page">
-    <header class="archive-header">
+    <header class="primary-header archive-header">
       <div>
         <h1>记录档案</h1>
-        <p>身体与饮食，按真实记录时间排列。</p>
+        <p>{{ items.length }} 条记录 · 按记录时间排列</p>
       </div>
-      <Button theme="primary" size="small" @click="router.push('/record')"><AddIcon /> 记录</Button>
+      <Button theme="primary" size="small" variant="text" @click="router.push('/record')"
+        ><AddIcon /> 记录</Button
+      >
     </header>
-    <div class="archive-filter">
+    <div class="archive-filter filter-tabs" aria-label="按记录类型筛选">
       <button
         v-for="filter in filters"
         :key="filter.value"
         type="button"
         :class="{ active: activeFilter === filter.value }"
+        :aria-pressed="activeFilter === filter.value"
         @click="activeFilter = filter.value"
       >
         {{ filter.label }}
       </button>
-      <span>{{ items.length }} 条记录</span>
     </div>
 
     <Loading class="page-loading" :loading="loading" text="正在整理记录">
-      <Empty
-        v-if="!loading && items.length === 0"
+      <div v-if="loadError" class="archive-error" role="alert">
+        <span>{{ loadError }}</span
+        ><Button variant="text" size="small" @click="loadRecords()">重新加载</Button>
+      </div>
+      <EmptyState
+        v-if="!loading && !loadError && items.length === 0"
         title="这里还没有记录"
-        description="完成一次身体或饮食记录后，会出现在这里。"
+        description="身体、饮食、训练和照片都会按时间收在这里。"
+        action-label="添加第一条记录"
+        @action="router.push('/record')"
       />
       <div v-else class="archive-list">
         <section v-for="group in groups" :key="group.date" class="archive-group">
@@ -241,52 +254,6 @@ onActivated(() => {
 </template>
 
 <style scoped lang="scss">
-.archive-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 24px 0 18px;
-  h1 {
-    margin: 0 0 4px;
-    font-size: 1.55rem;
-    font-weight: 800;
-  }
-  p {
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-  }
-}
-.archive-filter {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 22px;
-  button {
-    padding: 8px 14px;
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-    font-weight: 700;
-    background: transparent;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    &.active {
-      color: var(--color-text-primary);
-      background: var(--color-primary-light);
-      border-color: var(--color-primary-border);
-    }
-  }
-  > span {
-    overflow: hidden;
-    flex: 1;
-    color: var(--color-text-tertiary);
-    font-size: 0.75rem;
-    text-align: right;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
 .archive-list {
   display: grid;
   gap: 24px;
@@ -315,7 +282,7 @@ onActivated(() => {
   width: 100%;
   align-items: center;
   gap: 10px;
-  padding: 14px;
+  padding: 14px 12px;
   text-align: left;
   background: transparent;
   border: 0;
@@ -331,8 +298,8 @@ onActivated(() => {
   }
   &__icon {
     display: grid;
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     flex: none;
     place-items: center;
     color: var(--color-text-primary);
@@ -373,5 +340,13 @@ onActivated(() => {
       font-size: 0.75rem;
     }
   }
+}
+.archive-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
 }
 </style>

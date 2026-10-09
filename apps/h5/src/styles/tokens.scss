@@ -8,15 +8,15 @@
   --app-safe-area-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --app-safe-area-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
   --app-safe-area-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
-  /* 品牌色：酸绿只做强调，不承担大面积底色 */
-  --color-primary: #a8dd35;
-  /* 酸绿填充底上的前景色：两种主题下都是墨色 */
-  --color-on-primary: #111715;
+  /* 品牌色：低饱和绿色用于重要操作与数据强调 */
+  --color-primary: #2f7d5b;
+  /* 强调色填充底上的前景色 */
+  --color-on-primary: #fff;
   /* 强调色当文字/图标时的可读版本（浅色下压深，满足 4.5:1） */
-  --color-accent-text: #557f0d;
-  --color-primary-strong: #7fb01c;
-  --color-primary-light: #f0f7df;
-  --color-primary-border: #d7e9ad;
+  --color-accent-text: #2f7d5b;
+  --color-primary-strong: #266a4c;
+  --color-primary-light: #eaf3ee;
+  --color-primary-border: #cbded3;
   --color-accent: #ff7043;
   --color-success: #33c879;
   --color-success-text: #1f7a45;
@@ -30,25 +30,25 @@
   --color-on-ink: #fff;
 
   /* 文字：三档均通过 WCAG AA（白底 ≥4.5:1） */
-  --color-text-primary: #151b19;
-  --color-text-secondary: #525c57;
-  --color-text-tertiary: #656f6a;
-  --color-background: #f6f7f5;
+  --color-text-primary: #202923;
+  --color-text-secondary: #637067;
+  --color-text-tertiary: #737d77;
+  --color-background: #f7f8f6;
   --color-surface: #fff;
   --color-surface-translucent: rgb(255 255 255 / 94%);
   --color-surface-muted: #f1f3f0;
-  --color-border: #e3e6e1;
+  --color-border: #e6eae5;
 
-  /* 主按钮：浅色用墨底白字，深色反过来用酸绿 */
-  --color-brand: #151b19;
+  /* 主按钮跟随强调色，深色使用浅色填充。 */
+  --color-brand: var(--color-accent-text);
   --color-on-brand: #fff;
 
   /* 图表 */
   --color-chart-axis: #dce2dc;
   --color-chart-grid: #edf0ed;
   --color-chart-label: #6a746f;
-  --color-chart-line: #151b19;
-  --color-chart-point: #a8dd35;
+  --color-chart-line: var(--color-accent-text);
+  --color-chart-point: var(--color-primary);
 
   --border-radius-sm: 8px;
   --border-radius-md: 12px;
@@ -58,8 +58,8 @@
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 40px;
-  --bottom-nav-space: calc(78px + var(--app-safe-area-bottom));
-  --shadow-card: 0 2px 10px rgb(20 28 25 / 4%);
+  --bottom-nav-space: calc(68px + var(--app-safe-area-bottom));
+  --shadow-card: none;
 
   /* 动效 */
   --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
@@ -68,10 +68,11 @@
 }
 
 :root[data-theme='dark'] {
-  --color-primary-light: rgb(168 221 53 / 16%);
-  --color-primary-border: rgb(168 221 53 / 38%);
-  --color-primary-strong: #b8f23d;
-  --color-accent-text: #a8dd35;
+  --color-primary: #67cda3;
+  --color-primary-light: rgb(103 205 163 / 12%);
+  --color-primary-border: rgb(103 205 163 / 28%);
+  --color-primary-strong: #4ecb94;
+  --color-accent-text: #67cda3;
   --color-success-text: #5fd992;
   --color-danger-text: #ff8a80;
 
@@ -88,23 +89,22 @@
   --color-surface-muted: #242a2d;
   --color-border: #2e3538;
 
-  --color-brand: #a8dd35;
+  --color-brand: var(--color-accent-text);
   --color-on-brand: #111715;
 
   --color-chart-axis: #2e3538;
   --color-chart-grid: #262d2f;
   --color-chart-label: #8f9a95;
-  --color-chart-line: #e9eeec;
-  --color-chart-point: #a8dd35;
+  --color-chart-line: var(--color-accent-text);
+  --color-chart-point: var(--color-primary);
 
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-card: none;
 }
 
 /* TDesign 变量跟随主题 */
 :root {
-  /* 注意：TDesign 的品牌色会被 Loading 等容器继承为文字色，
-     所以这里保持品牌强调色，主按钮的颜色由 .t-button--primary 单独控制 */
-  --td-brand-color: var(--color-primary);
+  /* 文字操作使用有足够对比度的强调色。 */
+  --td-brand-color: var(--color-accent-text);
   --td-brand-color-hover: var(--color-primary-strong);
   --td-brand-color-focus: var(--color-surface-muted);
   --td-brand-color-active: var(--color-brand);
@@ -119,7 +119,7 @@
 }
 
 /*
- * 强调色方案：默认运动酸绿，其余四种可切换对比。
+ * 强调色方案：默认松针绿，保留其他强调色选择。
  * 每种都单独定义浅色与深色，且主按钮底色与前景色对比度均 ≥4.5:1。
  */
 :root[data-accent='pine'] {
@@ -188,7 +188,7 @@
   --color-primary-light: #fff2e2;
   --color-primary-border: #ffd9b0;
   --color-chart-point: #ff9f43;
-  --color-on-primary: #111715;
+  --color-on-primary: #fff;
   --color-accent-text: #a95c14;
 }
 
@@ -200,4 +200,19 @@
   --color-chart-point: #ffb066;
   --color-on-primary: #1a1206;
   --color-accent-text: #ffc189;
+}
+
+:root[data-accent='lime'] {
+  --color-primary: #a8dd35;
+  --color-primary-strong: #7fb01c;
+  --color-primary-light: #f0f7df;
+  --color-primary-border: #d7e9ad;
+  --color-on-primary: #111715;
+  --color-accent-text: #557f0d;
+}
+:root[data-theme='dark'][data-accent='lime'] {
+  --color-primary-light: rgb(168 221 53 / 16%);
+  --color-primary-border: rgb(168 221 53 / 38%);
+  --color-primary-strong: #b8f23d;
+  --color-accent-text: #a8dd35;
 }

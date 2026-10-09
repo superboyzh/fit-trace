@@ -11,7 +11,7 @@ const DARK_QUERY = '(prefers-color-scheme: dark)';
 export const resolvedTheme = ref<'light' | 'dark'>('light');
 
 /** 当前强调色，图表同样需要跟着重绘 */
-export const currentAccent = ref<AccentId>('lime');
+export const currentAccent = ref<AccentId>('pine');
 
 export function getThemeMode(): ThemeMode {
   const stored = localStorage.getItem(STORAGE_KEY);
@@ -25,7 +25,7 @@ export function applyTheme(mode: ThemeMode = getThemeMode()): void {
   resolvedTheme.value = resolved;
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', resolved === 'dark' ? '#14181a' : '#f6f7f5');
+    ?.setAttribute('content', resolved === 'dark' ? '#14181a' : '#f7f8f6');
 }
 
 export function setThemeMode(mode: ThemeMode): void {
@@ -36,7 +36,7 @@ export function setThemeMode(mode: ThemeMode): void {
 export function getAccent(): AccentId {
   const stored = localStorage.getItem(ACCENT_KEY);
   const allowed: AccentId[] = ['lime', 'pine', 'teal', 'indigo', 'amber'];
-  return allowed.includes(stored as AccentId) ? (stored as AccentId) : 'lime';
+  return allowed.includes(stored as AccentId) ? (stored as AccentId) : 'pine';
 }
 
 export function applyAccent(accent: AccentId = getAccent()): void {

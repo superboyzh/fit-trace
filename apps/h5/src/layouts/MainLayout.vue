@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue';
 import { Button } from 'tdesign-mobile-vue';
 import { ChartLineIcon, DataIcon, HomeIcon, UserIcon } from 'tdesign-icons-vue-next';
 import { useRoute, useRouter } from 'vue-router';
-import RecordFab from '@/components/RecordFab.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -27,15 +26,8 @@ const activePath = computed(() => {
   if (route.path.startsWith('/record')) return '/dashboard';
   return navigation.find((item) => route.path.startsWith(item.path))?.path ?? '/dashboard';
 });
-const activeIndex = computed(() =>
-  Math.max(
-    0,
-    navigation.findIndex((item) => item.path === activePath.value),
-  ),
-);
-/** 只有四个主 tab 展示底部标签栏与悬浮按钮，二级页面隐藏（同 iOS hidesBottomBarWhenPushed） */
+/** 底部标签栏只用于四个主页面，记录操作由各页的入口承担。 */
 const showChrome = computed(() => route.meta.tabBar === true);
-const showRecordFab = computed(() => showChrome.value && route.path !== '/dashboard');
 
 /**
  * 同级 tab 之间瞬切（苹果的标签栏就是瞬切，只有高亮在动）；
@@ -59,10 +51,7 @@ async function navigate(path: string): Promise<void> {
 </script>
 
 <template>
-  <div
-    class="app-shell"
-    :class="{ 'app-shell--with-nav': showChrome, 'app-shell--with-fab': showRecordFab }"
-  >
+  <div class="app-shell" :class="{ 'app-shell--with-nav': showChrome }">
     <div class="app-shell__content">
       <RouterView v-slot="{ Component }">
         <Transition :name="transitionName" mode="out-in">
@@ -72,19 +61,13 @@ async function navigate(path: string): Promise<void> {
         </Transition>
       </RouterView>
     </div>
-    <RecordFab v-if="showRecordFab" />
-    <nav
-      v-if="showChrome"
-      class="bottom-nav"
-      :style="{ '--active-index': activeIndex }"
-      aria-label="主导航"
-    >
-      <span class="bottom-nav__indicator" aria-hidden="true" />
+    <nav v-if="showChrome" class="bottom-nav" aria-label="主导航">
       <Button
         v-for="item in navigation"
         :key="item.path"
         class="bottom-nav__item"
         :class="{ active: activePath === item.path }"
+        :aria-current="activePath === item.path ? 'page' : undefined"
         variant="text"
         size="large"
         @click="navigate(item.path)"
@@ -112,10 +95,6 @@ async function navigate(path: string): Promise<void> {
     --app-content-bottom-space: var(--bottom-nav-space);
   }
 
-  &--with-fab {
-    --app-content-bottom-space: calc(var(--bottom-nav-space) + 52px);
-  }
-
   &__content {
     min-height: calc(100vh - var(--app-safe-area-top));
     min-height: calc(100dvh - var(--app-safe-area-top));
@@ -128,72 +107,47 @@ async function navigate(path: string): Promise<void> {
   position: fixed;
   z-index: 20;
   left: 50%;
-  /* 悬浮胶囊：离底边留白，比贴边通栏更接近 iOS 26 的观感 */
-  bottom: max(10px, var(--app-safe-area-bottom));
+  bottom: 0;
   display: grid;
-  width: min(calc(100% - 24px), 520px);
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2px;
-  padding: 6px;
+  width: min(100%, 560px);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 6px 8px calc(6px + var(--app-safe-area-bottom));
   background: var(--color-surface-translucent);
-  border: 1px solid var(--color-border);
-  border-radius: 26px;
-  box-shadow: 0 4px 16px rgb(20 28 25 / 7%);
+  border-top: 1px solid var(--color-border);
   transform: translateX(-50%);
-  backdrop-filter: saturate(180%) blur(24px);
-
-  /* 选中高亮是一枚滑动的胶囊，而不是两个背景色交叉淡入 */
-  &__indicator {
-    position: absolute;
-    top: 6px;
-    bottom: 6px;
-    left: 6px;
-    width: calc((100% - 18px) / 4);
-    background: var(--color-primary-light);
-    border-radius: 20px;
-    transform: translateX(calc(var(--active-index, 0) * (100% + 2px)));
-    transition: transform 320ms var(--ease-standard);
-    pointer-events: none;
-  }
+  backdrop-filter: blur(16px);
 
   &__item.t-button {
-    position: relative;
-    z-index: 1;
     min-width: 0;
-    height: auto;
-    min-height: 50px;
-    padding: 6px 4px;
+    height: 50px;
+    padding: 4px;
     color: var(--color-text-tertiary);
     background: transparent;
     border: 0;
-    border-radius: 20px;
-    transition: color var(--duration-base) var(--ease-standard);
+    border-radius: 8px;
 
     :deep(.t-button__content) {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 3px;
+      gap: 4px;
       font-size: 0.6875rem;
-      font-weight: 500;
-      letter-spacing: -0.01em;
+      font-weight: 400;
     }
 
     &.active {
       color: var(--color-accent-text);
-
       :deep(.t-button__content) {
-        font-weight: 650;
+        font-weight: 600;
       }
     }
   }
 
   &__icon {
     display: grid;
-    width: 25px;
-    height: 25px;
+    width: 24px;
+    height: 24px;
     place-items: center;
-    font-size: 1.35rem;
+    font-size: 22px;
     line-height: 1;
   }
 }

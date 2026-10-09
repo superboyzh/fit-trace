@@ -16,16 +16,21 @@ const router = useRouter();
 
 <template>
   <header class="detail-header">
-    <Button variant="text" shape="round" @click="router.back()"><ChevronLeftIcon /> 返回</Button>
     <div class="detail-header__row">
-      <div>
-        <h1>{{ title }}</h1>
-        <p v-if="subtitle">{{ subtitle }}</p>
-      </div>
+      <Button
+        class="detail-header__back"
+        variant="text"
+        shape="round"
+        aria-label="返回"
+        @click="router.back()"
+        ><ChevronLeftIcon
+      /></Button>
+      <h1>{{ title }}</h1>
       <Button
         v-if="actionLabel"
         class="detail-header__action"
         theme="primary"
+        variant="text"
         size="small"
         :loading="actionLoading"
         @click="emit('action')"
@@ -33,22 +38,29 @@ const router = useRouter();
         {{ actionLabel }}
       </Button>
     </div>
+    <p v-if="subtitle">{{ subtitle }}</p>
   </header>
 </template>
 
 <style scoped lang="scss">
 .detail-header {
-  padding: 18px 0 18px;
-
-  > .t-button {
-    margin: 0 0 13px -10px;
-  }
+  padding: 12px 0 20px;
 
   &__row {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 12px;
+    min-height: 44px;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__back.t-button {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    margin-left: -12px;
+    padding: 0;
+    color: var(--color-text-primary);
+    font-size: 22px;
   }
 
   &__action {
@@ -56,15 +68,19 @@ const router = useRouter();
   }
 
   h1 {
-    margin: 0 0 5px;
-    font-size: 1.7rem;
-    letter-spacing: -0.04em;
+    min-width: 0;
+    flex: 1;
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.4;
   }
 
   p {
-    margin: 0;
+    margin: 8px 0 0;
     color: var(--color-text-secondary);
-    font-size: 0.9375rem;
+    font-size: 0.8125rem;
+    line-height: 1.6;
   }
 }
 </style>

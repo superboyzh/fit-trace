@@ -135,7 +135,7 @@ for (const controller of controllers) {
         body.data,
         name === 'list'
           ? [record]
-          : name === 'remove' || name === 'latest' || name === 'resetPassword'
+          : name === 'remove' || name === 'latest' || name === 'resetPassword' || name === 'logout'
             ? null
             : prefix === 'health'
               ? { status: 'ok' }

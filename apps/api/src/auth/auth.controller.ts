@@ -10,7 +10,9 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { UsersService, type PublicUser } from '../users/users.service';
 import { AuthService } from './auth.service';
-import type { AuthResult } from './auth.types';
+import type { AuthResult, JwtPayload } from './auth.types';
+import { AuthSessionService } from './auth-session.service';
+import { RefreshSessionDto } from './dto/refresh-session.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { EmailCodeDto } from './dto/email-code.dto';
@@ -26,6 +28,7 @@ export class AuthController {
     private readonly users: UsersService,
     private readonly security: AuthSecurityService,
     private readonly verification: EmailVerificationService,
+    private readonly sessions: AuthSessionService,
   ) {}
 
   @Post('register')
@@ -47,6 +50,24 @@ export class AuthController {
     @Req() request: Request,
   ): Promise<ApiPayload<EmailCodeResult>> {
     return { data: await this.verification.send(dto.email, dto.purpose, this.clientIp(request)) };
+  }
+
+  @Post('refresh')
+  async refresh(@Body() dto: RefreshSessionDto): Promise<ApiPayload<AuthResult>> {
+    return { data: await this.sessions.refresh(dto.refreshToken) };
+  }
+
+  @Post('logout')
+  async logout(@Body() dto: RefreshSessionDto): Promise<ApiPayload<null>> {
+    await this.sessions.logout(dto.refreshToken);
+    return { data: null };
+  }
+
+  // 老版本只有 JWT；仍有效的登录可以无感升级为持久会话。
+  @UseGuards(JwtAuthGuard)
+  @Post('session')
+  async upgrade(@CurrentUser() user: JwtPayload): Promise<ApiPayload<AuthResult>> {
+    return { data: await this.sessions.upgrade(user) };
   }
 
   @Get('captcha')

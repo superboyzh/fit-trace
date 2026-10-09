@@ -6,8 +6,11 @@ interface ResponseHandlers {
 }
 
 export function installResponseHandlers(client: AxiosInstance, handlers: ResponseHandlers): void {
+  const handledErrors = new WeakSet<object>();
   function rejectRequest(error: unknown): Promise<never> {
-    if (!axios.isCancel(error)) {
+    const alreadyHandled = typeof error === 'object' && error !== null && handledErrors.has(error);
+    if (!axios.isCancel(error) && !alreadyHandled) {
+      if (typeof error === 'object' && error !== null) handledErrors.add(error);
       handlers.notify(error);
       if (
         axios.isAxiosError(error) &&

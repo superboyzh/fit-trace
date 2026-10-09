@@ -29,6 +29,24 @@ pnpm dev
 
 若 API 在反向代理后面，设置 `TRUST_PROXY` 为实际可信代理 IP/CIDR，多个以逗号分隔。不配置时使用直接连接 IP，不信任外部提交的转发头。
 
+## App 持久登录（2026-10-09）
+
+`JWT_EXPIRES_IN_SECONDS` 明确按正整数秒解析，默认 `900`（15 分钟）。旧实现将 `.env` 的 `604800` 字符串传给 JWT 库，被按毫秒解析，实际只有 604 秒。配置 `604800` 现在会正确得到 7 天，但推荐保持 900 秒，通过长期会话自动续期。
+
+登录和注册返回 `{accessToken,accessTokenExpiresAt,refreshToken,user}`。每次登录生成独立的 256 位随机设备凭证，数据库 `auth_sessions` 只保存 SHA-256 摘要、账号版本、使用时间和撤销状态。设备会话没有固定到期时间；续期凭证保持稳定，避免并发续期或响应丢失导致本机掉线。访问令牌始终短期有效，并绑定设备会话 ID。
+
+| 方法与路径           | 请求与行为                                                                                      |
+| -------------------- | ----------------------------------------------------------------------------------------------- |
+| POST `/auth/refresh` | `{refreshToken}`，校验设备会话和账号版本，返回最新访问令牌与用户资料                            |
+| POST `/auth/logout`  | `{refreshToken}`，幂等撤销当前设备会话，无需有效的访问令牌                                      |
+| POST `/auth/session` | 携带仍有效且没有设备会话 ID 的旧 Bearer JWT，无感升级旧版登录状态；新版访问令牌不能换取长期凭证 |
+
+App/WebView 在 `fit-trace:session` 中持久保存凭证和上次账号资料，不保存密码。启动、恢复到前台、恢复网络时检查会话；访问令牌剩余不足 30 秒时先续期，受保护请求遇到 401 时最多续期并重试一次。同一账号并发请求共用续期任务；退出或更换账号后，旧请求不能恢复旧账号。重新打开时先恢复会话，再进入目标页面。
+
+网络错误、超时、服务异常保留本机登录，只有会话明确失效才返回登录页。主动退出立即清除本机账号；离线退出暂存待撤销凭证，恢复网络或下次启动补发撤销。服务端收到撤销后，当前设备的访问令牌和续期凭证都失效；其他设备会话不受影响。重置密码递增账号版本，使所有旧设备会话同时失效。
+
+升级需先执行 `prisma:deploy` 和 `prisma:generate`，再重启 API。仍有效的旧 JWT 可以自动升级；已经过期的旧 JWT 需要首次重新登录。清除应用数据、卸载重装或清除浏览器存储也会清除本机登录。生产环境应使用 HTTPS 保护登录与续期凭证的传输。
+
 ## 接口
 
 所有路径以 `/api/v1` 开头，继续返回统一 `{code,message,data,meta}`。
@@ -60,7 +78,7 @@ pnpm dev
 ```sh
 pnpm check
 pnpm build
-node --test apps/api/test/auth.test.mjs apps/api/test/dashboard.test.mjs apps/api/test/response.test.mjs apps/h5/test/response-handler.test.mjs
+node --test apps/api/test/auth.test.mjs apps/api/test/auth-session.test.mjs apps/api/test/dashboard.test.mjs apps/api/test/response.test.mjs apps/h5/test/auth-session.test.mjs apps/h5/test/response-handler.test.mjs
 ```
 
 认证服务测试使用数据库和邮件替身，覆盖验证码用途隔离、到期、重复使用、错误次数、事务回滚、发信失败清理、图形验证码 IP 绑定、JWT 版本、登录失败阈值和密码重置。接口测试挂载真实控制器并替换服务，验证统一返回格式。替身测试不能证明 PostgreSQL 的实际并发锁、SMTP 投递或真机体验。

@@ -34,6 +34,20 @@ export class JwtAuthGuard implements CanActivate {
       select: { tokenVersion: true },
     });
     if (!user || (payload.ver ?? 0) !== user.tokenVersion) throw this.unauthorized();
+    if (payload.sid !== undefined) {
+      if (typeof payload.sid !== 'string') throw this.unauthorized();
+      const session = await this.prisma.authSession.findUnique({
+        where: { id: payload.sid },
+        select: { userId: true, tokenVersion: true, revokedAt: true },
+      });
+      if (
+        !session ||
+        session.revokedAt ||
+        session.userId !== payload.sub ||
+        session.tokenVersion !== user.tokenVersion
+      )
+        throw this.unauthorized();
+    }
     request.user = payload;
     return true;
   }

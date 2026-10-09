@@ -1,5 +1,4 @@
 import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
 import { UsersService, type PublicUser } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -8,7 +7,8 @@ import { VerifyResetCodeDto } from './dto/verify-reset-code.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthSecurityService } from './auth-security.service';
 import { EmailVerificationService } from './email-verification.service';
-import type { AuthResult, JwtPayload } from './auth.types';
+import type { AuthResult } from './auth.types';
+import { AuthSessionService } from './auth-session.service';
 
 @Injectable()
 export class AuthService {
@@ -16,7 +16,7 @@ export class AuthService {
 
   constructor(
     private readonly users: UsersService,
-    private readonly jwt: JwtService,
+    private readonly sessions: AuthSessionService,
     private readonly security: AuthSecurityService,
     private readonly verification: EmailVerificationService,
   ) {}
@@ -100,7 +100,6 @@ export class AuthService {
   }
 
   private async buildAuthResult(user: PublicUser, ver = 0): Promise<AuthResult> {
-    const payload: JwtPayload = { sub: user.id, email: user.email, ver };
-    return { accessToken: await this.jwt.signAsync(payload), user };
+    return this.sessions.create(user, ver);
   }
 }

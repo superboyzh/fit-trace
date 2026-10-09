@@ -1,4 +1,4 @@
-import type { PublicUser } from '@fit-trace/shared';
+import type { AuthResult, PublicUser } from '@fit-trace/shared';
 import { defineStore } from 'pinia';
 import {
   getCurrentUser,
@@ -7,12 +7,12 @@ import {
   type LoginInput,
   type RegisterInput,
 } from '@/api/auth';
-import { getAccessToken, removeAccessToken, setAccessToken } from '@/utils/auth-token';
+import { authSession } from '@/api/session';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    token: getAccessToken(),
-    user: null as PublicUser | null,
+    token: authSession.snapshot?.accessToken ?? null,
+    user: authSession.snapshot?.user ?? (null as PublicUser | null),
   }),
   getters: {
     isAuthenticated: (state) => Boolean(state.token),
@@ -20,25 +20,30 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(input: LoginInput): Promise<void> {
       const result = await loginRequest(input);
-      this.setSession(result.accessToken, result.user);
+      this.setSession(result);
     },
     async register(input: RegisterInput): Promise<void> {
       const result = await registerRequest(input);
-      this.setSession(result.accessToken, result.user);
+      this.setSession(result);
     },
     async fetchCurrentUser(): Promise<void> {
       if (!this.token) return;
-      this.user = await getCurrentUser();
+      const generation = authSession.generation;
+      const user = await getCurrentUser();
+      if (generation === authSession.generation) {
+        this.user = user;
+        authSession.updateUser(user);
+      }
     },
     logout(): void {
-      removeAccessToken();
+      authSession.logout();
       this.token = null;
       this.user = null;
     },
-    setSession(token: string, user: PublicUser): void {
-      setAccessToken(token);
-      this.token = token;
-      this.user = user;
+    setSession(result: AuthResult): void {
+      authSession.save(result);
+      this.token = result.accessToken;
+      this.user = result.user;
     },
   },
 });

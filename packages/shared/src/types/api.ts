@@ -56,6 +56,8 @@ export interface FitnessGoal {
 
 export interface AuthResult {
   accessToken: string;
+  accessTokenExpiresAt: string;
+  refreshToken: string;
   user: PublicUser;
 }
 

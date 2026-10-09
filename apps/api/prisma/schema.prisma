@@ -25,8 +25,24 @@ model User {
   mealRecords    MealRecord[]
   workoutRecords WorkoutRecord[]
   progressPhotos ProgressPhoto[]
+  authSessions   AuthSession[]
 
   @@map("users")
+}
+
+// 每次登录创建独立设备会话；没有定期到期时间，退出或密码重置后不可再续期。
+model AuthSession {
+  id           String    @id @default(uuid())
+  userId       String
+  tokenHash    String    @unique
+  tokenVersion Int
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime  @default(now())
+  revokedAt    DateTime?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_sessions")
 }
 
 enum EmailCodePurpose {

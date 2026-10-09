@@ -9,6 +9,8 @@ import { AuthService } from './auth.service';
 import { AuthSecurityService } from './auth-security.service';
 import { EmailVerificationService } from './email-verification.service';
 import { MailService } from './mail.service';
+import { accessTokenLifetime } from './auth-config';
+import { AuthSessionService } from './auth-session.service';
 
 @Module({
   imports: [
@@ -23,7 +25,7 @@ import { MailService } from './mail.service';
         return {
           secret,
           signOptions: {
-            expiresIn: config.get<number>('JWT_EXPIRES_IN_SECONDS', 604800),
+            expiresIn: accessTokenLifetime(config.get('JWT_EXPIRES_IN_SECONDS')),
           },
         };
       },
@@ -32,6 +34,7 @@ import { MailService } from './mail.service';
   controllers: [AuthController, UsersController],
   providers: [
     AuthService,
+    AuthSessionService,
     JwtAuthGuard,
     AuthSecurityService,
     EmailVerificationService,

@@ -3,9 +3,14 @@ import { App } from '@capacitor/app';
 import { watch } from 'vue';
 import { resolvedTheme } from './theme';
 import router from '@/router';
+import { authSession } from '@/api/session';
 
 export function setupNativeShell(): void {
   if (Capacitor.getPlatform() !== 'android') return;
+
+  void App.addListener('appStateChange', ({ isActive }) => {
+    if (isActive) void authSession.restore();
+  }).catch((error: unknown) => console.warn('应用会话恢复初始化失败', error));
 
   void App.addListener('backButton', ({ canGoBack }) => {
     if (canGoBack) {

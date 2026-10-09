@@ -6,6 +6,8 @@ import { pinia } from './stores';
 import './styles/global.scss';
 import { applyTheme, watchSystemTheme } from './utils/theme';
 import { setupNativeShell } from './utils/native';
+import { authSession } from './api/session';
+import { useAuthStore } from './stores/auth';
 
 // 主题要在挂载前定好，避免首屏闪一下浅色
 // 品牌统一使用松针绿，清理旧版强调色偏好。
@@ -13,6 +15,11 @@ localStorage.removeItem('fittrace-accent');
 applyTheme();
 watchSystemTheme();
 setupNativeShell();
+authSession.subscribe((session) => {
+  useAuthStore(pinia).$patch({ token: session?.accessToken ?? null, user: session?.user ?? null });
+});
+window.addEventListener('online', () => void authSession.restore());
+window.addEventListener('storage', () => authSession.syncFromStorage());
 
 createApp(App).use(pinia).use(router).mount('#app');
 

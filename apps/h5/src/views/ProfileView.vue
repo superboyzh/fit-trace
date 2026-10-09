@@ -55,6 +55,24 @@ const totalRecords = computed(() =>
     ? counts.value.body + counts.value.meal + counts.value.workout + counts.value.photo
     : null,
 );
+const goalProgress = computed(() => {
+  const goal = auth.user?.goal;
+  const current = latestBody.value?.weight;
+  if (
+    !goal ||
+    current === undefined ||
+    goal.type === 'MAINTAIN' ||
+    goal.startWeight === goal.targetWeight
+  )
+    return null;
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(((current - goal.startWeight) / (goal.targetWeight - goal.startWeight)) * 100),
+    ),
+  );
+});
 const goalLabels = { LOSE_FAT: '减脂', GAIN_MUSCLE: '增肌', MAINTAIN: '保持' } as const;
 const themeMode = ref<ThemeMode>(getThemeMode());
 const themeOptions = [
@@ -154,7 +172,7 @@ onDeactivated(closeSetting);
 
 <template>
   <main class="view-page profile-page">
-    <header class="profile-header"><h1>我的</h1></header>
+    <header class="primary-header profile-header"><h1>我的</h1></header>
 
     <section class="account" aria-label="账户信息">
       <div class="avatar" aria-hidden="true">{{ displayName.slice(0, 1).toUpperCase() }}</div>
@@ -167,7 +185,11 @@ onDeactivated(closeSetting);
       </div>
     </section>
 
-    <section class="profile-section" aria-labelledby="records-title">
+    <section
+      v-if="totalRecords !== 0 || summaryError"
+      class="profile-section"
+      aria-labelledby="records-title"
+    >
       <div class="section-heading">
         <h2 id="records-title">我的记录</h2>
         <span v-if="totalRecords !== null">共 {{ totalRecords }} 条</span>
@@ -191,9 +213,25 @@ onDeactivated(closeSetting);
       </button>
     </section>
 
+    <section
+      v-if="totalRecords === 0 && !summaryError"
+      class="profile-section"
+      aria-label="记录档案"
+    >
+      <button class="profile-card setting-row" type="button" @click="router.push('/archive')">
+        <span class="row-icon"><MeasurementIcon /></span
+        ><span class="setting-row__label">我的记录档案</span
+        ><span class="setting-row__value">0 条记录</span><ChevronRightIcon class="chevron" />
+      </button>
+    </section>
     <section class="profile-section" aria-labelledby="goal-title">
       <div class="section-heading"><h2 id="goal-title">我的目标</h2></div>
-      <button class="profile-card goal-card" type="button" @click="router.push('/goal')">
+      <button
+        v-if="auth.user?.goal"
+        class="profile-card goal-card"
+        type="button"
+        @click="router.push('/goal')"
+      >
         <div class="goal-card__heading">
           <span class="row-icon row-icon--accent"><FlagIcon aria-hidden="true" /></span>
           <strong>{{
@@ -218,6 +256,18 @@ onDeactivated(closeSetting);
             <strong v-else class="goal-card__empty">未设置</strong>
           </div>
         </div>
+        <div v-if="goalProgress !== null" class="goal-progress">
+          <span>已完成 {{ goalProgress }}%</span>
+          <div
+            role="progressbar"
+            aria-label="体重目标进度"
+            :aria-valuenow="goalProgress"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <i :style="{ width: `${goalProgress}%` }" />
+          </div>
+        </div>
         <p class="goal-card__note">
           <template v-if="auth.user?.goal">
             起始 {{ auth.user.goal.startWeight }} kg
@@ -231,6 +281,10 @@ onDeactivated(closeSetting);
         <p v-if="latestBody" class="goal-card__updated">
           体重更新于 {{ dayjs(latestBody.recordedAt).format('M月D日') }}
         </p>
+      </button>
+      <button v-else class="profile-card setting-row" type="button" @click="router.push('/goal')">
+        <span class="row-icon"><FlagIcon /></span
+        ><span class="setting-row__label">设置健身目标</span><ChevronRightIcon class="chevron" />
       </button>
     </section>
 
@@ -343,15 +397,6 @@ onDeactivated(closeSetting);
 </template>
 
 <style scoped lang="scss">
-.profile-header {
-  padding: 24px 0 18px;
-  h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 750;
-    letter-spacing: -0.04em;
-  }
-}
 .account {
   display: flex;
   align-items: center;
@@ -367,8 +412,8 @@ onDeactivated(closeSetting);
       white-space: nowrap;
     }
     h2 {
-      font-size: 1.375rem;
-      font-weight: 750;
+      font-size: 1.125rem;
+      font-weight: 500;
       line-height: 1.4;
     }
     p {
@@ -386,8 +431,8 @@ onDeactivated(closeSetting);
 }
 .avatar {
   display: grid;
-  width: 64px;
-  height: 64px;
+  width: 52px;
+  height: 52px;
   flex: none;
   place-items: center;
   color: var(--color-accent-text);
@@ -395,7 +440,7 @@ onDeactivated(closeSetting);
   font-weight: 650;
   background: var(--color-primary-light);
   border: 1px solid var(--color-primary-border);
-  border-radius: 22px;
+  border-radius: 50%;
 }
 .profile-section {
   margin-top: 24px;
@@ -420,7 +465,7 @@ onDeactivated(closeSetting);
   overflow: hidden;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: var(--border-radius-md);
 }
 .profile-page button {
   color: var(--color-text-primary);
@@ -452,8 +497,8 @@ onDeactivated(closeSetting);
       font-size: 1.125rem;
     }
     strong {
-      font-size: 1.375rem;
-      font-weight: 700;
+      font-size: 1.125rem;
+      font-weight: 500;
       line-height: 1.2;
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.04em;
@@ -788,5 +833,25 @@ onDeactivated(closeSetting);
   place-items: center;
   color: var(--color-accent-text);
   font-size: 1rem;
+}
+.goal-progress {
+  margin: 0 16px 14px;
+  > span {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+  }
+  > div {
+    height: 5px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--color-surface-muted);
+  }
+  i {
+    display: block;
+    height: 100%;
+    background: var(--color-primary);
+  }
 }
 </style>

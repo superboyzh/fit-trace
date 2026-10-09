@@ -110,7 +110,7 @@ onActivated(() => {
       </button>
     </header>
 
-    <RouterLink class="account" to="/settings/account" aria-label="编辑个人资料">
+    <RouterLink class="account" to="/profile/info" aria-label="查看个人资料">
       <UserAvatar :url="auth.user?.avatarUrl" :name="displayName" />
       <div class="account__body">
         <h2>{{ displayName }}</h2>
@@ -119,7 +119,7 @@ onActivated(() => {
           >{{ dayjs(auth.user.createdAt).format('YYYY年M月D日') }} 加入</span
         >
       </div>
-      <span class="account__edit">编辑<ChevronRightIcon aria-hidden="true" /></span>
+      <span class="account__edit">查看<ChevronRightIcon aria-hidden="true" /></span>
     </RouterLink>
 
     <section

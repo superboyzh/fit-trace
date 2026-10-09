@@ -48,6 +48,11 @@ const router = createRouter({
           meta: { tabBar: true },
         },
         {
+          path: 'profile/info',
+          name: 'profile-info',
+          component: () => import('@/views/ProfileInfoView.vue'),
+        },
+        {
           path: 'goal',
           name: 'goal-settings',
           component: () => import('@/views/GoalSettingsView.vue'),

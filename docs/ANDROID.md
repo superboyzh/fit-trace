@@ -1,6 +1,6 @@
 # Android APK
 
-H5 使用 Capacitor 8 打包为 Android 应用，应用名为 FitTrace，包名为 `com.fittrace.app`，版本为 `0.1.0`。前端资源放在 APK 内，后端和数据库仍需单独运行。
+H5 使用 Capacitor 8 打包为 Android 应用，应用名为循形（FitTrace），包名为 `com.fittrace.app`，版本为 `0.1.0`。前端资源放在 APK 内，后端和数据库仍需单独运行。品牌图标与使用说明见 [品牌素材](../assets/brand/README.md)。
 
 ## 环境
 

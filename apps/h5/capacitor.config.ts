@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.fittrace.app',
-  appName: 'FitTrace',
+  appName: '循形',
   webDir: 'dist',
   android: {
     // 当前局域网接口和图片使用 HTTP，本地页面仍使用默认的 HTTPS origin。

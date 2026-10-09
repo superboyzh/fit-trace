@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import RecordDetailHeader from '@/components/RecordDetailHeader.vue';
 import { showRequestError } from '@/utils/request-error';
 import type { WorkoutRecord, WorkoutType } from '@fit-trace/shared';
 import dayjs from 'dayjs';
@@ -11,7 +12,7 @@ import {
   Textarea,
   ToastPlugin,
 } from 'tdesign-mobile-vue';
-import { CalendarIcon, ChevronLeftIcon } from 'tdesign-icons-vue-next';
+import { CalendarIcon, ChevronRightIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
@@ -151,14 +152,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="view-page workout-form-page">
-    <header class="workout-form-header">
-      <Button variant="text" shape="round" @click="router.back()">
-        <ChevronLeftIcon /> 返回
-      </Button>
-      <h1>{{ isEdit ? '编辑训练记录' : '记录一次训练' }}</h1>
-      <p>先记下练了什么、练了多久，细节可以之后补充。</p>
-    </header>
+  <main class="view-page record-form workout-form-page">
+    <RecordDetailHeader
+      :title="isEdit ? '编辑训练记录' : '记训练'"
+      subtitle="记录训练内容和时长。"
+    />
 
     <Loading class="page-loading" :loading="loading" text="正在读取训练记录">
       <section class="surface-card workout-form-card">
@@ -184,6 +182,7 @@ onMounted(async () => {
               :key="item.value"
               type="button"
               :class="{ active: formData.type === item.value }"
+              :aria-pressed="formData.type === item.value"
               @click="formData.type = item.value"
             >
               <span class="workout-type-grid__icon"><SportIcon :type="item.value" /></span>
@@ -199,13 +198,6 @@ onMounted(async () => {
             :maxlength="60"
             :placeholder="`例如：${selectedType.label}训练`"
           />
-        </div>
-
-        <div class="field-block">
-          <span class="field-label">开始时间</span>
-          <Input :model-value="startedAtDisplay" readonly @click="datePickerVisible = true">
-            <template #suffix-icon><CalendarIcon /></template>
-          </Input>
         </div>
 
         <div class="field-block">
@@ -230,21 +222,29 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="field-block">
-          <span class="field-label">消耗热量（可选）</span>
-          <Input v-model="formData.calories" type="number" suffix="kcal" placeholder="例如 320" />
-        </div>
+        <button class="form-meta" type="button" @click="datePickerVisible = true">
+          <span>开始时间</span><span>{{ startedAtDisplay }} <CalendarIcon /></span>
+        </button>
+        <details
+          class="workout-extra"
+          :open="isEdit || formData.calories !== '' || Boolean(formData.note)"
+        >
+          <summary>热量与备注 <span>选填</span><ChevronRightIcon class="expand-icon" /></summary>
+          <div class="field-block">
+            <span class="field-label">消耗热量（可选）</span>
+            <Input v-model="formData.calories" type="number" suffix="kcal" placeholder="例如 320" />
+          </div>
 
-        <div class="field-block note-field">
-          <span class="field-label">备注</span>
-          <Textarea
-            v-model="formData.note"
-            :maxlength="500"
-            :autosize="{ minRows: 3, maxRows: 6 }"
-            placeholder="例如：状态不错、组间休息偏长等"
-          />
-        </div>
-
+          <div class="field-block note-field">
+            <span class="field-label">备注</span>
+            <Textarea
+              v-model="formData.note"
+              :maxlength="500"
+              :autosize="{ minRows: 3, maxRows: 6 }"
+              placeholder="例如：状态不错、组间休息偏长等"
+            />
+          </div>
+        </details>
         <Button theme="primary" size="large" block :loading="submitting" @click="submit">
           {{ isEdit ? '保存修改' : '保存训练记录' }}
         </Button>
@@ -265,26 +265,6 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss">
-.workout-form-header {
-  padding: 18px 0 20px;
-
-  > .t-button {
-    margin: 0 0 13px -10px;
-  }
-
-  h1 {
-    margin: 6px 0 5px;
-    font-size: 1.7rem;
-    letter-spacing: -0.04em;
-  }
-
-  p {
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-size: 0.9375rem;
-  }
-}
-
 .workout-form-card {
   width: 100%;
   padding: 18px;
@@ -292,14 +272,14 @@ onMounted(async () => {
 
 .field-block {
   display: grid;
-  gap: 9px;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 18px;
 }
 
 .field-label {
   color: var(--color-text-secondary);
   font-size: 0.875rem;
-  font-weight: 750;
+  font-weight: 500;
 }
 
 .quick-start {
@@ -348,65 +328,57 @@ onMounted(async () => {
       flex: none;
       color: var(--color-accent-text);
       font-size: 0.7rem;
-      font-weight: 750;
+      font-weight: 500;
     }
   }
 }
 
 .workout-type-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 7px;
-
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
   button {
-    display: grid;
-    place-items: center;
-    gap: 5px;
-    padding: 12px 6px;
+    display: flex;
+    min-width: 0;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 4px;
     color: var(--color-text-secondary);
     background: var(--color-surface-muted);
     border: 1px solid transparent;
-    border-radius: 10px;
-
+    border-radius: 6px;
     strong {
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
+      font-weight: 400;
     }
-
     &.active {
-      color: var(--color-text-primary);
+      color: var(--color-accent-text);
       background: var(--color-primary-light);
-      border-color: var(--color-primary);
+      border-color: var(--color-primary-border);
     }
   }
-
   &__icon {
-    color: var(--color-text-primary);
-    font-size: 1.2rem;
+    display: flex;
+    font-size: 1rem;
   }
 }
 
 .preset-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
   button {
-    flex: 1 0 auto;
-    padding: 7px 12px;
+    min-height: 36px;
+    padding: 8px 10px;
     color: var(--color-text-secondary);
-    font-size: 0.75rem;
-    font-weight: 700;
     background: transparent;
     border: 1px solid var(--color-border);
-    border-radius: 8px;
-
+    border-radius: 6px;
+    font-size: 0.75rem;
     &.active {
-      color: var(--color-text-primary);
+      color: var(--color-accent-text);
       background: var(--color-primary-light);
       border-color: var(--color-primary-border);
     }
@@ -420,6 +392,39 @@ onMounted(async () => {
 @media (max-width: 360px) {
   .workout-type-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+.form-meta {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 0;
+  font-size: 0.75rem;
+  > span:last-child {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+.workout-extra {
+  margin: 4px 0 18px;
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    color: var(--color-text-secondary);
+    font-size: 0.8125rem;
+    span {
+      color: var(--color-text-tertiary);
+      font-size: 0.75rem;
+    }
   }
 }
 </style>

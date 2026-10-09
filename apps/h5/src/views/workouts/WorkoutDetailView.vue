@@ -142,7 +142,7 @@ onMounted(async () => {
     flex: none;
     padding: 3px 8px;
     font-size: 0.75rem;
-    font-weight: 750;
+    font-weight: 500;
     background: var(--color-primary-light);
     border-radius: 6px;
   }

@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import RecordDetailHeader from '@/components/RecordDetailHeader.vue';
 import { showRequestError } from '@/utils/request-error';
 import type { FitnessGoalType } from '@fit-trace/shared';
 import dayjs from 'dayjs';
 import { Button, Input, Loading, ToastPlugin } from 'tdesign-mobile-vue';
-import { ChevronLeftIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { getLatestBodyRecord } from '@/api/body-records';
@@ -98,14 +98,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="view-page goal-page">
-    <header class="goal-header">
-      <Button variant="text" shape="round" @click="router.back()">
-        <ChevronLeftIcon /> 返回
-      </Button>
-      <h1>我的目标</h1>
-      <p>目标用来解释趋势，不会给你的每一天打分。</p>
-    </header>
+  <main class="view-page record-form goal-page">
+    <RecordDetailHeader title="我的目标" subtitle="选择适合自己的目标和节奏。" />
 
     <Loading class="page-loading" :loading="loading" text="正在读取身体数据">
       <section class="goal-section">
@@ -158,26 +152,6 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss">
-.goal-header {
-  padding: 18px 0 22px;
-
-  > .t-button {
-    margin: 0 0 13px -10px;
-  }
-
-  h1 {
-    margin: 0 0 6px;
-    font-size: 1.55rem;
-    letter-spacing: -0.04em;
-  }
-
-  p {
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-  }
-}
-
 .goal-section {
   margin-bottom: 26px;
 }
@@ -243,7 +217,7 @@ onMounted(async () => {
 
     > span {
       font-size: 0.82rem;
-      font-weight: 750;
+      font-weight: 500;
     }
 
     small {

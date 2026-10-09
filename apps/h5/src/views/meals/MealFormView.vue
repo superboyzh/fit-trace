@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import RecordDetailHeader from '@/components/RecordDetailHeader.vue';
 import { showRequestError } from '@/utils/request-error';
 import type { MealRecord, MealType } from '@fit-trace/shared';
 import dayjs from 'dayjs';
@@ -16,7 +17,7 @@ import {
   CalendarIcon,
   CameraIcon,
   CheckIcon,
-  ChevronLeftIcon,
+  ChevronRightIcon,
   DeleteIcon,
 } from 'tdesign-icons-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
@@ -342,14 +343,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="view-page meal-form-page">
-    <header class="meal-form-header">
-      <Button variant="text" shape="round" @click="router.back()">
-        <ChevronLeftIcon /> 返回
-      </Button>
-      <h1>{{ isEdit ? '编辑饮食记录' : '记录这一餐' }}</h1>
-      <p>记下吃了什么，份量和热量可以选填。</p>
-    </header>
+  <main class="view-page record-form meal-form-page">
+    <RecordDetailHeader
+      :title="isEdit ? '编辑饮食记录' : '记饮食'"
+      subtitle="记下吃了什么，份量和热量选填。"
+    />
 
     <Loading class="page-loading" :loading="loading" text="正在读取饮食记录">
       <section class="surface-card meal-form-card">
@@ -368,12 +366,9 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div class="field-block">
-          <span class="field-label">记录时间</span>
-          <Input :model-value="recordedAtDisplay" readonly @click="datePickerVisible = true">
-            <template #suffix-icon><CalendarIcon /></template>
-          </Input>
-        </div>
+        <button class="form-meta" type="button" @click="datePickerVisible = true">
+          <span>记录时间</span><span>{{ recordedAtDisplay }} <CalendarIcon /></span>
+        </button>
 
         <div class="entry-modes" role="group" aria-label="添加食物方式">
           <button
@@ -557,34 +552,42 @@ onMounted(async () => {
                 <DeleteIcon />
               </button>
             </div>
-            <div class="food-item__details">
-              <label>
-                <span>份量</span>
-                <input
-                  v-model="food.amount"
-                  :aria-label="`食物 ${index + 1} 份量`"
-                  maxlength="50"
-                  placeholder="如 150g"
-                />
-              </label>
-              <label>
-                <span>热量</span>
-                <input
-                  v-model="food.calories"
-                  :aria-label="`食物 ${index + 1} 热量`"
-                  type="number"
-                  inputmode="decimal"
-                  placeholder="选填"
-                />
-                <small>kcal</small>
-              </label>
-            </div>
+            <details
+              class="food-item__extras"
+              :open="isEdit || food.aiGenerated || Boolean(food.amount) || food.calories !== ''"
+            >
+              <summary>
+                份量与热量 <span>选填</span><ChevronRightIcon class="expand-icon" />
+              </summary>
+              <div class="food-item__details">
+                <label>
+                  <span>份量</span>
+                  <input
+                    v-model="food.amount"
+                    :aria-label="`食物 ${index + 1} 份量`"
+                    maxlength="50"
+                    placeholder="如 150g"
+                  />
+                </label>
+                <label>
+                  <span>热量</span>
+                  <input
+                    v-model="food.calories"
+                    :aria-label="`食物 ${index + 1} 热量`"
+                    type="number"
+                    inputmode="decimal"
+                    placeholder="选填"
+                  />
+                  <small>kcal</small>
+                </label>
+              </div>
+            </details>
           </section>
           <button type="button" class="add-food" @click="addFood"><AddIcon /> 添加食物</button>
         </div>
 
         <details class="note-details" :open="isEdit && !!formData.note">
-          <summary>添加备注（选填）</summary>
+          <summary>添加备注（选填）<ChevronRightIcon class="expand-icon" /></summary>
           <div class="field-block note-field">
             <span class="field-label">备注</span>
             <Textarea
@@ -660,26 +663,6 @@ onMounted(async () => {
   }
 }
 
-.meal-form-header {
-  padding: 18px 0 20px;
-
-  > .t-button {
-    margin: 0 0 13px -10px;
-  }
-
-  h1 {
-    margin: 6px 0 5px;
-    font-size: 1.4rem;
-    letter-spacing: -0.04em;
-  }
-
-  p {
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-size: 0.9375rem;
-  }
-}
-
 .meal-form-card {
   width: 100%;
   padding: 18px;
@@ -687,14 +670,14 @@ onMounted(async () => {
 
 .field-block {
   display: grid;
-  gap: 9px;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 18px;
 }
 
 .field-label {
   color: var(--color-text-secondary);
   font-size: 0.875rem;
-  font-weight: 750;
+  font-weight: 500;
 }
 
 .quick-start {
@@ -761,7 +744,7 @@ onMounted(async () => {
     flex: none;
     color: var(--color-accent-text);
     font-size: 0.75rem;
-    font-weight: 750;
+    font-weight: 500;
   }
 }
 
@@ -947,14 +930,14 @@ onMounted(async () => {
       padding: 0;
       color: var(--color-text-primary);
       font-size: 0.875rem;
-      font-weight: 750;
+      font-weight: 500;
     }
   }
 
   &__calories {
     flex: none;
     font-size: 0.875rem;
-    font-weight: 750;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
 
     small {
@@ -1010,33 +993,24 @@ onMounted(async () => {
 
 .meal-type-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 7px;
-
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
   button {
-    display: grid;
-    place-items: start;
-    gap: 3px;
     min-width: 0;
-    padding: 12px 4px;
+    min-height: 40px;
+    padding: 8px 4px;
     color: var(--color-text-secondary);
     background: var(--color-surface-muted);
     border: 1px solid transparent;
-    border-radius: 9px;
-
-    span {
-      color: var(--color-text-tertiary);
-      font-size: 0.75rem;
-    }
-
+    border-radius: 6px;
     strong {
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
+      font-weight: 400;
     }
-
     &.active {
-      color: var(--color-text-primary);
+      color: var(--color-accent-text);
       background: var(--color-primary-light);
-      border-color: var(--color-primary);
+      border-color: var(--color-primary-border);
     }
   }
 }
@@ -1108,7 +1082,7 @@ onMounted(async () => {
   input.food-item__name {
     flex: 1;
     height: 40px;
-    font-size: 0.875rem;
+    font-size: 1rem;
   }
   &__ai {
     color: var(--color-text-tertiary);
@@ -1199,6 +1173,39 @@ onMounted(async () => {
 @media (max-width: 360px) {
   .meal-type-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+.form-meta {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -8px 0 16px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  > span:last-child {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+.food-item__extras {
+  summary {
+    display: flex;
+    min-height: 36px;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    span {
+      color: var(--color-text-tertiary);
+      font-size: 0.6875rem;
+    }
   }
 }
 </style>

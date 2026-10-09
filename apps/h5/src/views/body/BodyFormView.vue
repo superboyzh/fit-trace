@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import RecordDetailHeader from '@/components/RecordDetailHeader.vue';
 import { showRequestError } from '@/utils/request-error';
 import type { BodyRecord } from '@fit-trace/shared';
 import dayjs from 'dayjs';
@@ -11,7 +12,7 @@ import {
   Textarea,
   ToastPlugin,
 } from 'tdesign-mobile-vue';
-import { CalendarIcon, ChevronLeftIcon } from 'tdesign-icons-vue-next';
+import { CalendarIcon, ChevronRightIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
@@ -138,14 +139,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="view-page body-form-page">
-    <header class="body-form-header">
-      <Button variant="text" shape="round" @click="router.back()">
-        <ChevronLeftIcon /> 返回
-      </Button>
-      <h1>{{ isEdit ? '编辑身体数据' : '记体重' }}</h1>
-      <p>填一个数字，留下一次变化。</p>
-    </header>
+  <main class="view-page record-form body-form-page">
+    <RecordDetailHeader
+      :title="isEdit ? '编辑身体数据' : '记体重'"
+      subtitle="体重是必填项，其他数据可以稍后补充。"
+    />
 
     <Loading class="page-loading" :loading="loading" text="正在读取记录">
       <section class="surface-card body-form-card">
@@ -161,7 +159,7 @@ onMounted(async () => {
               step="0.1"
               min="0"
               aria-label="体重（kg）"
-              placeholder="输入体重"
+              placeholder="填写今天的体重"
               @keydown.enter.prevent="submit"
             /><span>kg</span>
           </div>
@@ -176,7 +174,9 @@ onMounted(async () => {
         </div>
 
         <details class="more-fields" :open="isEdit">
-          <summary>更多指标与备注 <span>选填</span></summary>
+          <summary>
+            更多指标与备注 <span>选填</span><ChevronRightIcon class="expand-icon" />
+          </summary>
           <div class="field-block">
             <span class="field-label">身体围度（可选）</span>
             <div class="metric-grid">
@@ -218,26 +218,6 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss">
-.body-form-header {
-  padding: 18px 0 20px;
-
-  > .t-button {
-    margin: 0 0 13px -10px;
-  }
-
-  h1 {
-    margin: 6px 0 5px;
-    font-size: 1.4rem;
-    letter-spacing: -0.04em;
-  }
-
-  p {
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-size: 0.8125rem;
-  }
-}
-
 .body-form-card {
   width: 100%;
   padding: 18px;
@@ -245,14 +225,14 @@ onMounted(async () => {
 
 .field-block {
   display: grid;
-  gap: 9px;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 18px;
 }
 
 .field-label {
   color: var(--color-text-secondary);
   font-size: 0.875rem;
-  font-weight: 750;
+  font-weight: 500;
 }
 
 .field-hint {
@@ -264,7 +244,7 @@ onMounted(async () => {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 16px 0;
+  padding: 20px 0;
   border-bottom: 1px solid var(--color-border);
   input {
     min-width: 0;
@@ -274,7 +254,7 @@ onMounted(async () => {
     outline: none;
     color: var(--color-text-primary);
     background: transparent;
-    font-size: 2.25rem;
+    font-size: 2.75rem;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
   }
@@ -288,7 +268,7 @@ onMounted(async () => {
   }
   input::placeholder {
     color: var(--color-text-tertiary);
-    font-size: 1.5rem;
+    font-size: 1.125rem;
   }
   &:focus-within {
     border-color: var(--color-accent-text);

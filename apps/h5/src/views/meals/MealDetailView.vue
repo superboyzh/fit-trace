@@ -142,7 +142,7 @@ onMounted(async () => {
   &__type {
     padding: 3px 8px;
     font-size: 0.75rem;
-    font-weight: 750;
+    font-weight: 500;
     background: var(--color-primary-light);
     border-radius: 6px;
   }
@@ -192,7 +192,7 @@ onMounted(async () => {
   h2 {
     margin: 0;
     font-size: 1rem;
-    font-weight: 800;
+    font-weight: 600;
   }
 
   span {
@@ -240,7 +240,7 @@ onMounted(async () => {
       padding: 2px 5px;
       color: var(--color-text-secondary);
       font-size: 0.75rem;
-      font-weight: 750;
+      font-weight: 500;
       background: var(--color-surface-muted);
       border-radius: 4px;
     }

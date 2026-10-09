@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Button } from 'tdesign-mobile-vue';
 import {
   ActivityIcon,
   CameraIcon,
@@ -51,7 +50,13 @@ const shortcuts = [
     <RecordDetailHeader title="添加记录" subtitle="选择今天想要记录的内容。" />
 
     <div class="entry-list">
-      <section v-for="entry in entries" :key="entry.title" class="surface-card entry-card">
+      <button
+        v-for="entry in entries"
+        :key="entry.title"
+        class="surface-card entry-card"
+        type="button"
+        @click="router.push(entry.path)"
+      >
         <div class="entry-card__symbol"><component :is="entry.icon" /></div>
         <div class="entry-card__content">
           <div class="entry-card__title">
@@ -59,10 +64,8 @@ const shortcuts = [
           </div>
           <span>{{ entry.description }}</span>
         </div>
-        <Button variant="text" shape="round" @click="router.push(entry.path)">
-          <ChevronRightIcon />
-        </Button>
-      </section>
+        <ChevronRightIcon />
+      </button>
     </div>
 
     <section class="surface-card shortcut-card">
@@ -88,14 +91,17 @@ const shortcuts = [
 
 .entry-card {
   display: flex;
+  width: 100%;
+  text-align: left;
+  color: var(--color-text-primary);
   align-items: center;
   gap: 12px;
-  padding: 17px 15px;
+  padding: 16px;
 
   &__symbol {
     display: grid;
-    width: 46px;
-    height: 46px;
+    width: 36px;
+    height: 36px;
     flex: none;
     place-items: center;
     color: var(--color-text-primary);
@@ -113,7 +119,7 @@ const shortcuts = [
 
     > span {
       color: var(--color-text-secondary);
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
     }
   }
 
@@ -144,8 +150,8 @@ const shortcuts = [
     }
 
     span {
-      font-size: 0.875rem;
-      font-weight: 700;
+      font-size: 0.8125rem;
+      font-weight: 500;
     }
 
     svg {

@@ -1,5 +1,12 @@
 # 实现进度
 
+## GlitchTip 错误监控（2026-10-09）
+
+- H5 和 Android WebView 已接入 `@sentry/vue@10.76.1`，初始化 Vue 组件错误捕获和 1% 性能事务采样；移除当前 SDK 默认的 `BrowserSession` 集成，避免 GlitchTip 会话采集。
+- 诊断事件不采集用户信息、Cookie、请求体、请求头、查询参数、控制台和 DOM 内容；source map 构建使用 hidden 模式。
+- GlitchTip 组织 slug 为 `yuwenovo`、项目 slug 为 `fittrace`；改为 Vite 自动上传，令牌从本地 `.env` 或构建环境读取，运行时与上传共用 release。上传失败会终止构建并保留映射。
+- 新增 `pnpm build:apps`，一次 H5 构建生成 H5 发布目录和测试 APK；`android:sync`、`android:apk` 复用现有前端产物。已通过 `pnpm check`、真实 Vite source map 上传和 APK 构建，核对 APK 内前端文件与 H5 产物一致且无 `.map`、上传令牌。已用当前 H5 产物在浏览器触发合成未捕获异常，确认 `FITTRACE-1` 入库、release 关联及 SDK 堆栈映射；业务代码堆栈和 Android 真机上报仍需验证。
+
 ## App 持久登录（2026-10-09）
 
 - 修复 JWT 秒配置被字符串按毫秒解析的问题，校验正整数，默认访问令牌 15 分钟。
@@ -108,7 +115,7 @@
 
 ## Android APK 接入（2026-10-08）
 
-- H5 已接入 Capacitor 8，生成 `com.fittrace.app` Android 工程，应用版本为 `0.1.0`。根目录执行 `pnpm android:apk` 可构建、同步前端并生成测试 APK。
+- H5 已接入 Capacitor 8，生成 `com.fittrace.app` Android 工程，应用版本为 `0.1.0`。根目录执行 `pnpm build:apps` 可构建、同步前端并生成测试 APK；`pnpm android:apk` 复用已构建前端。
 - API 和图片服务配置为 `10.0.3.54:3000`，Vite 读取仓库根目录 `.env`；Android 允许该 IP 的 HTTP 访问。
 - 已适配系统返回键、系统栏主题和安全区；页面资源包含在 APK 内，后端和数据库仍独立运行。环境与签名步骤见 `ANDROID.md`。
 - `pnpm check`、H5 构建和 Gradle `assembleDebug` 通过，APK 签名、包名及包内接口地址已核对；已通过 ADB 安装到 Redmi K50 Ultra 并打开。

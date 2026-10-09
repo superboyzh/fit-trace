@@ -23,10 +23,12 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"
 
 ```bash
 pnpm install
-pnpm android:apk
+pnpm build:apps
 ```
 
-`android:apk` 会先构建 H5、同步 Capacitor 资源和插件，再运行 Gradle `assembleDebug`。首次构建会下载 Gradle 和 Android 依赖，需要网络。
+`build:apps` 会构建一次 H5，通过 Vite 自动上传 GlitchTip source map，再同步同一份 Capacitor 资源和插件并运行 Gradle `assembleDebug`。启用监控时需在根目录 `.env` 配置 `SENTRY_AUTH_TOKEN`，详见 [GlitchTip 接入](GLITCHTIP.md)。首次构建会下载 Gradle 和 Android 依赖，需要网络。
+
+如果已经执行过 `pnpm build:h5`，直接执行 `pnpm android:apk`，不会重新构建 H5。`pnpm android:sync` 也仅同步现有产物。
 
 生成的测试安装包：
 
@@ -58,7 +60,7 @@ VITE_API_BASE_URL=http://10.0.3.54:3000/api/v1
 STORAGE_PUBLIC_URL=http://10.0.3.54:3000
 ```
 
-Vite 会读取根目录 `.env`，接口地址在构建时写入前端资源。更换接口地址后重新运行 `pnpm android:apk`；更换图片服务地址后还需重启 API。
+Vite 会读取根目录 `.env`，接口地址在构建时写入前端资源。更换接口地址后重新运行 `pnpm build:apps`；更换图片服务地址后还需重启 API。
 
 手机需要能访问 `10.0.3.54:3000`。APK 内有完整页面资源，运行时无需启动 Vite，但登录、记录和图片等功能需要连接 API。可在手机浏览器访问 `http://10.0.3.54:3000/api/v1/health` 检查连接。
 

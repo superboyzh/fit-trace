@@ -46,7 +46,8 @@ uploads/2026/10/09/<用户ID>/<文件UUID>.jpg
 H5 已接入 Capacitor。配置 Android SDK 与 JDK 21 后，在仓库根目录执行：
 
 ```bash
-pnpm android:apk   # 构建 H5、同步资源并生成测试 APK
+pnpm build:apps    # 构建一次 H5、自动上传 source map，再生成测试 APK
+pnpm android:apk   # 复用已构建的 H5 资源生成测试 APK
 pnpm android:open  # 在 Android Studio 打开工程
 ```
 

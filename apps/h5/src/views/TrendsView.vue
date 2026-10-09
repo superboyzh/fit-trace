@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
 import type {
   BodyTrendData,
   BodyTrendDays,
@@ -16,8 +17,8 @@ import {
 } from 'echarts/components';
 import { init, use, type ComposeOption, type EChartsType } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { Button, Empty, Loading } from 'tdesign-mobile-vue';
-import { ChartLineIcon, RefreshIcon } from 'tdesign-icons-vue-next';
+import { Button, Loading } from 'tdesign-mobile-vue';
+import { AddIcon, ChartLineIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { getBodyTrends } from '@/api/body-records';
@@ -61,6 +62,19 @@ const metric = computed(
 );
 const series = computed(() => trendData.value?.[selectedMetric.value] ?? null);
 const stats = computed(() => series.value?.stats ?? null);
+const hasInsightRecords = computed(() =>
+  Boolean(
+    insights.value &&
+    (insights.value.weight.recordCount ||
+      insights.value.meals.count ||
+      insights.value.workouts.count),
+  ),
+);
+const hasInsightChartData = computed(
+  () =>
+    insights.value?.series.some((point) => point.weight !== null || point.calories !== null) ??
+    false,
+);
 
 function formatValue(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -171,22 +185,13 @@ function createChartOption(): ChartOption {
         showSymbol: points.length < 15,
         lineStyle: { color: token('--color-chart-line', '#151b19'), width: 3 },
         itemStyle: {
-          color: token('--color-chart-point', '#a8dd35'),
+          color: token('--color-chart-point', '#2f7d5b'),
           borderColor: token('--color-chart-line', '#151b19'),
           borderWidth: 2,
         },
         areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(184, 242, 61, 0.38)' },
-              { offset: 1, color: 'rgba(184, 242, 61, 0.02)' },
-            ],
-          },
+          color: token('--color-primary-light', '#eaf3ee'),
+          opacity: 0.7,
         },
       },
     ],
@@ -265,7 +270,7 @@ function createInsightOption(): ChartOption {
         symbolSize: 6,
         lineStyle: { color: token('--color-chart-line', '#151b19'), width: 2.5 },
         itemStyle: {
-          color: token('--color-chart-point', '#a8dd35'),
+          color: token('--color-chart-point', '#2f7d5b'),
           borderColor: token('--color-chart-line', '#151b19'),
           borderWidth: 2,
         },
@@ -369,12 +374,17 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="view-page trends-page">
-    <header class="trends-header">
-      <h1>数据趋势</h1>
-      <p>把身体、饮食与训练放在同一条时间轴上观察。</p>
+    <header class="primary-header trends-header">
+      <div>
+        <h1>数据趋势</h1>
+        <p>看清变化，找到适合自己的节奏。</p>
+      </div>
+      <Button theme="primary" variant="text" size="small" @click="router.push('/body/create')"
+        ><AddIcon /> 记录</Button
+      >
     </header>
 
-    <div class="range-switch" aria-label="趋势时间范围">
+    <div class="range-switch filter-tabs" aria-label="趋势时间范围">
       <button
         v-for="range in ranges"
         :key="range"
@@ -427,23 +437,26 @@ onBeforeUnmount(() => {
             :aria-label="`${metric.label}趋势图`"
           />
 
-          <div class="stats-grid">
-            <div v-for="item in statItems(stats)" :key="item.label">
-              <span>{{ item.label }}</span>
-              <strong
-                :class="{
-                  rise: item.change !== undefined && item.change > 0,
-                  fall: item.change !== undefined && item.change < 0,
-                }"
-              >
-                {{ item.value }} <small>{{ metric.unit }}</small>
-              </strong>
+          <details class="trend-details">
+            <summary>查看详细统计</summary>
+            <div class="stats-grid">
+              <div v-for="item in statItems(stats)" :key="item.label">
+                <span>{{ item.label }}</span>
+                <strong
+                  :class="{
+                    rise: item.change !== undefined && item.change > 0,
+                    fall: item.change !== undefined && item.change < 0,
+                  }"
+                >
+                  {{ item.value }} <small>{{ metric.unit }}</small>
+                </strong>
+              </div>
             </div>
-          </div>
+          </details>
         </template>
 
-        <Empty
-          v-else
+        <EmptyState
+          v-else-if="!loading"
           title="暂无该指标数据"
           :description="`${selectedRange} 天内还没有${metric.label}记录，记录后会自动生成趋势。`"
         >
@@ -451,7 +464,7 @@ onBeforeUnmount(() => {
           <template #action>
             <Button theme="primary" @click="router.push('/body/create')">记录身体数据</Button>
           </template>
-        </Empty>
+        </EmptyState>
       </section>
 
       <section class="content-section">
@@ -461,7 +474,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div v-if="insightError" class="insight-error">生活节奏数据暂时无法加载。</div>
-        <template v-else-if="insights">
+        <template v-else-if="insights && hasInsightRecords">
           <div class="insight-grid">
             <div v-for="card in insightCards" :key="card.label">
               <span>{{ card.label }}</span>
@@ -472,15 +485,19 @@ onBeforeUnmount(() => {
           </div>
           <p class="insight-summary">{{ insightSummary }}</p>
           <div
+            v-if="hasInsightChartData"
             ref="insightElement"
             class="insight-chart"
             role="img"
             :aria-label="`${selectedRange} 天热量与体重对照图`"
           />
-          <p class="insight-legend">
+          <p v-if="hasInsightChartData" class="insight-legend">
             <span class="insight-legend__bar" />每日热量 <span class="insight-legend__line" />体重
           </p>
         </template>
+        <p v-else-if="!loading && insights" class="insight-empty">
+          记录饮食与训练后，在这里查看同期的生活节奏。
+        </p>
       </section>
     </Loading>
   </main>
@@ -491,57 +508,16 @@ onBeforeUnmount(() => {
   padding-bottom: 24px;
 }
 
-.trends-header {
-  padding: 24px 0 16px;
-
-  h1 {
-    margin: 0 0 4px;
-    font-size: 1.55rem;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-  }
-
-  p {
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-  }
-}
-
-.range-switch {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin-bottom: 14px;
-
-  button {
-    padding: 9px 4px;
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-    font-weight: 700;
-    background: transparent;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-
-    &.active {
-      color: var(--color-text-primary);
-      background: var(--color-primary-light);
-      border-color: var(--color-primary-border);
-    }
-  }
-}
-
 .trend-card {
   width: 100%;
   min-width: 0;
-  min-height: 430px;
   padding: 18px;
 }
 
 .metric-tabs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  padding-bottom: 16px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--color-border);
 
   button {
@@ -549,7 +525,7 @@ onBeforeUnmount(() => {
     padding: 7px 4px 11px;
     color: var(--color-text-tertiary);
     font-size: 0.9375rem;
-    font-weight: 750;
+    font-weight: 500;
     background: transparent;
     border: 0;
 
@@ -607,7 +583,7 @@ onBeforeUnmount(() => {
 .change-badge {
   padding: 6px 9px;
   color: var(--color-text-secondary) !important;
-  font-weight: 750;
+  font-weight: 500;
   background: var(--color-surface-muted);
   border-radius: 999px;
 
@@ -682,7 +658,7 @@ onBeforeUnmount(() => {
   h2 {
     margin: 0;
     font-size: 1rem;
-    font-weight: 800;
+    font-weight: 600;
   }
 
   span {
@@ -784,7 +760,7 @@ onBeforeUnmount(() => {
 
 .error-state {
   display: grid;
-  min-height: 320px;
+  min-height: 160px;
   place-items: center;
   align-content: center;
   gap: 14px;
@@ -792,18 +768,31 @@ onBeforeUnmount(() => {
   font-size: 0.875rem;
 }
 
-:deep(.t-empty) {
-  padding: 62px 8px 38px;
-}
-
 .empty-icon {
   color: var(--color-text-tertiary);
-  font-size: 3.5rem;
+  font-size: 1.5rem;
 }
 
 @media (max-width: 360px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+.trend-details {
+  margin-top: 12px;
+  summary {
+    padding: 12px 0;
+    color: var(--color-text-secondary);
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+}
+.insight-empty {
+  margin: 0;
+  padding: 16px 0;
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  border-top: 1px solid var(--color-border);
 }
 </style>

@@ -47,7 +47,7 @@ const shortcuts = [
 
 <template>
   <main class="view-page">
-    <RecordDetailHeader title="添加记录" subtitle="选择今天想要记录的内容。" />
+    <RecordDetailHeader title="添加记录" subtitle="选择今天想要记录的内容" />
 
     <div class="entry-list">
       <button

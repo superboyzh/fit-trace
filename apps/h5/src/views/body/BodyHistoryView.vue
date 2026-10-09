@@ -49,7 +49,7 @@ function confirmDelete(record: BodyRecord): void {
   let deleting = false;
   const dialog = DialogPlugin.confirm({
     title: '删除这条记录？',
-    content: `${dayjs(record.recordedAt).format('YYYY年M月D日')} · ${record.weight} kg，删除后无法恢复。`,
+    content: `${dayjs(record.recordedAt).format('YYYY年M月D日')} · ${record.weight} kg，删除后无法恢复`,
     confirmBtn: { content: '删除', theme: 'danger' },
     cancelBtn: '取消',
     onConfirm: async () => {
@@ -84,7 +84,7 @@ onMounted(async () => {
   <main class="view-page history-page">
     <RecordDetailHeader
       title="身体数据"
-      subtitle="每一次记录，都会让变化更清晰。"
+      subtitle="每一次记录，都会让变化更清晰"
       action-label="新记录"
       @action="router.push('/body/create')"
     />
@@ -99,7 +99,7 @@ onMounted(async () => {
         v-if="!loading && records.length === 0"
         class="empty-state"
         title="还没有身体数据"
-        description="从今天的体重开始，建立你的第一条身体轨迹。"
+        description="从今天的体重开始，建立你的第一条身体轨迹"
       >
         <template #action>
           <Button theme="primary" @click="router.push('/body/create')">记录第一条数据</Button>

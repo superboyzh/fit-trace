@@ -99,7 +99,7 @@ onMounted(async () => {
 
 <template>
   <main class="view-page record-form goal-page">
-    <RecordDetailHeader title="我的目标" subtitle="选择适合自己的目标和节奏。" />
+    <RecordDetailHeader title="我的目标" subtitle="选择适合自己的目标和节奏" />
 
     <Loading
       class="page-loading"

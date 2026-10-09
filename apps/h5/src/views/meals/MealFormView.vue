@@ -346,7 +346,7 @@ onMounted(async () => {
   <main class="view-page record-form meal-form-page">
     <RecordDetailHeader
       :title="isEdit ? '编辑饮食记录' : '记饮食'"
-      subtitle="记下吃了什么，份量和热量选填。"
+      subtitle="记下吃了什么，份量和热量选填"
     />
 
     <Loading
@@ -389,12 +389,12 @@ onMounted(async () => {
           </button>
         </div>
         <p v-if="templateSource" class="template-hint">
-          已带入 {{ templateSource }}，确认下方内容后保存。
+          已带入 {{ templateSource }}，确认下方内容后保存
         </p>
         <div v-if="entryMode === 'recent'" class="quick-start field-block">
           <span class="field-label">选择一餐，带入食物</span>
           <p v-if="!recentMeals.length" class="template-hint">
-            还没有可复用的饮食记录，先手动记下第一餐。
+            还没有可复用的饮食记录，先手动记下第一餐
           </p>
           <button
             v-for="meal in recentMeals.slice(0, 5)"
@@ -498,7 +498,7 @@ onMounted(async () => {
               </div>
             </div>
             <p class="suggestion-tip">
-              识别有误时直接改上面的名称，或取消勾选后手动添加；改名后热量仍按原来那道菜估算，加入明细后请随手核对。
+              识别有误时直接改上面的名称，或取消勾选后手动添加；改名后热量仍按原来那道菜估算，加入明细后请随手核对
             </p>
           </div>
 

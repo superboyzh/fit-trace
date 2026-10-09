@@ -182,7 +182,7 @@ onActivated(() => {
 
       <section v-if="!hasTodayRecords" class="start-today">
         <h2>从今天的一次记录开始</h2>
-        <p>体重、吃过的食物或一次训练，选一项记下来。</p>
+        <p>体重、吃过的食物或一次训练，选一项记下来</p>
       </section>
       <section v-else class="content-section">
         <div class="section-heading">

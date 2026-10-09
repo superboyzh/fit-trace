@@ -44,7 +44,7 @@ const formData = reactive({
 const recordedAtDisplay = computed(() => dayjs(formData.recordedAt).format('YYYY-MM-DD HH:mm'));
 const previousHint = computed(() => {
   const record = previousRecord.value;
-  if (!record) return '还没有历史记录，这是第一条。';
+  if (!record) return '还没有历史记录，这是第一条';
   const days = dayjs().startOf('day').diff(dayjs(record.recordedAt).startOf('day'), 'day');
   const when = days <= 0 ? '今天' : days === 1 ? '昨天' : `${days} 天前`;
   const diff = Number(formData.weight) - record.weight;
@@ -142,7 +142,7 @@ onMounted(async () => {
   <main class="view-page record-form body-form-page">
     <RecordDetailHeader
       :title="isEdit ? '编辑身体数据' : '记体重'"
-      subtitle="体重是必填项，其他数据可以稍后补充。"
+      subtitle="体重是必填项，其他数据可以稍后补充"
     />
 
     <Loading

@@ -115,28 +115,28 @@ const insightSummary = computed(() => {
     const amount = Math.abs(data.weight.change).toFixed(1);
     sentences.push(
       data.weight.change === 0
-        ? `这 ${data.days} 天体重基本持平。`
-        : `这 ${data.days} 天体重${direction} ${amount} kg。`,
+        ? `这 ${data.days} 天体重基本持平`
+        : `这 ${data.days} 天体重${direction} ${amount} kg`,
     );
   } else {
-    sentences.push(`这 ${data.days} 天还没有身体数据。`);
+    sentences.push(`这 ${data.days} 天还没有身体数据`);
   }
 
   if (data.calories.average !== null) {
     sentences.push(
-      `有记录的 ${data.calories.recordedDays} 天里，平均每天摄入约 ${data.calories.average} kcal。`,
+      `有记录的 ${data.calories.recordedDays} 天里，平均每天摄入约 ${data.calories.average} kcal`,
     );
   } else {
-    sentences.push('饮食记录里还没有可统计的热量。');
+    sentences.push('饮食记录里还没有可统计的热量');
   }
 
   sentences.push(
     data.workouts.count > 0
-      ? `完成了 ${data.workouts.count} 次训练，共 ${data.workouts.totalMinutes} 分钟。`
-      : '这段区间里还没有训练记录。',
+      ? `完成了 ${data.workouts.count} 次训练，共 ${data.workouts.totalMinutes} 分钟`
+      : '这段区间里还没有训练记录',
   );
 
-  return sentences.join('');
+  return sentences.join('。');
 });
 
 function createChartOption(): ChartOption {
@@ -377,7 +377,7 @@ onBeforeUnmount(() => {
     <header class="primary-header trends-header">
       <div>
         <h1>数据趋势</h1>
-        <p>看清变化，找到适合自己的节奏。</p>
+        <p>看清变化，找到适合自己的节奏</p>
       </div>
       <Button theme="primary" variant="text" size="small" @click="router.push('/body/create')"
         ><AddIcon /> 记录</Button
@@ -463,7 +463,7 @@ onBeforeUnmount(() => {
         <EmptyState
           v-else-if="!loading"
           title="暂无该指标数据"
-          :description="`${selectedRange} 天内还没有${metric.label}记录，记录后会自动生成趋势。`"
+          :description="`${selectedRange} 天内还没有${metric.label}记录，记录后会自动生成趋势`"
         >
           <template #image><ChartLineIcon class="empty-icon" /></template>
           <template #action>
@@ -478,7 +478,7 @@ onBeforeUnmount(() => {
           <span>同期饮食与训练</span>
         </div>
 
-        <div v-if="insightError" class="insight-error">生活节奏数据暂时无法加载。</div>
+        <div v-if="insightError" class="insight-error">生活节奏数据暂时无法加载</div>
         <template v-else-if="insights && hasInsightRecords">
           <div class="insight-grid">
             <div v-for="card in insightCards" :key="card.label">
@@ -501,7 +501,7 @@ onBeforeUnmount(() => {
           </p>
         </template>
         <p v-else-if="!loading && insights" class="insight-empty">
-          记录饮食与训练后，在这里查看同期的生活节奏。
+          记录饮食与训练后，在这里查看同期的生活节奏
         </p>
       </section>
     </Loading>

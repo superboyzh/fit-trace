@@ -24,7 +24,7 @@ onMounted(() => {
     <section class="about-brand" aria-label="循形 FitTrace">
       <img src="/brand/app-icon-512.png" width="76" height="76" alt="循形应用图标" />
       <h2>循形 <span>FitTrace</span></h2>
-      <p>记录日常，看见改变。</p>
+      <p>记录日常，看见改变</p>
     </section>
     <section class="settings-section" aria-label="应用信息">
       <div class="settings-list">
@@ -37,7 +37,7 @@ onMounted(() => {
         /></RouterLink>
       </div>
       <p class="about-description">
-        循形陪你记录身体、饮食、训练与身材变化，用清晰的记录和趋势，找到适合自己的节奏。
+        循形陪你记录身体、饮食、训练与身材变化，用清晰的记录和趋势，找到适合自己的节奏
       </p>
     </section>
   </main>

@@ -153,10 +153,7 @@ onMounted(async () => {
 
 <template>
   <main class="view-page record-form workout-form-page">
-    <RecordDetailHeader
-      :title="isEdit ? '编辑训练记录' : '记训练'"
-      subtitle="记录训练内容和时长。"
-    />
+    <RecordDetailHeader :title="isEdit ? '编辑训练记录' : '记训练'" subtitle="记录训练内容和时长" />
 
     <Loading
       class="page-loading"

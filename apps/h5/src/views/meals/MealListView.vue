@@ -87,7 +87,7 @@ function confirmDelete(meal: MealRecord): void {
   let deleting = false;
   const dialog = DialogPlugin.confirm({
     title: '删除这条饮食记录？',
-    content: `${dayjs(meal.recordedAt).format('M月D日 HH:mm')} · ${mealLabels[meal.type]}，删除后无法恢复。`,
+    content: `${dayjs(meal.recordedAt).format('M月D日 HH:mm')} · ${mealLabels[meal.type]}，删除后无法恢复`,
     confirmBtn: { content: '删除', theme: 'danger' },
     cancelBtn: '取消',
     onConfirm: async () => {
@@ -121,7 +121,7 @@ onMounted(async () => {
   <main class="view-page meals-page">
     <RecordDetailHeader
       title="饮食日记"
-      subtitle="按餐次记录，回顾每天真实的饮食。"
+      subtitle="按餐次记录，回顾每天真实的饮食"
       action-label="添加"
       @action="router.push('/meals/create')"
     />
@@ -148,7 +148,7 @@ onMounted(async () => {
         v-if="!loading && meals.length === 0"
         class="empty-state"
         title="还没有饮食记录"
-        description="从今天的一餐开始，建立真实的饮食轨迹。"
+        description="从今天的一餐开始，建立真实的饮食轨迹"
       >
         <template #image><ForkIcon class="empty-icon" /></template>
         <template #action

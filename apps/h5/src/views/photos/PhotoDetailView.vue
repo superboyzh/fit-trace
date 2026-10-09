@@ -31,7 +31,7 @@ function confirmDelete(): void {
   let deleting = false;
   const dialog = DialogPlugin.confirm({
     title: '删除这张照片？',
-    content: `${recordedAtText.value} · ${photoLabels[target.type]}，删除后无法恢复。`,
+    content: `${recordedAtText.value} · ${photoLabels[target.type]}，删除后无法恢复`,
     confirmBtn: { content: '删除', theme: 'danger' },
     cancelBtn: '取消',
     onConfirm: async () => {

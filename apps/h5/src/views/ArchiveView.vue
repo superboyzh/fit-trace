@@ -182,7 +182,7 @@ onActivated(() => {
       <EmptyState
         v-if="!loading && !loadError && items.length === 0"
         title="这里还没有记录"
-        description="身体、饮食、训练和照片都会按时间收在这里。"
+        description="身体、饮食、训练和照片都会按时间收在这里"
         action-label="添加第一条记录"
         @action="router.push('/record')"
       />

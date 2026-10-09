@@ -88,7 +88,7 @@ function confirmDelete(workout: WorkoutRecord): void {
   let deleting = false;
   const dialog = DialogPlugin.confirm({
     title: '删除这条训练记录？',
-    content: `${dayjs(workout.startedAt).format('YYYY年M月D日')} · ${workout.name}，删除后无法恢复。`,
+    content: `${dayjs(workout.startedAt).format('YYYY年M月D日')} · ${workout.name}，删除后无法恢复`,
     confirmBtn: { content: '删除', theme: 'danger' },
     cancelBtn: '取消',
     onConfirm: async () => {
@@ -123,7 +123,7 @@ onMounted(async () => {
   <main class="view-page workouts-page">
     <RecordDetailHeader
       title="训练记录"
-      subtitle="把练过的留下，和身体变化放在同一条时间线上。"
+      subtitle="把练过的留下，和身体变化放在同一条时间线上"
       action-label="新记录"
       @action="router.push('/workouts/create')"
     />
@@ -149,7 +149,7 @@ onMounted(async () => {
       <EmptyState
         v-if="!loading && workouts.length === 0"
         title="还没有训练记录"
-        description="完成一次训练后，在这里留下第一条记录。"
+        description="完成一次训练后，在这里留下第一条记录"
       >
         <template #action>
           <Button theme="primary" @click="router.push('/workouts/create')">记录第一次训练</Button>

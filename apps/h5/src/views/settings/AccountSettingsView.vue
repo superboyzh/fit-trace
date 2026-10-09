@@ -174,7 +174,7 @@ onBeforeUnmount(() => {
             </div>
           </fieldset>
         </div>
-        <p class="settings-hint">性别可选，不影响记录和使用。</p>
+        <p class="settings-hint">性别可选，不影响记录和使用</p>
       </section>
       <Button
         theme="primary"

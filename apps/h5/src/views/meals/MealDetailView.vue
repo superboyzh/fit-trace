@@ -32,7 +32,7 @@ function confirmDelete(): void {
   let deleting = false;
   const dialog = DialogPlugin.confirm({
     title: '删除这条饮食记录？',
-    content: `${dayjs(target.recordedAt).format('YYYY年M月D日')} · ${mealLabels[target.type]}，删除后无法恢复。`,
+    content: `${dayjs(target.recordedAt).format('YYYY年M月D日')} · ${mealLabels[target.type]}，删除后无法恢复`,
     confirmBtn: { content: '删除', theme: 'danger' },
     cancelBtn: '取消',
     onConfirm: async () => {

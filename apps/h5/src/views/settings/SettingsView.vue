@@ -58,7 +58,7 @@ async function logout(): Promise<void> {
     >
     <dialog ref="logoutDialog" class="logout-dialog" aria-labelledby="logout-title">
       <h2 id="logout-title">退出当前账号？</h2>
-      <p>你的记录会保留，再次登录后仍可查看。</p>
+      <p>你的记录会保留，再次登录后仍可查看</p>
       <div>
         <Button variant="outline" @click="logoutDialog?.close()">取消</Button
         ><Button theme="primary" @click="logout">退出登录</Button>

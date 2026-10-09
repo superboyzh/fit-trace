@@ -93,7 +93,7 @@ onMounted(async () => {
   <main class="view-page photos-page">
     <RecordDetailHeader
       title="身材照片"
-      subtitle="同角度、同光线，隔一段时间再拍一张。"
+      subtitle="同角度、同光线，隔一段时间再拍一张"
       action-label="上传"
       :action-loading="uploading"
       @action="pickFile"
@@ -146,7 +146,7 @@ onMounted(async () => {
       <EmptyState
         v-if="!loading && visiblePhotos.length === 0"
         title="还没有照片"
-        description="拍下今天的样子，之后才能看到变化。"
+        description="拍下今天的样子，之后才能看到变化"
       >
         <template #image><ImageIcon class="empty-icon" /></template>
         <template #action>

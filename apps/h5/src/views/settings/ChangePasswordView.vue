@@ -120,7 +120,7 @@ async function save(): Promise<void> {
       </div>
       <div class="password-note">
         <label><input v-model="visible" type="checkbox" />显示密码</label>
-        <p class="settings-hint">修改成功后需要重新登录，其他设备的登录也会失效。</p>
+        <p class="settings-hint">修改成功后需要重新登录，其他设备的登录也会失效</p>
       </div>
       <Button theme="primary" type="submit" size="large" block :loading="saving" :disabled="saving"
         >确认修改</Button

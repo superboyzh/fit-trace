@@ -49,9 +49,9 @@ const title = computed(() =>
 const subtitle = computed(
   () =>
     ({
-      login: '继续记录你的身体、饮食与训练。',
-      register: '验证邮箱，开始记录你的变化。',
-      reset: resetGrant.value ? '邮箱验证已通过，请设置新密码。' : '先验证邮箱，确认是你本人操作。',
+      login: '持续记录你的身体、饮食与训练',
+      register: '验证邮箱，开始记录你的变化',
+      reset: resetGrant.value ? '邮箱验证已通过，请设置新密码' : '先验证邮箱，确认是你本人操作',
     })[mode.value],
 );
 const submitLabel = computed(
@@ -442,7 +442,7 @@ async function submit(): Promise<void> {
           >
         </p>
       </section>
-      <footer class="auth-footer">记录行动，看见改变。</footer>
+      <footer class="auth-footer">记录行动，看见改变</footer>
     </div>
   </main>
 </template>

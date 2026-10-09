@@ -44,7 +44,7 @@ watch(mode, setThemeMode);
           />
         </label>
       </div>
-      <p class="settings-hint">选择后立即生效，自动保存在当前设备。</p>
+      <p class="settings-hint">选择后立即生效，自动保存在当前设备</p>
     </section>
   </main>
 </template>

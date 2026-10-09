@@ -11,7 +11,7 @@ const IMAGE_EXTENSIONS: Record<string, string> = {
 };
 
 const UNSUPPORTED_MESSAGE =
-  '仅支持 JPG、PNG 或 WebP 图片。iPhone 的 HEIC 照片请在“设置 → 相机 → 格式”里改为“兼容性最佳”，或先导出为 JPEG 再上传。';
+  '仅支持 JPG、PNG 或 WebP 图片。iPhone 的 HEIC 照片请在“设置 → 相机 → 格式”里改为“兼容性最佳”，或先导出为 JPEG 再上传';
 
 /** HEIC/HEIF 无法被识别服务和浏览器直接使用，这里按文件头拦截。 */
 function isHeic(buffer: Buffer): boolean {

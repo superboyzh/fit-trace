@@ -44,7 +44,7 @@ const countdown = computed(() => Math.max(0, Math.ceil((resendAt.value - now.val
 const title = computed(() =>
   mode.value === 'reset' && resetGrant.value
     ? '设置新密码'
-    : { login: '登录 FitTrace', register: '创建账户', reset: '找回密码' }[mode.value],
+    : { login: '登录循形', register: '创建账户', reset: '找回密码' }[mode.value],
 );
 const subtitle = computed(
   () =>
@@ -263,8 +263,9 @@ async function submit(): Promise<void> {
         >
           <ChevronLeftIcon /> {{ mode === 'reset' && resetGrant ? '返回邮箱验证' : '返回登录' }}
         </button>
-        <div v-else class="auth-brand">
-          <span class="brand-mark" aria-hidden="true"><i /><i /><i /></span>FitTrace
+        <div v-else class="auth-brand" aria-label="循形 FitTrace">
+          <img src="/brand/app-icon-512.png" width="42" height="42" alt="" />
+          <span class="brand-wordmark"><strong>循形</strong><span>FitTrace</span></span>
         </div>
       </header>
       <section class="auth-content">
@@ -467,29 +468,26 @@ async function submit(): Promise<void> {
 .auth-brand {
   display: flex;
   align-items: center;
-  gap: 9px;
-  font-size: 1.1rem;
-  font-weight: 750;
+  gap: 11px;
   color: var(--color-text-primary);
+  img {
+    display: block;
+    border-radius: 11px;
+  }
 }
-.brand-mark {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 20px;
-  i {
-    width: 4px;
-    border-radius: 2px;
-    background: var(--color-primary);
-    &:nth-child(1) {
-      height: 9px;
-    }
-    &:nth-child(2) {
-      height: 15px;
-    }
-    &:nth-child(3) {
-      height: 20px;
-    }
+.brand-wordmark {
+  display: grid;
+  gap: 2px;
+  strong {
+    font-size: 1.125rem;
+    font-weight: 750;
+    line-height: 1.2;
+  }
+  span {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--color-text-secondary);
   }
 }
 .auth-content {

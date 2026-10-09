@@ -325,7 +325,7 @@ onDeactivated(closeSetting);
     <button class="logout-button" type="button" @click="logout">
       <LogoutIcon aria-hidden="true" />退出登录
     </button>
-    <footer class="profile-footer">FitTrace <span>v0.1.0</span></footer>
+    <footer class="profile-footer">循形 · FitTrace <span>v0.1.0</span></footer>
 
     <dialog
       ref="settingsDialog"

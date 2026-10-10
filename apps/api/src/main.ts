@@ -43,7 +43,10 @@ async function bootstrap(): Promise<void> {
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
-  app.enableCors({ origin: corsOrigins.length ? corsOrigins : '*' });
+  app.enableCors({
+    origin: corsOrigins.length ? corsOrigins : '*',
+    exposedHeaders: ['Retry-After'],
+  });
   app.enableShutdownHooks();
 
   // 本地存储实现下，把上传目录以静态资源方式暴露给 H5。

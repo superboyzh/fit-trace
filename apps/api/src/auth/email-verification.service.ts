@@ -7,7 +7,7 @@ import type {
 } from '@fit-trace/shared';
 import type { EmailVerification, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { AuthSecurityService } from './auth-security.service';
+import { AuthSecurityService, type EmailCodeReservation } from './auth-security.service';
 import { MailService } from './mail.service';
 
 @Injectable()
@@ -20,15 +20,7 @@ export class EmailVerificationService {
 
   async send(email: string, purpose: EmailCodePurpose, ip: string): Promise<EmailCodeResult> {
     this.mail.assertConfigured();
-    await this.security.limit('email-code-ip', ip, 10, 3600);
-    await this.security.limit('email-code-minute', `${email}:${purpose}`, 1, 60);
-    await this.security.limit('email-code-hour', email, 5, 3600);
     await this.security.cleanup();
-    const user = await this.prisma.user.findUnique({ where: { email }, select: { id: true } });
-    // 返回相同结果，不通过验证码发送接口暴露账户是否存在。
-    if ((purpose === 'RESET_PASSWORD' && !user) || (purpose === 'REGISTER' && user)) {
-      return { retryAfterSeconds: 60, expiresInSeconds: 600 };
-    }
     const code = randomInt(0, 1000000).toString().padStart(6, '0');
     const codeHash = this.security.digest(`email:${email}:${purpose}:${code}`);
     const data = {
@@ -38,15 +30,27 @@ export class EmailVerificationService {
       consumedAt: null,
       createdAt: new Date(),
     };
-    const row = await this.prisma.emailVerification.upsert({
-      where: { email_purpose: { email, purpose } },
-      create: { email, purpose, ...data },
-      update: data,
+    let reservations: EmailCodeReservation[] = [];
+    const row = await this.prisma.$transaction(async (tx) => {
+      // 限流与验证码写入原子提交：被限流或数据库失败都不消耗发送额度。
+      reservations = await this.security.reserveEmailCode(email, purpose, ip, tx);
+      const user = await tx.user.findUnique({ where: { email }, select: { id: true } });
+      // 返回相同结果，不通过验证码发送接口暴露账户是否存在。
+      if ((purpose === 'RESET_PASSWORD' && !user) || (purpose === 'REGISTER' && user)) return null;
+      return tx.emailVerification.upsert({
+        where: { email_purpose: { email, purpose } },
+        create: { email, purpose, ...data },
+        update: data,
+      });
     });
+    if (!row) return { retryAfterSeconds: 60, expiresInSeconds: 600 };
     try {
       await this.mail.sendCode(email, purpose, code);
     } catch (error) {
-      await this.prisma.emailVerification.deleteMany({ where: { id: row.id, codeHash } });
+      await this.prisma.$transaction(async (tx) => {
+        await tx.emailVerification.deleteMany({ where: { id: row.id, codeHash } });
+        await this.security.releaseEmailCode(reservations, tx);
+      });
       throw error;
     }
     return { retryAfterSeconds: 60, expiresInSeconds: 600 };

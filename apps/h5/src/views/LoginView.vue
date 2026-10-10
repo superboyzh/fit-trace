@@ -153,6 +153,14 @@ function handleError(error: unknown): void {
     errors.emailCode = message;
   }
   if (code === 'AGREEMENT_REQUIRED') errors.agreement = message;
+  if (code === 'AUTH_RATE_LIMITED') {
+    const seconds = Number(error.response?.headers['retry-after']);
+    if (Number.isFinite(seconds) && seconds > 0) {
+      now.value = Date.now();
+      resendAt.value = now.value + seconds * 1000;
+      codeCooldowns.set(cooldownKey(), resendAt.value);
+    }
+  }
   if (code === 'INVALID_CREDENTIALS') errors.password = message;
   if (code === 'LOGIN_CAPTCHA_REQUIRED' || code === 'CAPTCHA_INVALID') {
     captchaRequired.value = true;

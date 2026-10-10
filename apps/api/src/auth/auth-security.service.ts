@@ -1,10 +1,15 @@
 import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 import { ForbiddenException, HttpException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { LoginCaptcha } from '@fit-trace/shared';
+import type { EmailCodePurpose, LoginCaptcha } from '@fit-trace/shared';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { renderCaptcha } from './captcha-image';
+
+export interface EmailCodeReservation {
+  key: string;
+  expiresAt: Date;
+}
 
 @Injectable()
 export class AuthSecurityService {
@@ -28,16 +33,64 @@ export class AuthSecurityService {
   }
 
   async hit(key: string, seconds: number): Promise<number> {
+    return (await this.increment(key, seconds, this.prisma)).count;
+  }
+
+  private async increment(key: string, seconds: number, transaction: Prisma.TransactionClient) {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + seconds * 1000);
-    const rows = await this.prisma.$queryRaw<Array<{ count: number }>>`
+    const rows = await transaction.$queryRaw<Array<{ count: number; expiresAt: Date }>>`
       INSERT INTO "auth_rate_limits" ("key", "count", "expiresAt") VALUES (${key}, 1, ${expiresAt})
       ON CONFLICT ("key") DO UPDATE SET
         "count" = CASE WHEN "auth_rate_limits"."expiresAt" <= ${now} THEN 1 ELSE "auth_rate_limits"."count" + 1 END,
         "expiresAt" = CASE WHEN "auth_rate_limits"."expiresAt" <= ${now} THEN ${expiresAt} ELSE "auth_rate_limits"."expiresAt" END
-      RETURNING "count"
+      RETURNING "count", "expiresAt"
     `;
-    return rows[0].count;
+    return rows[0];
+  }
+
+  async reserveEmailCode(
+    email: string,
+    purpose: EmailCodePurpose,
+    ip: string,
+    transaction: Prisma.TransactionClient,
+  ): Promise<EmailCodeReservation[]> {
+    const rules = [
+      { scope: 'email-code-minute', value: `${email}:${purpose}`, maximum: 1, seconds: 60 },
+      { scope: 'email-code-hour', value: email, maximum: 5, seconds: 3600 },
+      { scope: 'email-code-ip', value: ip, maximum: 10, seconds: 3600 },
+    ];
+    const reservations: EmailCodeReservation[] = [];
+    for (const rule of rules) {
+      const key = this.key(rule.scope, rule.value);
+      const row = await this.increment(key, rule.seconds, transaction);
+      if (row.count > rule.maximum) {
+        const retryAfterSeconds = Math.max(
+          1,
+          Math.ceil((row.expiresAt.getTime() - Date.now()) / 1000),
+        );
+        const message =
+          rule.scope === 'email-code-minute'
+            ? `验证码每 60 秒可发送一次，请 ${retryAfterSeconds} 秒后重试`
+            : `${rule.scope === 'email-code-hour' ? '该邮箱' : '当前网络'}的验证码发送次数已达上限，请 ${Math.ceil(retryAfterSeconds / 60)} 分钟后重试`;
+        throw new HttpException({ code: 'AUTH_RATE_LIMITED', message, retryAfterSeconds }, 429);
+      }
+      reservations.push({ key, expiresAt: row.expiresAt });
+    }
+    return reservations;
+  }
+
+  async releaseEmailCode(
+    reservations: EmailCodeReservation[],
+    transaction: Prisma.TransactionClient,
+  ): Promise<void> {
+    for (const reservation of reservations) {
+      // 只退还本次请求所在窗口的一次额度，避免影响其他请求或后续窗口。
+      await transaction.authRateLimit.updateMany({
+        where: { ...reservation, count: { gt: 0 } },
+        data: { count: { decrement: 1 } },
+      });
+    }
   }
   async limit(scope: string, value: string, maximum: number, seconds: number): Promise<void> {
     if ((await this.hit(this.key(scope, value), seconds)) > maximum) {

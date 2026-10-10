@@ -35,7 +35,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const exceptionResponse = exception.getResponse();
 
     if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-      const body = exceptionResponse as { code?: unknown; message?: unknown };
+      const body = exceptionResponse as {
+        code?: unknown;
+        message?: unknown;
+        retryAfterSeconds?: unknown;
+      };
+      if (
+        status === 429 &&
+        typeof body.retryAfterSeconds === 'number' &&
+        Number.isFinite(body.retryAfterSeconds)
+      ) {
+        response.setHeader('Retry-After', String(Math.max(1, Math.ceil(body.retryAfterSeconds))));
+      }
       if (typeof body.code === 'string' && typeof body.message === 'string') {
         this.respond(response, status, body.code, body.message);
         return;

@@ -26,9 +26,11 @@ function fixture() {
       const previous = row && { ...row };
       try {
         return await action({
+          user: prisma.user,
           $queryRaw: async (_, email, purpose) =>
             row?.email === email && row?.purpose === purpose ? [{ ...row }] : [],
           emailVerification: {
+            ...prisma.emailVerification,
             update: async ({ data }) => {
               if (typeof data.attempts === 'object') row.attempts += data.attempts.increment;
               for (const [key, value] of Object.entries(data))
@@ -44,6 +46,8 @@ function fixture() {
   };
   const security = new AuthSecurityService(prisma, config);
   security.limit = async () => {};
+  security.reserveEmailCode = async () => [];
+  security.releaseEmailCode = async () => {};
   security.cleanup = async () => {};
   const mail = {
     assertConfigured() {},

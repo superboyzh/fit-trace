@@ -9,6 +9,8 @@ import type { EmailVerification, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthSecurityService, type EmailCodeReservation } from './auth-security.service';
 import { MailService } from './mail.service';
+import { EmailCaptchaService } from './email-captcha.service';
+import type { EmailCaptchaDto } from './dto/email-captcha.dto';
 
 @Injectable()
 export class EmailVerificationService {
@@ -16,10 +18,17 @@ export class EmailVerificationService {
     private readonly prisma: PrismaService,
     private readonly security: AuthSecurityService,
     private readonly mail: MailService,
+    private readonly captcha: EmailCaptchaService,
   ) {}
 
-  async send(email: string, purpose: EmailCodePurpose, ip: string): Promise<EmailCodeResult> {
+  async send(
+    email: string,
+    purpose: EmailCodePurpose,
+    ip: string,
+    proof?: EmailCaptchaDto,
+  ): Promise<EmailCodeResult> {
     this.mail.assertConfigured();
+    await this.captcha.verify(proof, ip);
     await this.security.cleanup();
     const code = randomInt(0, 1000000).toString().padStart(6, '0');
     const codeHash = this.security.digest(`email:${email}:${purpose}:${code}`);

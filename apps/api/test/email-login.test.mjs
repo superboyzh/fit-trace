@@ -15,6 +15,7 @@ const { AuthController } = require('../dist/auth/auth.controller.js');
 const { AuthSessionService } = require('../dist/auth/auth-session.service.js');
 const { AuthSecurityService } = require('../dist/auth/auth-security.service.js');
 const { EmailVerificationService } = require('../dist/auth/email-verification.service.js');
+const { EmailCaptchaService } = require('../dist/auth/email-captcha.service.js');
 const { UsersService } = require('../dist/users/users.service.js');
 const { PrismaService } = require('../dist/prisma/prisma.service.js');
 const { ResponseInterceptor } = require('../dist/common/interceptors/response.interceptor.js');
@@ -110,10 +111,15 @@ function fixture(existingUser = null) {
   security.reserveEmailCode = async () => [];
   security.releaseEmailCode = async () => {};
   security.cleanup = async () => {};
-  const verification = new EmailVerificationService(prisma, security, {
-    assertConfigured() {},
-    sendCode: async (email, purpose, code) => sent.push({ email, purpose, code }),
-  });
+  const verification = new EmailVerificationService(
+    prisma,
+    security,
+    {
+      assertConfigured() {},
+      sendCode: async (email, purpose, code) => sent.push({ email, purpose, code }),
+    },
+    { verify: async () => {} },
+  );
   const users = new UsersService(prisma);
   const jwt = new JwtService({ secret: 'test-only-secret', signOptions: { expiresIn: 900 } });
   const sessions = new AuthSessionService(prisma, users, jwt);
@@ -259,6 +265,7 @@ test('HTTP email login normalizes email, validates consent/code, and returns the
       [AuthSecurityService, f.security],
       [EmailVerificationService, f.verification],
       [AuthSessionService, f.sessions],
+      [EmailCaptchaService, { getConfig: () => ({ enabled: false }) }],
       [PrismaService, f.prisma],
       [JwtService, f.jwt],
     ].map(([provide, useValue]) => ({ provide, useValue })),

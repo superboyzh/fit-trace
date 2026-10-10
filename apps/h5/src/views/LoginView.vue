@@ -8,11 +8,14 @@ import { useRoute, useRouter } from 'vue-router';
 import { getLoginCaptcha, resetPassword, sendEmailCode, verifyResetCode } from '@/api/auth';
 import { useAuthStore } from '@/stores/auth';
 import PolicyContent from '@/components/PolicyContent.vue';
+import { useEmailCaptcha } from '@/composables/useEmailCaptcha';
+import { showRequestError } from '@/utils/request-error';
 
 type Mode = 'login' | 'password' | 'reset';
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
+const emailCaptcha = useEmailCaptcha();
 const mode = ref<Mode>('login');
 const email = ref('');
 const password = ref('');
@@ -174,9 +177,14 @@ async function requestEmailCode(): Promise<void> {
   if (busy.value || countdown.value || !validateEmail()) return;
   sendingCode.value = true;
   try {
+    const requestEmail = email.value.trim();
+    const requestMode = mode.value;
+    const proof = await emailCaptcha.verify();
+    if (proof === null || email.value.trim() !== requestEmail || mode.value !== requestMode) return;
     const result = await sendEmailCode(
-      email.value.trim(),
-      mode.value === 'login' ? 'LOGIN' : 'RESET_PASSWORD',
+      requestEmail,
+      requestMode === 'login' ? 'LOGIN' : 'RESET_PASSWORD',
+      proof,
     );
     sentTo.value = email.value.trim();
     now.value = Date.now();
@@ -187,6 +195,7 @@ async function requestEmailCode(): Promise<void> {
     );
   } catch (error) {
     handleError(error);
+    showRequestError(error, '验证码发送失败，请重试');
   } finally {
     sendingCode.value = false;
   }

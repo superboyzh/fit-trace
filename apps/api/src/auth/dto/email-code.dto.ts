@@ -1,8 +1,9 @@
 import { Transform } from 'class-transformer';
 import { IsEmail, IsIn } from 'class-validator';
 import type { EmailCodePurpose } from '@fit-trace/shared';
+import { EmailCaptchaDto } from './email-captcha.dto';
 
-export class EmailCodeDto {
+export class EmailCodeDto extends EmailCaptchaDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   )

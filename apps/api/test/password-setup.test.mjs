@@ -14,6 +14,7 @@ const { AuthController } = require('../dist/auth/auth.controller.js');
 const { AuthSessionService } = require('../dist/auth/auth-session.service.js');
 const { AuthSecurityService } = require('../dist/auth/auth-security.service.js');
 const { EmailVerificationService } = require('../dist/auth/email-verification.service.js');
+const { EmailCaptchaService } = require('../dist/auth/email-captcha.service.js');
 const { UsersService } = require('../dist/users/users.service.js');
 const { PrismaService } = require('../dist/prisma/prisma.service.js');
 const { JwtAuthGuard } = require('../dist/common/guards/jwt-auth.guard.js');
@@ -148,10 +149,15 @@ async function fixture(hasPassword = false) {
   security.needsCaptcha = async () => false;
   security.loginSucceeded = async () => {};
   const sent = [];
-  const verification = new EmailVerificationService(prisma, security, {
-    assertConfigured() {},
-    sendCode: async (...args) => sent.push(args),
-  });
+  const verification = new EmailVerificationService(
+    prisma,
+    security,
+    {
+      assertConfigured() {},
+      sendCode: async (...args) => sent.push(args),
+    },
+    { verify: async () => {} },
+  );
   const users = new UsersService(prisma);
   const jwt = new JwtService({ secret: 'test-only-secret', signOptions: { expiresIn: 900 } });
   const sessions = new AuthSessionService(prisma, users, jwt);
@@ -339,6 +345,7 @@ test('password HTTP routes require authentication, reject client identity and co
       [AuthSecurityService, f.security],
       [EmailVerificationService, f.verification],
       [AuthSessionService, f.sessions],
+      [EmailCaptchaService, { getConfig: () => ({ enabled: false }) }],
       [PrismaService, f.prisma],
       [JwtService, f.jwt],
     ].map(([provide, useValue]) => ({ provide, useValue })),
@@ -370,7 +377,8 @@ test('password HTTP routes require authentication, reject client identity and co
     ]) {
       assert.equal((await request(path, {}, null, method)).status, 401);
     }
-    assert.equal((await request('email-code', { email: 'other@example.invalid' })).status, 201);
+    assert.equal((await request('email-code', { email: 'other@example.invalid' })).status, 400);
+    assert.equal((await request('email-code', {})).status, 201);
     assert.equal(f.sent.at(-1)[0], 'owner@example.invalid');
     for (const bad of [
       { emailCode: f.code(), email: 'other@example.invalid' },

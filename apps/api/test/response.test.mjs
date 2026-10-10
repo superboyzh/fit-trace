@@ -36,6 +36,7 @@ const service = new Proxy(
     get: (_, name) => {
       // Nest checks lifecycle hooks and promise-like values on providers.
       if (typeof name !== 'string' || name === 'then' || name.startsWith('on')) return undefined;
+      if (name === 'getConfig') return () => record;
       return async () => {
         if (name === 'list') return { data: [record], meta };
         if (name === 'latest') return null;

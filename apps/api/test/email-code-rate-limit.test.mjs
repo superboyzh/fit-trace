@@ -61,7 +61,7 @@ function fixture() {
   security.cleanup = async () => {};
   const sent = [];
   const mail = { assertConfigured() {}, sendCode: async (...args) => sent.push(args) };
-  const service = new EmailVerificationService(prisma, security, mail);
+  const service = new EmailVerificationService(prisma, security, mail, { verify: async () => {} });
   return {
     prisma,
     security,

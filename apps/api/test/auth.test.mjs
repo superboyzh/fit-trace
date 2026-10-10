@@ -55,7 +55,7 @@ function fixture() {
       sent = code;
     },
   };
-  const service = new EmailVerificationService(prisma, security, mail);
+  const service = new EmailVerificationService(prisma, security, mail, { verify: async () => {} });
   return { service, prisma, mail, row: () => row, code: () => sent };
 }
 test('email code is purpose-bound, hashed, expires and can only be consumed once', async () => {

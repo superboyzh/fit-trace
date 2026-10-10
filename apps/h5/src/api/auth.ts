@@ -3,6 +3,8 @@ import type {
   AuthResult,
   EmailCodePurpose,
   EmailCodeResult,
+  EmailCaptchaConfig,
+  EmailCaptchaProof,
   LoginCaptcha,
   PublicUser,
   ResetPasswordVerification,
@@ -30,13 +32,18 @@ export interface EmailLoginInput {
 export async function sendEmailCode(
   email: string,
   purpose: EmailCodePurpose,
+  proof?: EmailCaptchaProof,
 ): Promise<EmailCodeResult> {
   const response = await http.post<ApiResponse<EmailCodeResult>>(
     '/auth/email-code',
-    { email, purpose },
+    { email, purpose, ...proof },
     { timeout: 45_000 },
   );
   return response.data.data;
+}
+
+export async function getEmailCaptchaConfig(): Promise<EmailCaptchaConfig> {
+  return (await http.get<ApiResponse<EmailCaptchaConfig>>('/auth/email-captcha/config')).data.data;
 }
 
 export async function getLoginCaptcha(): Promise<LoginCaptcha> {
@@ -90,13 +97,11 @@ export async function changePassword(input: {
   return (await http.patch<ApiResponse<AuthResult>>('/auth/password/session', input)).data.data;
 }
 
-export async function sendPasswordCode(): Promise<EmailCodeResult> {
+export async function sendPasswordCode(proof?: EmailCaptchaProof): Promise<EmailCodeResult> {
   return (
-    await http.post<ApiResponse<EmailCodeResult>>(
-      '/auth/password/email-code',
-      {},
-      { timeout: 45_000 },
-    )
+    await http.post<ApiResponse<EmailCodeResult>>('/auth/password/email-code', proof ?? {}, {
+      timeout: 45_000,
+    })
   ).data.data;
 }
 

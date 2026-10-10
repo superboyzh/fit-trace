@@ -9,9 +9,11 @@ import { changePassword, sendPasswordCode, setPassword, verifyPasswordCode } fro
 import { authSession } from '@/api/session';
 import { useAuthStore } from '@/stores/auth';
 import { showRequestError } from '@/utils/request-error';
+import { useEmailCaptcha } from '@/composables/useEmailCaptcha';
 
 const router = useRouter();
 const auth = useAuthStore();
+const emailCaptcha = useEmailCaptcha();
 const mode = ref<'password' | 'email'>('email');
 const currentPassword = ref('');
 const password = ref('');
@@ -89,7 +91,9 @@ async function requestCode(): Promise<void> {
   sending.value = true;
   const generation = authSession.generation;
   try {
-    const result = await sendPasswordCode();
+    const proof = await emailCaptcha.verify();
+    if (proof === null || !active || generation !== authSession.generation) return;
+    const result = await sendPasswordCode(proof);
     if (!active || generation !== authSession.generation) return;
     resendAt.value = Date.now() + result.retryAfterSeconds * 1000;
     emailCode.value = '';

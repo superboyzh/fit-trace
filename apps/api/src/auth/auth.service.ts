@@ -20,6 +20,7 @@ import { AuthSessionService } from './auth-session.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { PasswordEmailCodeDto, SetPasswordDto } from './dto/set-password.dto';
 import type { JwtPayload } from './auth.types';
+import type { EmailCaptchaDto } from './dto/email-captcha.dto';
 
 @Injectable()
 export class AuthService {
@@ -176,9 +177,9 @@ export class AuthService {
     return user;
   }
 
-  async sendPasswordCode(payload: JwtPayload, ip: string) {
+  async sendPasswordCode(payload: JwtPayload, ip: string, proof?: EmailCaptchaDto) {
     const user = await this.passwordAccount(payload);
-    return this.verification.send(user.email, 'RESET_PASSWORD', ip);
+    return this.verification.send(user.email, 'RESET_PASSWORD', ip, proof);
   }
 
   async verifyPasswordCode(payload: JwtPayload, dto: PasswordEmailCodeDto, ip: string) {

@@ -88,6 +88,8 @@ GET  /api/v1/auth/me
 
 `/auth/me` 需要 `Authorization: Bearer <token>`。开发前请在 `.env` 中设置可用的 PostgreSQL `DATABASE_URL` 和足够长的 `JWT_SECRET`。
 
+邮件验证码发送可接入阿里云验证码 2.0，安全验证通过后再发送邮件，验证形态由控制台场景配置决定。开通、H5/APK 场景和 API 密钥配置见 [邮箱安全验证](docs/EMAIL-CAPTCHA.md)。
+
 ## 目录
 
 - `apps/h5`: Vue 3 H5

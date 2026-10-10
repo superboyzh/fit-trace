@@ -73,6 +73,23 @@ export interface EmailCodeResult {
   expiresInSeconds: number;
 }
 
+export type EmailCaptchaPlatform = 'web' | 'app';
+
+export interface EmailCaptchaProof {
+  captchaVerifyParam: string;
+  captchaPlatform: EmailCaptchaPlatform;
+}
+
+export type EmailCaptchaConfig =
+  | { enabled: false }
+  | {
+      enabled: true;
+      region: 'cn' | 'sgp';
+      prefix: string;
+      sceneId: string;
+      appSceneId: string | null;
+    };
+
 export interface LoginCaptcha {
   id: string;
   image: string;

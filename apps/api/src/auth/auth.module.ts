@@ -11,6 +11,7 @@ import { EmailVerificationService } from './email-verification.service';
 import { MailService } from './mail.service';
 import { accessTokenLifetime } from './auth-config';
 import { AuthSessionService } from './auth-session.service';
+import { EmailCaptchaService } from './email-captcha.service';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { AuthSessionService } from './auth-session.service';
     JwtAuthGuard,
     AuthSecurityService,
     EmailVerificationService,
+    EmailCaptchaService,
     MailService,
   ],
   exports: [JwtModule, JwtAuthGuard],

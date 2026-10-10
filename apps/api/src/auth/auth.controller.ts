@@ -1,6 +1,7 @@
 import type {
   ApiPayload,
   EmailCodeResult,
+  EmailCaptchaConfig,
   LoginCaptcha,
   ResetPasswordVerification,
 } from '@fit-trace/shared';
@@ -32,6 +33,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthSecurityService } from './auth-security.service';
 import { EmailVerificationService } from './email-verification.service';
 import { PasswordEmailCodeDto, SetPasswordDto } from './dto/set-password.dto';
+import { EmailCaptchaService } from './email-captcha.service';
+import { EmailCaptchaDto } from './dto/email-captcha.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -41,6 +44,7 @@ export class AuthController {
     private readonly security: AuthSecurityService,
     private readonly verification: EmailVerificationService,
     private readonly sessions: AuthSessionService,
+    private readonly emailCaptcha: EmailCaptchaService,
   ) {}
 
   @Post('register')
@@ -69,7 +73,14 @@ export class AuthController {
     @Body() dto: EmailCodeDto,
     @Req() request: Request,
   ): Promise<ApiPayload<EmailCodeResult>> {
-    return { data: await this.verification.send(dto.email, dto.purpose, this.clientIp(request)) };
+    return {
+      data: await this.verification.send(dto.email, dto.purpose, this.clientIp(request), dto),
+    };
+  }
+
+  @Get('email-captcha/config')
+  emailCaptchaConfig(): ApiPayload<EmailCaptchaConfig> {
+    return { data: this.emailCaptcha.getConfig() };
   }
 
   @Post('refresh')
@@ -120,9 +131,10 @@ export class AuthController {
   @Post('password/email-code')
   async sendPasswordCode(
     @CurrentUser() user: JwtPayload,
+    @Body() dto: EmailCaptchaDto,
     @Req() request: Request,
   ): Promise<ApiPayload<EmailCodeResult>> {
-    return { data: await this.auth.sendPasswordCode(user, this.clientIp(request)) };
+    return { data: await this.auth.sendPasswordCode(user, this.clientIp(request), dto) };
   }
 
   @UseGuards(JwtAuthGuard)

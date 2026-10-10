@@ -21,6 +21,6 @@ export default defineConfig(({ command, mode }) => {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },
     server: { host: true, port: 5173 },
-    build: { sourcemap: 'hidden' },
+    build: { sourcemap: env.GLITCHTIP_UPLOAD_SOURCEMAPS === 'false' ? false : 'hidden' },
   };
 });

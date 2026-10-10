@@ -22,7 +22,11 @@ export function createGlitchTipBuildOptions(
   release: string,
   dist: string,
 ): SentryVitePluginOptions | undefined {
-  if (env.VITE_GLITCHTIP_ENABLED === 'false' || env.VITE_GLITCHTIP_DSN?.trim() === '')
+  if (
+    env.GLITCHTIP_UPLOAD_SOURCEMAPS === 'false' ||
+    env.VITE_GLITCHTIP_ENABLED === 'false' ||
+    env.VITE_GLITCHTIP_DSN?.trim() === ''
+  )
     return undefined;
 
   for (const key of ['SENTRY_ORG', 'SENTRY_PROJECT', 'SENTRY_AUTH_TOKEN']) {

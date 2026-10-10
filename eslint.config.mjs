@@ -23,5 +23,9 @@ export default tseslint.config(
     files: ['apps/api/**/*.ts'],
     languageOptions: { globals: globals.node },
   },
+  {
+    files: ['deploy/**/*.mjs'],
+    languageOptions: { globals: globals.node },
+  },
   eslintConfigPrettier,
 );

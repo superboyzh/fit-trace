@@ -1,0 +1,12 @@
+/usr/local/nginx/logs/fittrace-*.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+        /usr/local/nginx/sbin/nginx -s reopen
+    endscript
+}

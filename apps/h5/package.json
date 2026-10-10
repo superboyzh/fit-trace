@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "android:sync": "cap sync android",
     "android:open": "cap open android",
-    "android:apk": "pnpm android:sync && cd android && ./gradlew assembleDebug"
+    "android:apk": "pnpm android:sync && cd android && ./gradlew assembleDebug",
+    "android:release": "FITTRACE_ANDROID_PRODUCTION=true pnpm android:sync && cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

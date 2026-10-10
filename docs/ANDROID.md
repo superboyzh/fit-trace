@@ -13,7 +13,7 @@ H5 使用 Capacitor 8 打包为 Android 应用，应用名为循形（FitTrace�
 macOS 环境变量示例：
 
 ```bash
-export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
@@ -49,7 +49,24 @@ pnpm android:sync
 pnpm android:open
 ```
 
-正式包使用 Android Studio 的 **Build → Generate Signed Bundle / APK → APK**。保存签名证书并在后续更新中继续使用同一证书；发布时递增 `android/app/build.gradle` 中的 `versionCode` 并设置 `versionName`。当前命令生成的是自动使用调试证书签名的测试包。
+正式签名配置放在 `apps/h5/android/keystore.properties`，示例：
+
+```properties
+storeFile=../../../.android-signing/fittrace-release.jks
+storePassword=YOUR_STORE_PASSWORD
+keyAlias=fittrace
+keyPassword=YOUR_KEY_PASSWORD
+```
+
+证书和密码配置不入库。配置完成后执行：
+
+```bash
+GLITCHTIP_UPLOAD_SOURCEMAPS=false pnpm build:release
+```
+
+这会使用线上 HTTPS 接口，生成 `apps/h5/android/app/build/outputs/apk/release/app-release.apk`。如果 H5 已按生产配置构建，执行 `pnpm android:release` 可复用该产物。`build:apps` 和 `android:apk` 继续生成 Debug 包。
+
+保存签名证书并在后续更新中继续使用同一证书；发布时递增 `android/app/build.gradle` 中的 `versionCode` 并设置 `versionName`。旧 Debug 包与正式包签名不同，首次切换须先卸载旧 Debug 包。签名与生产部署详情见 [生产部署说明](../deploy/README.md)。
 
 ## 局域网服务
 
@@ -64,9 +81,9 @@ Vite 会读取根目录 `.env`，接口地址在构建时写入前端资源。�
 
 手机需要能访问 `10.0.3.54:3000`。APK 内有完整页面资源，运行时无需启动 Vite，但登录、记录和图片等功能需要连接 API。可在手机浏览器访问 `http://10.0.3.54:3000/api/v1/health` 检查连接。
 
-Android 网络配置只允许 `10.0.3.54` 的 HTTP 请求；Capacitor 已允许本地 HTTPS 页面访问该 HTTP 接口和图片。更换局域网 IP 时同步修改 `apps/h5/android/app/src/main/res/xml/network_security_config.xml`。
+Debug 网络配置只允许 `10.0.3.54` 的 HTTP 请求；Debug 的 Capacitor 配置允许本地 HTTPS 页面访问该 HTTP 接口和图片。更换局域网 IP 时同步修改 `apps/h5/android/app/src/debug/res/xml/network_security_config.xml`。
 
-正式环境应配置 HTTPS 接口与图片地址，并移除 HTTP 域名许可、关闭 `capacitor.config.ts` 中的 `android.allowMixedContent`。
+`build:release` 使用 `https://fittrace.idoit.icu/api/v1`，通过 `FITTRACE_ANDROID_PRODUCTION=true` 关闭混合内容；正式包的网络配置禁止明文 HTTP。更换生产域名时同时修改构建接口地址和服务端图片地址。
 
 ## 手机验证
 

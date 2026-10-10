@@ -196,7 +196,16 @@ onBeforeUnmount(() => {
             class="settings-row"
             :aria-disabled="saving"
             @click="saving && $event.preventDefault()"
-            ><LockOnIcon aria-hidden="true" /><span class="settings-row__body">修改密码</span
+            ><LockOnIcon aria-hidden="true" /><span class="settings-row__body">{{
+              auth.user?.hasPassword === false
+                ? '设置密码'
+                : auth.user?.hasPassword === true
+                  ? '修改密码'
+                  : '设置或修改密码'
+            }}</span
+            ><span v-if="typeof auth.user?.hasPassword === 'boolean'" class="settings-row__value">{{
+              auth.user.hasPassword ? '已设置' : '未设置'
+            }}</span
             ><ChevronRightIcon class="settings-row__chevron" aria-hidden="true"
           /></RouterLink>
         </div>

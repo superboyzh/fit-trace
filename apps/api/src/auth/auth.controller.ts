@@ -31,6 +31,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthSecurityService } from './auth-security.service';
 import { EmailVerificationService } from './email-verification.service';
+import { PasswordEmailCodeDto, SetPasswordDto } from './dto/set-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -113,6 +114,44 @@ export class AuthController {
 
   private clientIp(request: Request): string {
     return request.ip ?? request.socket.remoteAddress ?? 'unknown';
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('password/email-code')
+  async sendPasswordCode(
+    @CurrentUser() user: JwtPayload,
+    @Req() request: Request,
+  ): Promise<ApiPayload<EmailCodeResult>> {
+    return { data: await this.auth.sendPasswordCode(user, this.clientIp(request)) };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('password/verify-code')
+  async verifyPasswordCode(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: PasswordEmailCodeDto,
+    @Req() request: Request,
+  ): Promise<ApiPayload<ResetPasswordVerification>> {
+    return { data: await this.auth.verifyPasswordCode(user, dto, this.clientIp(request)) };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('password/email')
+  async setPassword(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: SetPasswordDto,
+    @Req() request: Request,
+  ): Promise<ApiPayload<AuthResult>> {
+    return { data: await this.auth.setPassword(user, dto, this.clientIp(request)) };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('password/session')
+  async changePasswordWithSession(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<ApiPayload<AuthResult>> {
+    return { data: await this.auth.changePasswordWithSession(user, dto) };
   }
 
   @UseGuards(JwtAuthGuard)

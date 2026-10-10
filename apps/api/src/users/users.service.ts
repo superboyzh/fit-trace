@@ -13,6 +13,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 const publicUserSelect = {
   id: true,
   email: true,
+  hasPassword: true,
   nickname: true,
   avatarUrl: true,
   gender: true,
@@ -63,7 +64,7 @@ export class UsersService {
   async updatePassword(userId: string, expectedHash: string, passwordHash: string): Promise<void> {
     const updated = await this.prisma.user.updateMany({
       where: { id: userId, passwordHash: expectedHash },
-      data: { passwordHash, tokenVersion: { increment: 1 } },
+      data: { passwordHash, hasPassword: true, tokenVersion: { increment: 1 } },
     });
     if (!updated.count) {
       throw new ConflictException({
@@ -90,7 +91,10 @@ export class UsersService {
     transaction: Prisma.TransactionClient = this.prisma,
   ): Promise<PublicUser> {
     try {
-      const user = await transaction.user.create({ data: input, select: publicUserSelect });
+      const user = await transaction.user.create({
+        data: { ...input, hasPassword: true },
+        select: publicUserSelect,
+      });
       return this.toPublicUser(user);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -175,6 +179,7 @@ export class UsersService {
     return {
       id: user.id,
       email: user.email,
+      hasPassword: user.hasPassword ?? null,
       nickname: user.nickname,
       avatarUrl: user.avatarUrl,
       gender: user.gender,

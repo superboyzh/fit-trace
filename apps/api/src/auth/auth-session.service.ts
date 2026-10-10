@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -43,6 +43,46 @@ export class AuthSessionService {
     });
     if (!updated.count) throw this.unauthorized();
     return this.result(user, session.id, session.tokenVersion, refreshToken);
+  }
+
+  async replaceAfterPasswordChange(
+    payload: JwtPayload,
+    expectedHash: string,
+    passwordHash: string,
+    transaction?: Prisma.TransactionClient,
+  ): Promise<AuthResult> {
+    const replace = async (tx: Prisma.TransactionClient) => {
+      const version = payload.ver ?? 0;
+      if (payload.sid) {
+        const current = await tx.authSession.findUnique({ where: { id: payload.sid } });
+        if (
+          !current ||
+          current.revokedAt ||
+          current.userId !== payload.sub ||
+          current.tokenVersion !== version
+        )
+          throw this.unauthorized();
+      }
+      const changed = await tx.user.updateMany({
+        where: { id: payload.sub, passwordHash: expectedHash, tokenVersion: version },
+        data: { passwordHash, hasPassword: true, tokenVersion: { increment: 1 } },
+      });
+      if (!changed.count) {
+        throw new ConflictException({
+          code: 'PASSWORD_CHANGED',
+          message: '密码已发生变化，请重新验证后再试',
+        });
+      }
+      // 原设备凭证与其他设备一并撤销，原子签发当前设备的新凭证。
+      await tx.authSession.updateMany({
+        where: { userId: payload.sub, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      const user = await this.users.findPublicById(payload.sub, tx);
+      if (!user) throw this.unauthorized();
+      return this.create(user, version + 1, tx);
+    };
+    return transaction ? replace(transaction) : this.prisma.$transaction(replace);
   }
 
   async upgrade(payload: JwtPayload): Promise<AuthResult> {

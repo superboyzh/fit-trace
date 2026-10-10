@@ -64,12 +64,11 @@ test('profile edits survive reopening without changing session credentials or an
   assert.deepEqual(f.manager.snapshot.user, user);
 });
 
-test('password change requests carry and renew the current access token', async () => {
+test('password management routes carry and renew the current access token', async () => {
   const f = fixture();
   f.manager.save(result('expired', 0));
   const client = axios.create({
     adapter: async (config) => {
-      assert.equal(config.url, '/auth/password');
       assert.equal(config.headers.Authorization, 'Bearer renewed');
       return { config, status: 200, headers: {}, data: { code: 'OK', data: null }, statusText: '' };
     },
@@ -79,6 +78,34 @@ test('password change requests carry and renew the current access token', async 
     currentPassword: 'old-password',
     password: 'new-password',
   });
+  await client.post('/auth/password/email-code', {});
+  await client.post('/auth/password/verify-code', { emailCode: '123456' });
+  await client.patch('/auth/password/email', { resetToken: 'grant', password: 'new-password' });
+  await client.patch('/auth/password/session', {
+    currentPassword: 'old-password',
+    password: 'new-password',
+  });
+});
+
+test('password replacement credentials persist and an earlier renewal cannot restore old credentials', async () => {
+  let complete;
+  const f = fixture({
+    refresh: () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  });
+  f.manager.save(result('old', 0));
+  const pending = f.manager.accessToken();
+  const updated = { ...result('new-password-session'), refreshToken: 'new-device-credential' };
+  updated.user.hasPassword = true;
+  f.manager.save(updated);
+  complete(result('old-renewed'));
+  assert.equal(await pending, null);
+  const reopened = new AuthSessionManager(f.storage, f.transport);
+  assert.equal(reopened.snapshot.accessToken, updated.accessToken);
+  assert.equal(reopened.snapshot.refreshToken, updated.refreshToken);
+  assert.equal(reopened.snapshot.user.hasPassword, true);
 });
 
 test('temporary network failure retains the account; revoked credential clears it', async () => {

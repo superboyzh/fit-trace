@@ -147,6 +147,7 @@ test('email login registers only after verification and returns a persistent dev
   const result = await f.auth.loginByEmail(input(f.code()), 'ip');
   assert.equal(result.user.email, email);
   assert.equal(result.user.nickname, null);
+  assert.equal(result.user.hasPassword, false);
   assert.equal('passwordHash' in result.user, false);
   assert.match(result.refreshToken, /^[a-f0-9]{64}$/);
   assert.notEqual(f.state().sessions[0].tokenHash, result.refreshToken);

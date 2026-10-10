@@ -37,6 +37,8 @@ export interface HealthStatus {
 export interface PublicUser {
   id: string;
   email: string;
+  /** null 表示旧账号未记录密码设置状态。 */
+  hasPassword: boolean | null;
   nickname: string | null;
   avatarUrl: string | null;
   gender: UserGender;

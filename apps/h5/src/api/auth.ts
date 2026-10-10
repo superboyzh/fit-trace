@@ -86,6 +86,31 @@ export async function getCurrentUser(): Promise<PublicUser> {
 export async function changePassword(input: {
   currentPassword: string;
   password: string;
-}): Promise<void> {
-  await http.patch<ApiResponse<null>>('/auth/password', input);
+}): Promise<AuthResult> {
+  return (await http.patch<ApiResponse<AuthResult>>('/auth/password/session', input)).data.data;
+}
+
+export async function sendPasswordCode(): Promise<EmailCodeResult> {
+  return (
+    await http.post<ApiResponse<EmailCodeResult>>(
+      '/auth/password/email-code',
+      {},
+      { timeout: 45_000 },
+    )
+  ).data.data;
+}
+
+export async function verifyPasswordCode(emailCode: string): Promise<ResetPasswordVerification> {
+  return (
+    await http.post<ApiResponse<ResetPasswordVerification>>('/auth/password/verify-code', {
+      emailCode,
+    })
+  ).data.data;
+}
+
+export async function setPassword(input: {
+  resetToken: string;
+  password: string;
+}): Promise<AuthResult> {
+  return (await http.patch<ApiResponse<AuthResult>>('/auth/password/email', input)).data.data;
 }

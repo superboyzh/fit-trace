@@ -18,6 +18,8 @@ import { EmailVerificationService } from './email-verification.service';
 import type { AuthResult } from './auth.types';
 import { AuthSessionService } from './auth-session.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { PasswordEmailCodeDto, SetPasswordDto } from './dto/set-password.dto';
+import type { JwtPayload } from './auth.types';
 
 @Injectable()
 export class AuthService {
@@ -71,6 +73,7 @@ export class AuthService {
             create: {
               email: dto.email,
               passwordHash: await hash(randomBytes(32).toString('hex'), 12),
+              hasPassword: false,
             },
           });
         }
@@ -141,7 +144,7 @@ export class AuthService {
     await this.verification.withResetToken(dto.email, dto.resetToken, async (tx) => {
       await tx.user.update({
         where: { email: dto.email },
-        data: { passwordHash, tokenVersion: { increment: 1 } },
+        data: { passwordHash, hasPassword: true, tokenVersion: { increment: 1 } },
       });
     });
     await this.security.loginSucceeded(dto.email, ip);
@@ -163,6 +166,59 @@ export class AuthService {
       });
     }
     await this.users.updatePassword(userId, user.passwordHash, await hash(dto.password, 12));
+  }
+
+  private async passwordAccount(payload: JwtPayload) {
+    const user = await this.users.findById(payload.sub);
+    if (!user || user.tokenVersion !== (payload.ver ?? 0)) {
+      throw new UnauthorizedException({ code: 'UNAUTHORIZED', message: '请重新登录后再试' });
+    }
+    return user;
+  }
+
+  async sendPasswordCode(payload: JwtPayload, ip: string) {
+    const user = await this.passwordAccount(payload);
+    return this.verification.send(user.email, 'RESET_PASSWORD', ip);
+  }
+
+  async verifyPasswordCode(payload: JwtPayload, dto: PasswordEmailCodeDto, ip: string) {
+    const user = await this.passwordAccount(payload);
+    return this.verifyResetCode({ email: user.email, emailCode: dto.emailCode }, ip);
+  }
+
+  async setPassword(payload: JwtPayload, dto: SetPasswordDto, ip: string): Promise<AuthResult> {
+    await this.security.limit('reset-ip', ip, 20, 3600);
+    await this.security.limit('change-password-user', payload.sub, 10, 900);
+    const user = await this.passwordAccount(payload);
+    const passwordHash = await hash(dto.password, 12);
+    return this.verification.withResetToken(user.email, dto.resetToken, (tx) =>
+      this.sessions.replaceAfterPasswordChange(payload, user.passwordHash, passwordHash, tx),
+    );
+  }
+
+  async changePasswordWithSession(
+    payload: JwtPayload,
+    dto: ChangePasswordDto,
+  ): Promise<AuthResult> {
+    await this.security.limit('change-password-user', payload.sub, 10, 900);
+    const user = await this.passwordAccount(payload);
+    if (!(await compare(dto.currentPassword, user.passwordHash))) {
+      throw new BadRequestException({
+        code: 'CURRENT_PASSWORD_INCORRECT',
+        message: '当前密码不正确',
+      });
+    }
+    if (dto.currentPassword === dto.password) {
+      throw new BadRequestException({
+        code: 'PASSWORD_UNCHANGED',
+        message: '新密码不能与当前密码相同',
+      });
+    }
+    return this.sessions.replaceAfterPasswordChange(
+      payload,
+      user.passwordHash,
+      await hash(dto.password, 12),
+    );
   }
 
   private dummyHash?: Promise<string>;

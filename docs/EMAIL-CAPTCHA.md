@@ -37,7 +37,7 @@ ALIYUN_CAPTCHA_ACCESS_KEY_SECRET=RAM访问密钥Secret
 
 ## 请求流程与失败行为
 
-`GET /api/v1/auth/email-captcha/config` 返回公开配置。点击获取验证码后，前端动态加载官方 SDK，通过验证后将原始 `captchaVerifyParam` 和 `captchaPlatform`（`web` 或 `app`）提交给发邮件接口：
+`GET /api/v1/auth/email-captcha/config` 返回公开配置。页面进入时，前端动态加载官方 SDK 并预初始化验证码；初始化超过 2 秒且实例就绪后，点击获取验证码直接唤起验证。过早点击只等待剩余准备时间，验证结束后预初始化下一次；页面退出会清理实例，长时间停留后会更新挑战。通过验证后，将原始 `captchaVerifyParam` 和 `captchaPlatform`（`web` 或 `app`）提交给发邮件接口：
 
 - `POST /api/v1/auth/email-code`：`{ email, purpose, captchaVerifyParam, captchaPlatform }`。
 - `POST /api/v1/auth/password/email-code`：`{ captchaVerifyParam, captchaPlatform }`，邮箱由当前登录账号确定。

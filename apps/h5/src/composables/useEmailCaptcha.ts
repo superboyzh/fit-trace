@@ -9,7 +9,7 @@ export function useEmailCaptcha(): EmailCaptchaClient {
     getEmailCaptchaConfig,
   );
   onMounted(() => {
-    // 前置加载 SDK；失败由用户下次点击时重试并提示。
+    // 前置加载 SDK 并初始化挑战，把环境采集和资源准备放在用户点击之前。
     void captcha.prepare().catch(() => undefined);
   });
   onBeforeUnmount(() => captcha.dispose());

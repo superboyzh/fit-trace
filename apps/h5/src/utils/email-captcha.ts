@@ -5,7 +5,12 @@ import type {
 } from '@fit-trace/shared';
 
 interface CaptchaInstance {
-  hide?: () => void;
+  hide?: () => void | Promise<void>;
+}
+interface PreparedCaptcha {
+  initializedAt: number;
+  start: () => Promise<EmailCaptchaProof | null>;
+  cancel: () => Promise<void>;
 }
 interface CaptchaOptions {
   SceneId: string;
@@ -67,7 +72,8 @@ export class EmailCaptchaClient {
   private readonly getConfig: () => Promise<EmailCaptchaConfig>;
   private preparing: Promise<EmailCaptchaConfig> | null = null;
   private disposed = false;
-  private cancel: (() => void) | null = null;
+  private cancel: PreparedCaptcha['cancel'] | null = null;
+  private prepared: PreparedCaptcha | null = null;
 
   constructor(platform: EmailCaptchaPlatform, getConfig: () => Promise<EmailCaptchaConfig>) {
     this.platform = platform;
@@ -86,7 +92,14 @@ export class EmailCaptchaClient {
           throw error;
         });
     }
-    return this.preparing;
+    return this.preparing.then((config) => {
+      if (config.enabled && !this.disposed && !this.prepared) {
+        const sceneId = this.platform === 'app' ? config.appSceneId : config.sceneId;
+        if (!sceneId) throw new Error('安全验证暂不可用，请稍后重试');
+        this.prepared = this.initialize(sceneId);
+      }
+      return config;
+    });
   }
 
   async verify(): Promise<EmailCaptchaProof | undefined | null> {
@@ -94,10 +107,32 @@ export class EmailCaptchaClient {
     const config = await this.prepare();
     if (this.disposed) return null;
     if (!config.enabled) return undefined;
-    const sceneId = this.platform === 'app' ? config.appSceneId : config.sceneId;
-    if (!sceneId) throw new Error('安全验证暂不可用，请稍后重试');
-    this.cancel?.();
-    return new Promise((resolve, reject) => {
+    // 长时间停留页面后重新准备，避免使用过旧的云端挑战。
+    if (this.prepared && Date.now() - this.prepared.initializedAt >= 600000) {
+      await this.prepared.cancel();
+      this.prepared = null;
+      await this.prepare();
+    }
+    if (this.disposed || !this.prepared) return null;
+    await this.cancel?.();
+    if (this.disposed || !this.prepared) return null;
+    const challenge = this.prepared;
+    this.prepared = null;
+    this.cancel = challenge.cancel;
+    try {
+      return await challenge.start();
+    } finally {
+      if (this.cancel === challenge.cancel) this.cancel = null;
+      // 验证结束后提前初始化下一次，不重复使用已经消费的凭据。
+      void this.prepare().catch(() => undefined);
+    }
+  }
+
+  private initialize(sceneId: string): PreparedCaptcha {
+    let start!: PreparedCaptcha['start'];
+    let cancel!: () => void;
+    const initializedAt = Date.now();
+    const result = new Promise<EmailCaptchaProof | null>((resolve, reject) => {
       // 这里只需唯一 DOM ID；兼容没有 randomUUID 的 HTTP 页面和 WebView。
       const id = `email-captcha-${Date.now().toString(36)}-${++nextCaptchaId}`;
       const host = document.createElement('div');
@@ -110,14 +145,13 @@ export class EmailCaptchaClient {
       let settled = false;
       let instance: CaptchaInstance | undefined;
       let startTimer: number | undefined;
-      const initializedAt = Date.now();
+      let verificationTimer: number | undefined;
+      let requested = false;
+      let activated = false;
+      let closed = false;
       const readyTimer = window.setTimeout(
         () => finish(new Error('安全验证加载超时，请重试')),
         10000,
-      );
-      const verificationTimer = window.setTimeout(
-        () => finish(new Error('安全验证已超时，请重试')),
-        120000,
       );
       const finish = (result: EmailCaptchaProof | Error | null): void => {
         if (settled) return;
@@ -125,19 +159,52 @@ export class EmailCaptchaClient {
         window.clearTimeout(readyTimer);
         window.clearTimeout(startTimer);
         window.clearTimeout(verificationTimer);
-        this.cancel = null;
-        // SDK 的 hide 可能触发 onClose；先标记完成，避免覆盖成功结果。
+        const complete = (): void => {
+          host.remove();
+          trigger.remove();
+          if (result instanceof Error) reject(result);
+          else resolve(result);
+        };
+        // SDK 的 hide 包含异步动画且共用配置；完成后才能初始化下一次。
         try {
-          instance?.hide?.();
+          const hiding = closed ? undefined : instance?.hide?.();
+          if (hiding) {
+            void hiding.then(complete, complete);
+            return;
+          }
         } catch {
           /* 清理失败不应阻止结果返回。 */
         }
-        host.remove();
-        trigger.remove();
-        if (result instanceof Error) reject(result);
-        else resolve(result);
+        complete();
       };
-      this.cancel = () => finish(null);
+      const activate = (): void => {
+        if (settled || !requested || !instance || activated) return;
+        activated = true;
+        const show = (): void => {
+          if (settled) return;
+          try {
+            trigger.click();
+          } catch {
+            finish(new Error('安全验证加载失败，请稍后重试'));
+          }
+        };
+        // 等待发生在页面预初始化阶段；准备充分后点击可直接唤起。
+        const remaining = 2100 - (Date.now() - initializedAt);
+        if (remaining > 0) startTimer = window.setTimeout(show, remaining);
+        else show();
+      };
+      cancel = () => finish(null);
+      start = () => {
+        if (!settled && !requested) {
+          requested = true;
+          verificationTimer = window.setTimeout(
+            () => finish(new Error('安全验证已超时，请重试')),
+            120000,
+          );
+          activate();
+        }
+        return result;
+      };
       try {
         window.initAliyunCaptcha!({
           SceneId: sceneId,
@@ -164,22 +231,13 @@ export class EmailCaptchaClient {
             }
             instance = value;
             window.clearTimeout(readyTimer);
-            // 官方要求初始化与验证间隔大于 2 秒，给环境采集及资源加载留时间。
-            startTimer = window.setTimeout(
-              () => {
-                if (!settled) {
-                  try {
-                    trigger.click();
-                  } catch {
-                    finish(new Error('安全验证加载失败，请稍后重试'));
-                  }
-                }
-              },
-              Math.max(0, 2100 - (Date.now() - initializedAt)),
-            );
+            activate();
           },
           onError: () => finish(new Error('安全验证加载失败，请稍后重试')),
           onClose: (reason) => {
+            // 只处理用户已唤起的弹窗，忽略预初始化阶段的关闭通知。
+            if (!requested || settled) return;
+            closed = true;
             if (reason === 'userDismiss') finish(null);
           },
         });
@@ -187,10 +245,25 @@ export class EmailCaptchaClient {
         finish(new Error('安全验证加载失败，请稍后重试'));
       }
     });
+    // 预加载失败时尚无业务请求等待；点击后仍会收到原始错误。
+    void result.catch(() => undefined);
+    return {
+      initializedAt,
+      start: () => start(),
+      cancel: () => {
+        cancel();
+        return result.then(
+          () => undefined,
+          () => undefined,
+        );
+      },
+    };
   }
 
   dispose(): void {
     this.disposed = true;
-    this.cancel?.();
+    void this.prepared?.cancel();
+    this.prepared = null;
+    void this.cancel?.();
   }
 }

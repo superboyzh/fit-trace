@@ -1,5 +1,15 @@
 # 实现进度
 
+## 生产部署与服务器资源（2026-10-09）
+
+- H5、API 和正式签名 APK 已部署到 `fittrace.idoit.icu`，使用现有 Nginx、TLS 证书与 PostgreSQL 数据库。APK 版本 0.1.0，versionCode 2，包名 `com.fittrace.app`，正式包禁用 HTTP 和混合内容。
+- 构建与依赖安装移到本机，服务器只接收独立 Linux API 运行包；API 由独立用户和 systemd 管理，仅监听 `127.0.0.1:3100`，内存上限 512 MiB，上传文件独立持久化。
+- 已通过公网 HTTPS、History 路由、API 鉴权、Android Origin 跨域检查；公网 APK 与本机签名产物逐字节一致。临时账号验证真实数据库上的登录、四类记录、首页聚合、上传、续期与退出撤销，测试数据已清理。
+- SMTP 连接和认证通过，本次未发送邮件或调用付费 AI。手机拍照、相册、键盘与实际 AI 识别仍需真机验收。GlitchTip 运行时监控保留，本次跳过源码映射生成与上传。
+- 本机 100 项回归测试与 `pnpm check` 通过。旧 Debug APK 首次切换正式包需卸载旧包，后续升级应保留同一签名。
+- 部署时服务器失去响应的证据与限制见 [事故分析](../deploy/INCIDENT-20261009.md)。按用户后续指示卸载 OpenClaw 和 kkFileView，保留历史配置及数据备份；两套 MySQL 的使用方和合并方案见 [服务器审计](../deploy/SERVER-SERVICES-20261009.md)，尚未迁移 MySQL 数据。
+- 维护与回滚步骤见 [生产部署说明](../deploy/README.md)。
+
 ## GlitchTip 错误监控（2026-10-09）
 
 - H5 和 Android WebView 已接入 `@sentry/vue@10.76.1`，初始化 Vue 组件错误捕获和 1% 性能事务采样；移除当前 SDK 默认的 `BrowserSession` 集成，避免 GlitchTip 会话采集。

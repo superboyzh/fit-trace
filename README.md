@@ -21,6 +21,14 @@ pnpm dev
 - API: http://localhost:3000/api/v1
 - 健康检查: http://localhost:3000/api/v1/health
 
+## 线上版本
+
+- H5：[fittrace.idoit.icu](https://fittrace.idoit.icu)
+- API：[健康检查](https://fittrace.idoit.icu/api/v1/health)
+- Android：[下载正式签名 APK](https://fittrace.idoit.icu/downloads/fittrace.apk)
+
+部署目录、构建、签名和回滚步骤见 [生产部署说明](deploy/README.md)。服务器服务、内存占用及 MySQL 合并建议见 [服务器审计](deploy/SERVER-SERVICES-20261009.md)。
+
 ## 常用命令
 
 ```bash

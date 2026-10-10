@@ -73,8 +73,11 @@ export class UsersService {
     }
   }
 
-  async findPublicById(id: string): Promise<PublicUser | null> {
-    const user = await this.prisma.user.findUnique({ where: { id }, select: publicUserSelect });
+  async findPublicById(
+    id: string,
+    transaction: Prisma.TransactionClient = this.prisma,
+  ): Promise<PublicUser | null> {
+    const user = await transaction.user.findUnique({ where: { id }, select: publicUserSelect });
     return user ? this.toPublicUser(user) : null;
   }
 

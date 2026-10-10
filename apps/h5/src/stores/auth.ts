@@ -3,8 +3,10 @@ import { defineStore } from 'pinia';
 import {
   getCurrentUser,
   login as loginRequest,
+  loginByEmail as emailLoginRequest,
   register as registerRequest,
   type LoginInput,
+  type EmailLoginInput,
   type RegisterInput,
 } from '@/api/auth';
 import { authSession } from '@/api/session';
@@ -18,6 +20,10 @@ export const useAuthStore = defineStore('auth', {
     isAuthenticated: (state) => Boolean(state.token),
   },
   actions: {
+    async loginByEmail(input: EmailLoginInput): Promise<void> {
+      const result = await emailLoginRequest(input);
+      this.setSession(result);
+    },
     async login(input: LoginInput): Promise<void> {
       const result = await loginRequest(input);
       this.setSession(result);

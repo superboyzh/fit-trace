@@ -19,6 +19,18 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
+      path: '/agreement',
+      name: 'public-agreement',
+      component: () => import('@/views/settings/AgreementView.vue'),
+      meta: { publicPolicy: true },
+    },
+    {
+      path: '/privacy',
+      name: 'public-privacy',
+      component: () => import('@/views/settings/AgreementView.vue'),
+      meta: { publicPolicy: true, policyKind: 'privacy' },
+    },
+    {
       path: '/',
       component: () => import('@/layouts/MainLayout.vue'),
       meta: { requiresAuth: true },
@@ -81,6 +93,12 @@ const router = createRouter({
           path: 'settings/agreement',
           name: 'user-agreement',
           component: () => import('@/views/settings/AgreementView.vue'),
+        },
+        {
+          path: 'settings/privacy',
+          name: 'privacy-policy',
+          component: () => import('@/views/settings/AgreementView.vue'),
+          meta: { policyKind: 'privacy' },
         },
         {
           path: 'settings/about',

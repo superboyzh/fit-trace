@@ -49,6 +49,7 @@ model AuthSession {
 enum EmailCodePurpose {
   REGISTER
   RESET_PASSWORD
+  LOGIN
 }
 
 model EmailVerification {

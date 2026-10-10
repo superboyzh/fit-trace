@@ -21,6 +21,12 @@ export interface RegisterInput extends LoginInput {
   nickname?: string;
 }
 
+export interface EmailLoginInput {
+  email: string;
+  emailCode: string;
+  acceptedTerms: boolean;
+}
+
 export async function sendEmailCode(
   email: string,
   purpose: EmailCodePurpose,
@@ -59,6 +65,11 @@ export async function resetPassword(input: {
 
 export async function login(input: LoginInput): Promise<AuthResult> {
   const response = await http.post<ApiResponse<AuthResult>>('/auth/login', input);
+  return response.data.data;
+}
+
+export async function loginByEmail(input: EmailLoginInput): Promise<AuthResult> {
+  const response = await http.post<ApiResponse<AuthResult>>('/auth/login/email', input);
   return response.data.data;
 }
 

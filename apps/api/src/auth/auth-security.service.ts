@@ -2,6 +2,7 @@ import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 import { ForbiddenException, HttpException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { LoginCaptcha } from '@fit-trace/shared';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { renderCaptcha } from './captcha-image';
 
@@ -65,8 +66,12 @@ export class AuthSecurityService {
       this.hit(this.key('login-failed-ip', ip), 900),
     ]);
   }
-  async loginSucceeded(email: string, ip: string): Promise<void> {
-    await this.prisma.authRateLimit.deleteMany({
+  async loginSucceeded(
+    email: string,
+    ip: string,
+    transaction: Prisma.TransactionClient = this.prisma,
+  ): Promise<void> {
+    await transaction.authRateLimit.deleteMany({
       where: {
         key: { in: [this.key('login-failed-email', email), this.key('login-failed-ip', ip)] },
       },

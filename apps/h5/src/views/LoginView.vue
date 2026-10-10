@@ -7,8 +7,9 @@ import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getLoginCaptcha, resetPassword, sendEmailCode, verifyResetCode } from '@/api/auth';
 import { useAuthStore } from '@/stores/auth';
+import PolicyContent from '@/components/PolicyContent.vue';
 
-type Mode = 'login' | 'register' | 'reset';
+type Mode = 'login' | 'password' | 'reset';
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
@@ -16,6 +17,9 @@ const mode = ref<Mode>('login');
 const email = ref('');
 const password = ref('');
 const emailCode = ref('');
+const acceptedTerms = ref(false);
+const policyDialog = ref<HTMLDialogElement | null>(null);
+const policyKind = ref<'agreement' | 'privacy'>('agreement');
 const confirmPassword = ref('');
 const resetGrant = ref<{ token: string; email: string; expiresAt: number } | null>(null);
 const showPassword = ref(false);
@@ -38,25 +42,26 @@ const errors = reactive({
   confirmPassword: '',
   emailCode: '',
   captchaCode: '',
+  agreement: '',
 });
 const busy = computed(() => submitting.value || sendingCode.value);
 const countdown = computed(() => Math.max(0, Math.ceil((resendAt.value - now.value) / 1000)));
 const title = computed(() =>
   mode.value === 'reset' && resetGrant.value
     ? '设置新密码'
-    : { login: '登录循形', register: '创建账户', reset: '找回密码' }[mode.value],
+    : { login: '登录循形', password: '密码登录', reset: '设置或找回密码' }[mode.value],
 );
 const subtitle = computed(
   () =>
     ({
-      login: '持续记录你的身体、饮食与训练',
-      register: '验证邮箱，开始记录你的变化',
+      login: '验证邮箱，开始记录你的变化',
+      password: '使用已有账号的密码登录',
       reset: resetGrant.value ? '邮箱验证已通过，请设置新密码' : '先验证邮箱，确认是你本人操作',
     })[mode.value],
 );
 const submitLabel = computed(
   () =>
-    ({ login: '登录', register: '创建账户', reset: resetGrant.value ? '确认重置' : '验证并继续' })[
+    ({ login: '登录', password: '登录', reset: resetGrant.value ? '确认重置' : '验证并继续' })[
       mode.value
     ],
 );
@@ -72,8 +77,16 @@ function clearErrors(): void {
     confirmPassword: '',
     emailCode: '',
     captchaCode: '',
+    agreement: '',
   });
 }
+function openPolicy(kind: 'agreement' | 'privacy'): void {
+  policyKind.value = kind;
+  policyDialog.value?.showModal();
+}
+watch(acceptedTerms, () => {
+  errors.agreement = '';
+});
 function switchMode(next: Mode): void {
   if (busy.value) return;
   mode.value = next;
@@ -139,13 +152,13 @@ function handleError(error: unknown): void {
     confirmPassword.value = '';
     errors.emailCode = message;
   }
-  if (code === 'EMAIL_ALREADY_REGISTERED') errors.email = message;
+  if (code === 'AGREEMENT_REQUIRED') errors.agreement = message;
   if (code === 'INVALID_CREDENTIALS') errors.password = message;
   if (code === 'LOGIN_CAPTCHA_REQUIRED' || code === 'CAPTCHA_INVALID') {
     captchaRequired.value = true;
     errors.captchaCode = message;
     void refreshCaptcha().catch(() => undefined);
-  } else if (mode.value === 'login' && captchaRequired.value) {
+  } else if (mode.value === 'password' && captchaRequired.value) {
     void refreshCaptcha().catch(() => undefined);
   }
 }
@@ -155,13 +168,15 @@ async function requestEmailCode(): Promise<void> {
   try {
     const result = await sendEmailCode(
       email.value.trim(),
-      mode.value === 'register' ? 'REGISTER' : 'RESET_PASSWORD',
+      mode.value === 'login' ? 'LOGIN' : 'RESET_PASSWORD',
     );
     sentTo.value = email.value.trim();
     now.value = Date.now();
     resendAt.value = now.value + result.retryAfterSeconds * 1000;
     codeCooldowns.set(cooldownKey(), resendAt.value);
-    ToastPlugin.success('若邮箱可用，验证码将发送至你的邮箱');
+    ToastPlugin.success(
+      mode.value === 'login' ? '验证码已发送，请查收邮箱' : '若邮箱可用，验证码将发送至你的邮箱',
+    );
   } catch (error) {
     handleError(error);
   } finally {
@@ -173,23 +188,25 @@ async function submit(): Promise<void> {
   clearErrors();
   const validEmail = validateEmail();
   if (
-    (mode.value !== 'reset' || resetGrant.value) &&
+    (mode.value === 'password' || (mode.value === 'reset' && resetGrant.value)) &&
     (password.value.length < 8 || password.value.length > 72)
   )
     errors.password = '密码需要 8–72 位';
   if (mode.value === 'reset' && resetGrant.value && confirmPassword.value !== password.value)
     errors.confirmPassword = '两次输入的密码不一致';
   if (
-    (mode.value === 'register' || (mode.value === 'reset' && !resetGrant.value)) &&
+    (mode.value === 'login' || (mode.value === 'reset' && !resetGrant.value)) &&
     !/^\d{6}$/.test(emailCode.value)
   )
     errors.emailCode = '请输入 6 位邮箱验证码';
   if (
-    mode.value === 'login' &&
+    mode.value === 'password' &&
     captchaRequired.value &&
     (!captcha.value || !/^[a-z\d]{4}$/i.test(captchaCode.value))
   )
     errors.captchaCode = '请输入图片中的 4 位字符';
+  if (mode.value !== 'reset' && !acceptedTerms.value)
+    errors.agreement = '请先阅读并同意用户协议和隐私政策';
   if (!validEmail || Object.values(errors).some(Boolean)) return;
   submitting.value = true;
   try {
@@ -220,11 +237,11 @@ async function submit(): Promise<void> {
         resetToken: resetGrant.value.token,
       });
       submitting.value = false;
-      switchMode('login');
+      switchMode('password');
       ToastPlugin.success('密码已更新，请使用新密码登录');
       return;
     }
-    if (mode.value === 'login') {
+    if (mode.value === 'password') {
       await auth.login({
         ...input,
         ...(captchaRequired.value && captcha.value
@@ -232,7 +249,11 @@ async function submit(): Promise<void> {
           : {}),
       });
     } else {
-      await auth.register({ ...input, emailCode: emailCode.value });
+      await auth.loginByEmail({
+        email: input.email,
+        emailCode: emailCode.value,
+        acceptedTerms: acceptedTerms.value,
+      });
     }
     const redirect =
       typeof route.query.redirect === 'string' &&
@@ -298,7 +319,7 @@ async function submit(): Promise<void> {
               errors.email
             }}</small>
           </div>
-          <div v-if="mode === 'register' || (mode === 'reset' && !resetGrant)" class="form-field">
+          <div v-if="mode === 'login' || (mode === 'reset' && !resetGrant)" class="form-field">
             <label for="auth-email-code">邮箱验证码</label>
             <div class="code-field" :class="{ invalid: errors.emailCode }">
               <input
@@ -332,18 +353,16 @@ async function submit(): Promise<void> {
               }}</small
             >
           </div>
-          <div v-if="mode !== 'reset' || resetGrant" class="form-field">
-            <label for="auth-password">{{
-              mode === 'reset' ? '新密码' : mode === 'register' ? '设置密码' : '密码'
-            }}</label>
+          <div v-if="mode === 'password' || (mode === 'reset' && resetGrant)" class="form-field">
+            <label for="auth-password">{{ mode === 'reset' ? '新密码' : '密码' }}</label>
             <div class="password-field" :class="{ invalid: errors.password }">
               <input
                 id="auth-password"
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
-                :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
+                :autocomplete="mode === 'password' ? 'current-password' : 'new-password'"
                 maxlength="72"
-                :placeholder="mode === 'login' ? '输入密码' : '设置 8–72 位密码'"
+                :placeholder="mode === 'password' ? '输入密码' : '设置 8–72 位密码'"
                 :readonly="busy"
                 :aria-invalid="Boolean(errors.password)"
                 aria-describedby="password-hint"
@@ -359,7 +378,7 @@ async function submit(): Promise<void> {
               </button>
             </div>
             <small
-              v-if="errors.password || mode !== 'login'"
+              v-if="errors.password || mode !== 'password'"
               id="password-hint"
               :class="errors.password ? 'field-error' : 'field-hint'"
               :role="errors.password ? 'alert' : undefined"
@@ -387,7 +406,7 @@ async function submit(): Promise<void> {
               >{{ errors.confirmPassword }}</small
             >
           </div>
-          <div v-if="mode === 'login' && captchaRequired" class="form-field">
+          <div v-if="mode === 'password' && captchaRequired" class="form-field">
             <label for="auth-captcha">安全验证</label>
             <div class="captcha-field">
               <input
@@ -416,8 +435,33 @@ async function submit(): Promise<void> {
               errors.captchaCode || '点击图片可换一张，验证码 2 分钟内有效'
             }}</small>
           </div>
-          <div v-if="mode === 'login'" class="form-actions">
-            <button type="button" :disabled="busy" @click="switchMode('reset')">忘记密码？</button>
+          <div v-if="mode === 'password'" class="form-actions">
+            <button type="button" :disabled="busy" @click="switchMode('reset')">
+              设置或找回密码
+            </button>
+          </div>
+          <div v-if="mode !== 'reset'" class="agreement-field">
+            <div class="agreement-row">
+              <input
+                id="auth-agreement"
+                v-model="acceptedTerms"
+                type="checkbox"
+                :disabled="busy"
+                :aria-invalid="Boolean(errors.agreement)"
+                aria-describedby="agreement-error"
+              />
+              <div>
+                <label for="auth-agreement">我已阅读并同意</label>
+                <button type="button" aria-haspopup="dialog" @click="openPolicy('agreement')">
+                  《用户协议》</button
+                >和<button type="button" aria-haspopup="dialog" @click="openPolicy('privacy')">
+                  《隐私政策》
+                </button>
+              </div>
+            </div>
+            <small v-if="errors.agreement" id="agreement-error" class="field-error" role="alert">{{
+              errors.agreement
+            }}</small>
           </div>
           <Button
             class="submit-button"
@@ -426,24 +470,32 @@ async function submit(): Promise<void> {
             size="large"
             block
             :loading="submitting"
-            :disabled="sendingCode || (mode === 'login' && captchaRequired && !captcha)"
+            :disabled="sendingCode || (mode === 'password' && captchaRequired && !captcha)"
             >{{ submitting ? '请稍候…' : submitLabel }}</Button
           >
         </form>
+        <p v-if="mode === 'login'" class="auto-register-hint">未注册的邮箱将自动创建账户</p>
         <p class="mode-link">
           <template v-if="mode === 'login'"
-            >没有账户？<button type="button" :disabled="busy" @click="switchMode('register')">
-              注册
+            ><button type="button" :disabled="busy" @click="switchMode('password')">
+              使用密码登录
             </button></template
           ><template v-else
-            >已有账户？<button type="button" :disabled="busy" @click="switchMode('login')">
-              登录
+            ><button type="button" :disabled="busy" @click="switchMode('login')">
+              使用邮箱验证码登录
             </button></template
           >
         </p>
       </section>
       <footer class="auth-footer">记录行动，看见改变</footer>
     </div>
+    <dialog ref="policyDialog" class="policy-dialog" aria-labelledby="policy-title">
+      <header>
+        <h2 id="policy-title">{{ policyKind === 'agreement' ? '用户协议' : '隐私政策' }}</h2>
+        <button type="button" @click="policyDialog?.close()">关闭</button>
+      </header>
+      <PolicyContent :kind="policyKind" />
+    </dialog>
   </main>
 </template>
 
@@ -637,6 +689,65 @@ button:not(.t-button) {
 }
 .submit-button {
   margin-top: 4px;
+}
+.agreement-field {
+  display: grid;
+  gap: 6px;
+}
+.agreement-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.8;
+  input {
+    flex: none;
+    width: 17px;
+    height: 17px;
+    margin: 2px 0 0;
+    padding: 0;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+    &:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 3px;
+    }
+  }
+  label {
+    cursor: pointer;
+  }
+  button {
+    color: var(--color-accent-text);
+  }
+}
+.auto-register-hint {
+  margin: 12px 0 0;
+  color: var(--color-text-tertiary);
+  font-size: 0.75rem;
+  text-align: center;
+}
+.policy-dialog {
+  width: min(440px, calc(100% - 32px));
+  max-height: 80dvh;
+  padding: 20px;
+  color: var(--color-text-primary);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  &::backdrop {
+    background: rgb(0 0 0 / 35%);
+  }
+  > header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    h2 {
+      margin: 0;
+      font-size: 1.125rem;
+    }
+  }
 }
 .mode-link {
   display: flex;

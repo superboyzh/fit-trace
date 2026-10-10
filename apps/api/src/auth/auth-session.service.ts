@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService, type PublicUser } from '../users/users.service';
 import type { AuthResult, JwtPayload } from './auth.types';
@@ -13,9 +14,13 @@ export class AuthSessionService {
     private readonly jwt: JwtService,
   ) {}
 
-  async create(user: PublicUser, tokenVersion: number): Promise<AuthResult> {
+  async create(
+    user: PublicUser,
+    tokenVersion: number,
+    transaction: Prisma.TransactionClient = this.prisma,
+  ): Promise<AuthResult> {
     const refreshToken = randomBytes(32).toString('hex');
-    const session = await this.prisma.authSession.create({
+    const session = await transaction.authSession.create({
       data: { userId: user.id, tokenVersion, tokenHash: this.digest(refreshToken) },
     });
     return this.result(user, session.id, tokenVersion, refreshToken);

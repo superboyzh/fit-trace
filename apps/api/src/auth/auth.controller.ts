@@ -23,6 +23,7 @@ import type { AuthResult, JwtPayload } from './auth.types';
 import { AuthSessionService } from './auth-session.service';
 import { RefreshSessionDto } from './dto/refresh-session.dto';
 import { LoginDto } from './dto/login.dto';
+import { EmailLoginDto } from './dto/email-login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { EmailCodeDto } from './dto/email-code.dto';
 import { VerifyResetCodeDto } from './dto/verify-reset-code.dto';
@@ -52,6 +53,14 @@ export class AuthController {
   @Post('login')
   async login(@Body() dto: LoginDto, @Req() request: Request): Promise<ApiPayload<AuthResult>> {
     return { data: await this.auth.login(dto, this.clientIp(request)) };
+  }
+
+  @Post('login/email')
+  async loginByEmail(
+    @Body() dto: EmailLoginDto,
+    @Req() request: Request,
+  ): Promise<ApiPayload<AuthResult>> {
+    return { data: await this.auth.loginByEmail(dto, this.clientIp(request)) };
   }
 
   @Post('email-code')

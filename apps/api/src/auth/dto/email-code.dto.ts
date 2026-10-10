@@ -9,6 +9,6 @@ export class EmailCodeDto {
   @IsEmail({}, { message: '请输入正确的邮箱地址' })
   email!: string;
 
-  @IsIn(['REGISTER', 'RESET_PASSWORD'], { message: '验证码用途不正确' })
+  @IsIn(['LOGIN', 'REGISTER', 'RESET_PASSWORD'], { message: '验证码用途不正确' })
   purpose!: EmailCodePurpose;
 }

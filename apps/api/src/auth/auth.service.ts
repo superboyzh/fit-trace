@@ -6,8 +6,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { compare, hash } from 'bcryptjs';
+import { randomBytes } from 'node:crypto';
 import { UsersService, type PublicUser } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
+import { EmailLoginDto } from './dto/email-login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyResetCodeDto } from './dto/verify-reset-code.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -44,6 +46,50 @@ export class AuthService {
 
     this.logger.log(`注册成功 email=${user.email} user=${user.id.slice(0, 8)}`);
     return this.buildAuthResult(user);
+  }
+
+  async loginByEmail(dto: EmailLoginDto, ip: string): Promise<AuthResult> {
+    if (dto.acceptedTerms !== true) {
+      throw new BadRequestException({
+        code: 'AGREEMENT_REQUIRED',
+        message: '请先阅读并同意用户协议和隐私政策',
+      });
+    }
+    await this.security.limit('email-login-ip', ip, 40, 900);
+    await this.security.limit('email-login-email', dto.email, 20, 900);
+    const result = await this.verification.withCode(
+      dto.email,
+      'LOGIN',
+      dto.emailCode,
+      async (tx) => {
+        let user = await tx.user.findUnique({ where: { email: dto.email } });
+        if (!user) {
+          // 自动注册不设置可猜测的初始密码；用户可通过邮箱验证设置自己的密码。
+          user = await tx.user.upsert({
+            where: { email: dto.email },
+            update: {},
+            create: {
+              email: dto.email,
+              passwordHash: await hash(randomBytes(32).toString('hex'), 12),
+            },
+          });
+        }
+        const publicUser = await this.users.findPublicById(user.id, tx);
+        if (!publicUser) {
+          throw new UnauthorizedException({
+            code: 'UNAUTHORIZED',
+            message: '账号不可用，请重新登录',
+          });
+        }
+        // 验证码消费、自动注册与设备会话写入同一事务，失败时可重试验证码。
+        await this.security.loginSucceeded(dto.email, ip, tx);
+        return this.sessions.create(publicUser, user.tokenVersion, tx);
+      },
+    );
+    this.logger.log(
+      `邮箱验证登录成功 email=${result.user.email} user=${result.user.id.slice(0, 8)}`,
+    );
+    return result;
   }
 
   async login(dto: LoginDto, ip: string): Promise<AuthResult> {

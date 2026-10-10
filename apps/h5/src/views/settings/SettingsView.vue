@@ -24,6 +24,7 @@ const items = [
   },
   { title: '系统设置', description: '显示模式与外观', path: '/settings/system', icon: SettingIcon },
   { title: '用户协议', description: '了解使用条款', path: '/settings/agreement', icon: FileIcon },
+  { title: '隐私政策', description: '了解信息使用方式', path: '/settings/privacy', icon: FileIcon },
   {
     title: '关于循形',
     description: '应用介绍与版本信息',

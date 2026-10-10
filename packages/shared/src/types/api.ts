@@ -64,7 +64,7 @@ export interface AuthResult {
   user: PublicUser;
 }
 
-export type EmailCodePurpose = 'REGISTER' | 'RESET_PASSWORD';
+export type EmailCodePurpose = 'LOGIN' | 'REGISTER' | 'RESET_PASSWORD';
 
 export interface EmailCodeResult {
   retryAfterSeconds: number;
